@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/mysql:mysql-connector-java:5.1.39"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/org.json:json:20160810"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/org.apache.logging.log4j:log4j-1.2-api:2.6.2"/>
+	<classpathentry kind="output" path="out/production/jGemstoneServer"/>
+</classpath>

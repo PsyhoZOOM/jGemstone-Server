@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eclipse-userlibraries>
+  <library name="mysql:mysql-connector-java:5.1.39">
+    <archive path="/home/zoom/Documents/Developing/Java/jGemstoneServer/lib/mysql-connector-java-5.1.39.jar" />
+  </library>
+  <library name="org.apache.logging.log4j:log4j-1.2-api:2.6.2">
+    <archive path="/home/zoom/Documents/Developing/Java/jGemstoneServer/lib/log4j-1.2-api-2.6.2.jar" />
+    <archive path="/home/zoom/Documents/Developing/Java/jGemstoneServer/lib/log4j-api-2.6.2.jar" />
+    <archive path="/home/zoom/Documents/Developing/Java/jGemstoneServer/lib/log4j-core-2.6.2.jar" />
+  </library>
+  <library name="org.json:json:20160810">
+    <archive path="/home/zoom/Documents/Developing/Java/jGemstoneServer/lib/json-20160810.jar" />
+  </library>
+  <library name="JSON" />
+</eclipse-userlibraries>
+

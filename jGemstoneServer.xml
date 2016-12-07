@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="jgemstoneserver" default="all">
+  
+  
+  <property file="jGemstoneServer.properties"/>
+  <!-- Uncomment the following property if no tests compilation is needed -->
+  <!-- 
+  <property name="skip.tests" value="true"/>
+   -->
+  
+  <!-- Compiler options -->
+  
+  <property name="compiler.debug" value="on"/>
+  <property name="compiler.generate.no.warnings" value="off"/>
+  <property name="compiler.args" value=""/>
+  <property name="compiler.max.memory" value="700m"/>
+  <patternset id="ignored.files">
+    <exclude name="**/*.hprof/**"/>
+    <exclude name="**/*.pyc/**"/>
+    <exclude name="**/*.pyo/**"/>
+    <exclude name="**/*.rbc/**"/>
+    <exclude name="**/*.yarb/**"/>
+    <exclude name="**/*~/**"/>
+    <exclude name="**/.DS_Store/**"/>
+    <exclude name="**/.git/**"/>
+    <exclude name="**/.hg/**"/>
+    <exclude name="**/.svn/**"/>
+    <exclude name="**/CVS/**"/>
+    <exclude name="**/RCS/**"/>
+    <exclude name="**/SCCS/**"/>
+    <exclude name="**/__pycache__/**"/>
+    <exclude name="**/_svn/**"/>
+    <exclude name="**/rcs/**"/>
+    <exclude name="**/vssver.scc/**"/>
+    <exclude name="**/vssver2.scc/**"/>
+  </patternset>
+  <patternset id="library.patterns">
+    <include name="*.war"/>
+    <include name="*.swc"/>
+    <include name="*.apk"/>
+    <include name="*.zip"/>
+    <include name="*.egg"/>
+    <include name="*.ane"/>
+    <include name="*.jar"/>
+    <include name="*.ear"/>
+  </patternset>
+  <patternset id="compiler.resources">
+    <exclude name="**/?*.java"/>
+    <exclude name="**/?*.form"/>
+    <exclude name="**/?*.class"/>
+    <exclude name="**/?*.groovy"/>
+    <exclude name="**/?*.scala"/>
+    <exclude name="**/?*.flex"/>
+    <exclude name="**/?*.kt"/>
+    <exclude name="**/?*.clj"/>
+    <exclude name="**/?*.aj"/>
+  </patternset>
+  
+  <!-- JDK definitions -->
+  
+  <property name="jdk.bin.1.8" value="${jdk.home.1.8}/bin"/>
+  <path id="jdk.classpath.1.8">
+    <fileset dir="${jdk.home.1.8}">
+      <include name="jre/lib/charsets.jar"/>
+      <include name="jre/lib/deploy.jar"/>
+      <include name="jre/lib/ext/cldrdata.jar"/>
+      <include name="jre/lib/ext/dnsns.jar"/>
+      <include name="jre/lib/ext/jaccess.jar"/>
+      <include name="jre/lib/ext/jfxrt.jar"/>
+      <include name="jre/lib/ext/localedata.jar"/>
+      <include name="jre/lib/ext/nashorn.jar"/>
+      <include name="jre/lib/ext/sunec.jar"/>
+      <include name="jre/lib/ext/sunjce_provider.jar"/>
+      <include name="jre/lib/ext/sunpkcs11.jar"/>
+      <include name="jre/lib/ext/zipfs.jar"/>
+      <include name="jre/lib/javaws.jar"/>
+      <include name="jre/lib/jce.jar"/>
+      <include name="jre/lib/jfr.jar"/>
+      <include name="jre/lib/jfxswt.jar"/>
+      <include name="jre/lib/jsse.jar"/>
+      <include name="jre/lib/management-agent.jar"/>
+      <include name="jre/lib/plugin.jar"/>
+      <include name="jre/lib/resources.jar"/>
+      <include name="jre/lib/rt.jar"/>
+    </fileset>
+  </path>
+  
+  <property name="project.jdk.home" value="${jdk.home.1.8}"/>
+  <property name="project.jdk.bin" value="${jdk.bin.1.8}"/>
+  <property name="project.jdk.classpath" value="jdk.classpath.1.8"/>
+  
+  
+  <!-- Project Libraries -->
+  
+  <path id="library.mysql:mysql-connector-java:5.1.39.classpath">
+    <pathelement location="${basedir}/lib/mysql-connector-java-5.1.39.jar"/>
+  </path>
+  
+  <path id="library.org.apache.logging.log4j:log4j-1.2-api:2.6.2.classpath">
+    <pathelement location="${basedir}/lib/log4j-1.2-api-2.6.2.jar"/>
+    <pathelement location="${basedir}/lib/log4j-api-2.6.2.jar"/>
+    <pathelement location="${basedir}/lib/log4j-core-2.6.2.jar"/>
+  </path>
+  
+  <path id="library.org.json:json:20160810.classpath">
+    <pathelement location="${basedir}/lib/json-20160810.jar"/>
+  </path>
+  <!-- Register Custom Compiler Taskdefs -->
+  <property name="javac2.home" value="${idea.home}/lib"/>
+  <path id="javac2.classpath">
+    <pathelement location="${javac2.home}/javac2.jar"/>
+    <pathelement location="${javac2.home}/jdom.jar"/>
+    <pathelement location="${javac2.home}/asm-all.jar"/>
+    <pathelement location="${javac2.home}/jgoodies-forms.jar"/>
+  </path>
+  <target name="register.custom.compilers">
+    <taskdef name="javac2" classname="com.intellij.ant.Javac2" classpathref="javac2.classpath"/>
+    <taskdef name="instrumentIdeaExtensions" classname="com.intellij.ant.InstrumentIdeaExtensions" classpathref="javac2.classpath"/>
+  </target>
+  
+  <!-- Modules -->
+  
+  
+  <!-- Module jGemstoneServer -->
+  
+  <dirname property="module.jgemstoneserver.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.jgemstoneserver" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.jgemstoneserver" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.jgemstoneserver" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.jgemstoneserver" value="-encoding UTF-8 -source 8 -target 1.8 ${compiler.args}"/>
+  
+  <property name="jgemstoneserver.output.dir" value="${module.jgemstoneserver.basedir}/out/production/jGemstoneServer"/>
+  <property name="jgemstoneserver.testoutput.dir" value="${module.jgemstoneserver.basedir}/out/test/jGemstoneServer"/>
+  
+  <path id="jgemstoneserver.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="jgemstoneserver.module.production.classpath">
+    <path refid="${module.jdk.classpath.jgemstoneserver}"/>
+    <path refid="library.mysql:mysql-connector-java:5.1.39.classpath"/>
+    <path refid="library.org.apache.logging.log4j:log4j-1.2-api:2.6.2.classpath"/>
+    <path refid="library.org.json:json:20160810.classpath"/>
+  </path>
+  
+  <path id="jgemstoneserver.runtime.production.module.classpath">
+    <pathelement location="${jgemstoneserver.output.dir}"/>
+    <path refid="library.mysql:mysql-connector-java:5.1.39.classpath"/>
+    <path refid="library.org.apache.logging.log4j:log4j-1.2-api:2.6.2.classpath"/>
+    <path refid="library.org.json:json:20160810.classpath"/>
+  </path>
+  
+  <path id="jgemstoneserver.module.classpath">
+    <path refid="${module.jdk.classpath.jgemstoneserver}"/>
+    <pathelement location="${jgemstoneserver.output.dir}"/>
+    <path refid="library.mysql:mysql-connector-java:5.1.39.classpath"/>
+    <path refid="library.org.apache.logging.log4j:log4j-1.2-api:2.6.2.classpath"/>
+    <path refid="library.org.json:json:20160810.classpath"/>
+  </path>
+  
+  <path id="jgemstoneserver.runtime.module.classpath">
+    <pathelement location="${jgemstoneserver.testoutput.dir}"/>
+    <pathelement location="${jgemstoneserver.output.dir}"/>
+    <path refid="library.mysql:mysql-connector-java:5.1.39.classpath"/>
+    <path refid="library.org.apache.logging.log4j:log4j-1.2-api:2.6.2.classpath"/>
+    <path refid="library.org.json:json:20160810.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.jgemstoneserver">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.jgemstoneserver">
+    <patternset refid="excluded.from.module.jgemstoneserver"/>
+  </patternset>
+  
+  <path id="jgemstoneserver.module.sourcepath">
+    <dirset dir="${module.jgemstoneserver.basedir}">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.jgemstoneserver" depends="compile.module.jgemstoneserver.production,compile.module.jgemstoneserver.tests" description="Compile module jGemstoneServer"/>
+  
+  <target name="compile.module.jgemstoneserver.production" depends="register.custom.compilers" description="Compile module jGemstoneServer; production classes">
+    <mkdir dir="${jgemstoneserver.output.dir}"/>
+    <javac2 destdir="${jgemstoneserver.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.jgemstoneserver}/javac">
+      <compilerarg line="${compiler.args.jgemstoneserver}"/>
+      <bootclasspath refid="jgemstoneserver.module.bootclasspath"/>
+      <classpath refid="jgemstoneserver.module.production.classpath"/>
+      <src refid="jgemstoneserver.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.jgemstoneserver"/>
+    </javac2>
+    
+    <copy todir="${jgemstoneserver.output.dir}">
+      <fileset dir="${module.jgemstoneserver.basedir}/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.jgemstoneserver.tests" depends="register.custom.compilers,compile.module.jgemstoneserver.production" description="compile module jGemstoneServer; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.jgemstoneserver" description="cleanup module">
+    <delete dir="${jgemstoneserver.output.dir}"/>
+    <delete dir="${jgemstoneserver.testoutput.dir}"/>
+  </target>
+  
+  <target name="init" description="Build initialization">
+    <!-- Perform any build initialization in this target -->
+  </target>
+  
+  <target name="clean" depends="clean.module.jgemstoneserver" description="cleanup all"/>
+  
+  <target name="build.modules" depends="init, clean, compile.module.jgemstoneserver" description="build all modules"/>
+  
+  <target name="all" depends="build.modules" description="build all"/>
+</project>

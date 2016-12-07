@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="jGemstoneServer:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/jGemstoneServer_jar</output-path>
+    <root id="archive" name="jGemstoneServer.jar">
+      <element id="module-output" name="jGemstoneServer" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/mysql-connector-java-5.1.39.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/json-20160810.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/log4j-1.2-api-2.6.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/log4j-api-2.6.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/log4j-core-2.6.2.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
