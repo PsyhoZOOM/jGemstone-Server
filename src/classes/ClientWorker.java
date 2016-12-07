@@ -22,23 +22,20 @@ import java.util.GregorianCalendar;
 
 
 /**
- * Created by zoom on 8/8/16.
+ * Created by PsyhoZOOM on 8/8/16.
  */
 public class ClientWorker implements Runnable {
 
+    public boolean DEBUG = false;
+    public boolean client_db_update = false;
     private Logger LOGGER = LogManager.getLogger("CLIENT");
     private Socket client;
-    public boolean DEBUG = false;
-
     private InputStreamReader Isr = null;
     private OutputStreamWriter Osw = null;
-
     private BufferedReader Bfr;
     private BufferedWriter Bfw;
-
     private database db;
     private ResultSet rs;
-
     private String query;
     private Users user = null;
     private Groups groups = null;
@@ -47,11 +44,7 @@ public class ClientWorker implements Runnable {
     private Uplate uplate = null;
     private ArrayList<Uplate> uplateArrayList;
     private String operName;
-
     private boolean client_authenticated = false;
-    public boolean client_db_update = false;
-
-
     private Date date;
     private SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
@@ -484,7 +477,6 @@ public class ClientWorker implements Runnable {
 
             send_object(jsService);
 
-
             //send last user saved
             query = "SELECT * FROM users ORDER BY id DESC LIMIT 1";
 
@@ -514,7 +506,6 @@ public class ClientWorker implements Runnable {
 
             rs = db.query_data(query);
             JSONObject jsServicesArray = new JSONObject();
-
 
             try {
                 while (rs.next()) {
