@@ -108,6 +108,7 @@ public class ClientWorker implements Runnable {
                 jObj = new JSONObject(A);
             } catch (IOException e) {
                 e.printStackTrace();
+                break;
             }
             System.out.println("Reading Bfr.readline()" + jObj);
             object_worker(jObj);
@@ -502,7 +503,7 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("get_user_services")) {
             ArrayList<Services> services_id = new ArrayList<Services>();
             Services srv_id;
-            query = String.format("SELECT id,id_service FROM Services_User WHERE username='%s'", rLine.getString("userName"));
+            query = String.format("SELECT id,id_service FROM Services_User WHERE userID='%d'", rLine.getInt("userID"));
 
             rs = db.query_data(query);
             JSONObject jsServicesArray = new JSONObject();
@@ -605,14 +606,22 @@ public class ClientWorker implements Runnable {
             calendar.setTime(date);
             String datum = format.format(calendar.getTime());
 
-            query = String.format("INSERT into Services_User (id_service, username, date_added) VALUES ('%d', '%s', '%s') ",
-                    rLine.getInt("id"), rLine.getString("userName"), datum);
+            query = "INSERT into Services_User (id_service, date_added, userID) VALUES (?, ? ,?) ";
 
-            db.query = query;
-            db.executeUpdate();
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("id"));
+                db.ps.setInt(2, rLine.getInt("userID"));
+                db.ps.setDate(3, (java.sql.Date) date);
+                db.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
 
             jObj = new JSONObject();
-            jObj.put("message", String.format("Service id: %d added to user: %s", rLine.getInt("id"), rLine.getString("userName")));
+            jObj.put("message", String.format("Service id: %d added to user: %s", rLine.getInt("id"), rLine.getString("userID")));
             send_object(jObj);
 
         }
@@ -1118,16 +1127,8 @@ public class ClientWorker implements Runnable {
     }
 
     private void update_user(JSONObject jObj) {
-        String username = jObj.getString("userName");
-        query = String.format("UPDATE users SET username='%s', ime='%s', datumrodjenja='%s', adresa='%s', " +
-                        "mesto='%s', postbr='%s', brtel='%s', brtelmob='%s', brlk='%s', mbr='%s', adresaracun='%s'," +
-                        " ostalo='%s', adresakoriscenja='%s', komentar='%s',jbroj='%d'  WHERE username='%s'", jObj.getString("userName"),
-                jObj.getString("fullName"), jObj.getString("datumRodjenja"), jObj.getString("adresa"), jObj.getString("mesto"),
-                jObj.getString("postBr"), jObj.getString("telFixni"), jObj.getString("telMobilni"),
-                jObj.getString("brLk"), jObj.getString("JMBG"), jObj.getString("adresaRacuna"),
-                jObj.getString("ostalo"), jObj.getString("adresaKoriscenja"), jObj.getString("komentar"), jObj.getInt("jBroj"), username
-        );
-        query = "UPDATE users SET username = ? , ime = ? , datumrodjenja = ? , adresa = ? , mesto = ? , postbr = ? , brtel = ?  , brtelmob = ? ,  brlk = ? ,  mbr =? , adresaracun = ? , ostalo = ? , adresakoriscenja = ? , komentar = ?, jbroj = ?  WHERE username = ? ";
+        int userID = jObj.getInt("userID");
+        query = "UPDATE users SET username = ? , ime = ? , datumrodjenja = ? , adresa = ? , mesto = ? , postbr = ? , brtel = ?  , brtelmob = ? ,  brlk = ? ,  mbr =? , adresaracun = ? , ostalo = ? , adresakoriscenja = ? , komentar = ?, jbroj = ?  WHERE id = ? ";
 
 
         try {
@@ -1147,7 +1148,7 @@ public class ClientWorker implements Runnable {
             db.ps.setString(13, jObj.getString("adresaKoriscenja"));
             db.ps.setString(14, jObj.getString("komentar"));
             db.ps.setInt(15, jObj.getInt("jBroj"));
-            db.ps.setString(16, username);
+            db.ps.setInt(16, userID);
             LOGGER.info(db.ps.toString());
             db.ps.executeUpdate();
 
@@ -1166,7 +1167,7 @@ public class ClientWorker implements Runnable {
 
 
         jObj = new JSONObject();
-        jObj.put("message", String.format("USER: %s UPDATED", username));
+        jObj.put("message", String.format("USER: %s UPDATED", userID));
         send_object(jObj);
     }
 
