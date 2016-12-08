@@ -369,7 +369,7 @@ public class ClientWorker implements Runnable {
 
             try {
                 db.ps = db.conn.prepareStatement(query);
-                db.ps.setInt(1, rLine.getInt("userId"));
+                db.ps.setInt(1, rLine.getInt("userID"));
                 db.ps.executeUpdate();
 
             } catch (SQLException e) {
@@ -387,7 +387,7 @@ public class ClientWorker implements Runnable {
                 db.ps.setString(4,rLine.getString("pib"));
                 db.ps.setString(5,rLine.getString("maticniBrFirme"));
                 db.ps.setString(6,rLine.getString("brTekuciRacun"));
-                db.ps.setInt(7,rLine.getInt("userId"));
+                db.ps.setInt(7, rLine.getInt("userID"));
                 db.ps.setInt(8, rLine.getInt("brojFakture"));
                 db.ps.executeUpdate();
             } catch (SQLException e) {
@@ -873,7 +873,7 @@ public class ClientWorker implements Runnable {
         }
 
         if(rLine.getString("action").equals("add_user_ugovor")){
-            query = "INSERT INTO ugovori (pocetak, kraj, komentar, operater, username, br, ugovori_text, nazivUgovora) " +
+            query = "INSERT INTO ugovori (pocetak, kraj, komentar, operater, userID, br, ugovori_text, nazivUgovora) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
             try {
@@ -882,7 +882,7 @@ public class ClientWorker implements Runnable {
                 db.ps.setString(2, rLine.getString("doDate"));
                 db.ps.setString(3, rLine.getString("komentar"));
                 db.ps.setString(4, getOperName());
-                db.ps.setString(5, rLine.getString("userName"));
+                db.ps.setInt(5, rLine.getInt("userID"));
                 db.ps.setString(6, rLine.getString("brUgovora"));
                 db.ps.setString(7, rLine.getString("textUgovora"));
                 db.ps.setString(8, rLine.getString("nazivUgovora"));
@@ -925,11 +925,11 @@ public class ClientWorker implements Runnable {
         }
 
         if(rLine.getString("action").equals("get_ugovori_user")){
-            query = "SELECT * FROM ugovori WHERE username=? ORDER BY id DESC";
+            query = "SELECT * FROM ugovori WHERE userID=? ORDER BY id DESC";
 
             try{
                 db.ps = db.conn.prepareStatement(query);
-                db.ps.setString(1, rLine.getString("userName"));
+                db.ps.setInt(1, rLine.getInt("userID"));
                 rs = db.ps.executeQuery();
             } catch (SQLException e) {
                 e.printStackTrace();
