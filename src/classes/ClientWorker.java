@@ -108,6 +108,11 @@ public class ClientWorker implements Runnable {
                 jObj = new JSONObject(A);
             } catch (IOException e) {
                 e.printStackTrace();
+                try {
+                    client.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
                 break;
             }
             System.out.println("Reading Bfr.readline()" + jObj);
@@ -413,7 +418,7 @@ public class ClientWorker implements Runnable {
             try {
                 if (rs.next()) {
                     jObj = new JSONObject();
-                    jObj.put("message", "user_no_exist");
+                    jObj.put("Message", "user_no_exist");
                     send_object(jObj);
                     return;
                 }
@@ -426,7 +431,7 @@ public class ClientWorker implements Runnable {
             try {
                 if (rsUser.next()) {
                     jObj = new JSONObject();
-                    jObj.put("message", "user_exist");
+                    jObj.put("Message", "user_exist");
                     send_object(jObj);
                     return;
                 }
@@ -447,7 +452,7 @@ public class ClientWorker implements Runnable {
             db.query = query;
             db.executeUpdate();
             jObj = new JSONObject();
-            jObj.put("message", String.format("USER: %s SAVED", username));
+            jObj.put("Message", "user_saved");
 
 
 
@@ -477,35 +482,21 @@ public class ClientWorker implements Runnable {
             System.out.println(jsService);
 
             send_object(jsService);
-
-            //send last user saved
-            query = "SELECT * FROM users ORDER BY id DESC LIMIT 1";
-
-            try {
-                db.ps = db.conn.prepareStatement(query);
-                rs = db.ps.executeQuery();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                rs.next();
-                jObj = new JSONObject();
-                jObj.put("id",rs.getInt("id"));
-                jObj.put("userName", rs.getString("username"));
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            send_object(jObj);
-
         }
 
         if (rLine.getString("action").equals("get_user_services")) {
             ArrayList<Services> services_id = new ArrayList<Services>();
             Services srv_id;
-            query = String.format("SELECT id,id_service FROM Services_User WHERE userID='%d'", rLine.getInt("userID"));
+            query = "SELECT id, id_service FROM Services_User WHERE userID=?";
 
-            rs = db.query_data(query);
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("userID"));
+                rs = db.ps.executeQuery();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
             JSONObject jsServicesArray = new JSONObject();
 
             try {
@@ -538,7 +529,7 @@ public class ClientWorker implements Runnable {
                     e.printStackTrace();
                 }
             }
-            LOGGER.info(jsServicesArray);
+            LOGGER.info("SERVISIIII: " + jsServicesArray);
             send_object(jsServicesArray);
         }
 
@@ -611,29 +602,36 @@ public class ClientWorker implements Runnable {
 
             try {
                 db.ps = db.conn.prepareStatement(query);
+                LOGGER.info("AADIN SERVICE: " + db.ps.toString());
                 db.ps.setInt(1, rLine.getInt("id"));
-                db.ps.setInt(2, rLine.getInt("userID"));
-                db.ps.setDate(3, (java.sql.Date) date);
-                db.executeUpdate();
+                db.ps.setString(2, String.valueOf(datum));
+                db.ps.setInt(3, rLine.getInt("userID"));
+                db.ps.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
 
 
             jObj = new JSONObject();
-            jObj.put("message", String.format("Service id: %d added to user: %s", rLine.getInt("id"), rLine.getString("userID")));
+            jObj.put("message", String.format("Service id: %d added to user: %d", rLine.getInt("id"), rLine.getInt("userID")));
             send_object(jObj);
 
         }
 
         if (rLine.getString("action").equals("delete_service_user")) {
-            query = String.format("DELETE FROM Services_User WHERE username='%s' AND id='%d'",
-                    rLine.getString("userName"), rLine.getInt("id"));
-            db.query = query;
-            LOGGER.info(query);
-            db.executeUpdate();
+            query = "DELETE FROM Services_User WHERE id=?";
+
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("id"));
+                db.ps.executeUpdate();
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             jObj = new JSONObject();
-            jObj.put("message", String.format("Service id:%s deleted fro user:%s", rLine.getInt("id"), rLine.getString("userName")));
+            jObj.put("message", String.format("Service id:%s deleted", rLine.getInt("id")));
 
             send_object(jObj);
         }
@@ -916,7 +914,7 @@ public class ClientWorker implements Runnable {
                 jObj.put("kraj", rs.getString("kraj"));
                 jObj.put("komentar", rs.getString("komentar"));
                 jObj.put("operater", rs.getString("operater"));
-                jObj.put("userName", rs.getString("username"));
+                jObj.put("userID", rs.getString("userID"));
                 jObj.put("nazivUgovora", rs.getString("nazivUgovora"));
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -946,7 +944,7 @@ public class ClientWorker implements Runnable {
                     jObj.put("krajUgovora", rs.getString("kraj"));
                     jObj.put("komentar", rs.getString("komentar"));
                     jObj.put("operater", rs.getString("operater"));
-                    jObj.put("userName", rs.getString("username"));
+                    jObj.put("userID", rs.getString("userID"));
                     jObj.put("brUgovora", rs.getInt("br"));
                     jObj.put("textUgovora", rs.getString("ugovori_text"));
                     jObj.put("nazivUgovora", rs.getString("nazivUgovora"));
@@ -968,7 +966,6 @@ public class ClientWorker implements Runnable {
                 db.ps.setString(1, rLine.getString("textUgovora"));
                 db.ps.setInt(2, rLine.getInt("idUgovora"));
                 db.ps.executeUpdate();
-                LOGGER.info("AAAA STRING"+db.ps.toString());
             } catch (SQLException e) {
                 e.printStackTrace();
             }
