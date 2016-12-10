@@ -32,6 +32,7 @@ public class monthlyScheduler {
 
     private Logger LOGGER = LogManager.getLogger("MONTHLY_SCHEDULER");
 
+    private String query;
 
     public void monthlyScheduler() {
         userDebts = new ArrayList<>();
@@ -40,9 +41,8 @@ public class monthlyScheduler {
 
         try {
             while (rs.next()){
-                LOGGER.info("INFO USER:"+rs.getString("username"));
                 userDebt=new user_debts();
-                userDebt.setUserName(rs.getString("username"));
+                userDebt.setUserID(rs.getInt("userID"));
                 userDebt.setId(rs.getInt("id"));
                 userDebt.setServiceId(rs.getInt("id_service"));
                 userDebt.setDateDebt(format_first_day_in_month.format(new Date()));
@@ -56,12 +56,23 @@ public class monthlyScheduler {
 
 
         for(int i=0; i< userDebts.size();i++){
-            LOGGER.info("userdebts: "+userDebt.getUserName());
-            db.query = String.format("INSERT INTO user_debts (username, service_id, date_debt, debt, service_name) VALUES " +
-                            "('%s', '%d', '%s', '%.2f', '%s')",
-                    userDebts.get(i).getUserName(), userDebts.get(i).getServiceId(), userDebts.get(i).getDateDebt(),
-                    get_service_price(userDebts.get(i).getServiceId()), get_service_name(userDebts.get(i).getServiceId()) );
-            db.executeUpdate();
+
+            query = "INSERT INTO user_debts (userID, service_id, date_debt, debt, service_name) VALUES " +
+                    "(?,?,?,?,?)";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, userDebts.get(i).getUserID());
+                db.ps.setInt(2, userDebts.get(i).getServiceId());
+                db.ps.setString(3, userDebts.get(i).getDateDebt());
+                db.ps.setDouble(4, userDebts.get(i).getDebth());
+                db.ps.setString(5, get_service_name(userDebts.get(i).getServiceId()));
+                db.ps.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+
         }
 
 

@@ -9,12 +9,21 @@ public class user_debts implements Serializable {
     private int id;
     private String userName;
     private int serviceId;
+    private int userID;
     private String dateDebt;
     private double debth;
     private String paymenthDate;
     private String operName;
     private double payed;
 
+
+    public int getUserID() {
+        return userID;
+    }
+
+    public void setUserID(int userID) {
+        this.userID = userID;
+    }
 
     public int getId() {
         return id;

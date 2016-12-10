@@ -170,6 +170,28 @@ public class ClientWorker implements Runnable {
             }
         }
 
+        if (rLine.get("action").equals("get_user_id")) {
+            query = "SELECT * FROM users WHERE username=?";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setString(1, rLine.getString("userName"));
+                rs = db.ps.executeQuery();
+                if (!rs.isBeforeFirst()) {
+                    jObj = new JSONObject();
+                    jObj.put("Message", "UNKNOWN_ERROR");
+                    return;
+                }
+                rs.next();
+                jObj = new JSONObject();
+                jObj.put("userId", rs.getInt("id"));
+                send_object(jObj);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+        }
+
         if (rLine.get("action").equals("get_users")) {
             query = String.format("SELECT * FROM users WHERE username LIKE '%%%s%%' OR ime LIKE '%%%s%%' OR jbroj LIKE '%%%s%%'", rLine.getString("username"), rLine.getString("username"), rLine.getString("username"));
             LOGGER.info(query);
@@ -449,6 +471,40 @@ public class ClientWorker implements Runnable {
                     rLine.get("JMBG"), rLine.get("adresaRacuna"), rLine.getString("adresa"), rLine.getString("telMobilni"),
                     rLine.getString("telFiksni"), rLine.getInt("jbroj")
             );
+
+            query = "INSERT INTO users (username, ime, datumrodjenja, kreirao, postbr, mesto, brlk, mbr, adresaracun," +
+                    "adresakoriscenja, adresa, brtelmob, brtel, jbroj, komentar) " +
+                    "VALUES  (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setString(1, rLine.getString("userName"));
+                db.ps.setString(2, rLine.getString("fullName"));
+                db.ps.setString(3, rLine.getString("datumRodjenja"));
+                db.ps.setString(4, getOperName());
+                db.ps.setString(5, rLine.getString("postBr"));
+                db.ps.setString(6, rLine.getString("mesto"));
+                db.ps.setString(7, rLine.getString("brLk"));
+                db.ps.setString(8, rLine.getString("JMBG"));
+                db.ps.setString(9, rLine.getString("adresaRacuna"));
+                db.ps.setString(10, rLine.getString("adresaKoriscenja"));
+                db.ps.setString(11, rLine.getString("adresa"));
+                db.ps.setString(12, rLine.getString("telMobilni"));
+                db.ps.setString(13, rLine.getString("telFiksni"));
+                db.ps.setString(14, rLine.getString("jbroj"));
+                db.ps.setString(15, rLine.getString("komentar"));
+
+                db.ps.executeUpdate();
+
+            } catch (SQLException e) {
+                jObj = new JSONObject();
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+                send_object(jObj);
+            }
+
+
             db.query = query;
             db.executeUpdate();
             jObj = new JSONObject();
@@ -688,8 +744,16 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.get("action").equals("get_uplate_zaduzenja_user_sve")) {
-            query = String.format("SELECT * FROM user_debts WHERE username='%s' ORDER BY id DESC", rLine.getString("userName"));
-            rs = db.query_data(query);
+            query = "SELECT * FROM user_debts WHERE userID=? ORDER BY id DESC";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("userID"));
+                rs = db.ps.executeQuery();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
             jUplate = new JSONObject();
 
             try {
@@ -697,7 +761,6 @@ public class ClientWorker implements Runnable {
                 while (rs.next()) {
                     jObj = new JSONObject();
                     jObj.put("id", rs.getInt("id"));
-                    jObj.put("userName", rs.getString("username"));
                     jObj.put("datumZaduzenja", rs.getString("date_debt"));
                     jObj.put("serviceName", rs.getString("service_name"));
                     jObj.put("zaUplatu", rs.getDouble("debt"));
