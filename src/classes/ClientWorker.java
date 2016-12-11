@@ -693,8 +693,17 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.get("action").equals("get_uplate_zaduzenja_user")) {
-            query = String.format("SELECT * FROM user_debts WHERE username='%s' AND payed=0", rLine.getString("userName"));
-            rs = db.query_data(query);
+            //query = String.format("SELECT * FROM user_debts WHERE username='%s' AND payed=0", rLine.getString("userName"));
+            query = "SELECT * FROM user_debts WHERE userID=? AND payed=0";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("userID"));
+                rs = db.ps.executeQuery();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
             jUplate = new JSONObject();
 
             try {
@@ -702,7 +711,6 @@ public class ClientWorker implements Runnable {
                 while (rs.next()) {
                     jObj = new JSONObject();
                     jObj.put("id", rs.getInt("id"));
-                    jObj.put("userName", rs.getString("username"));
                     jObj.put("datumUplate", rs.getString("payment_date"));
                     jObj.put("serviceName", rs.getString("service_name"));
                     jObj.put("uplaceno", rs.getString("debt"));
@@ -718,15 +726,23 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.get("action").equals("get_uplate_user")) {
-            query = String.format("SELECT * FROM user_debts WHERE username='%s' AND payed=1 ORDER BY id DESC", rLine.getString("userName"));
-            rs = db.query_data(query);
+            //query = String.format("SELECT * FROM user_debts WHERE username='%s' AND payed=1 ORDER BY id DESC", rLine.getString("userName"));
+            query = "SELECT * FROM user_debts WHERE userID=? AND payed=1 ORDER BY id DESC";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("userID"));
+                rs = db.ps.executeQuery();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
             jUplate = new JSONObject();
             try {
                 int i = 0;
                 while (rs.next()) {
                     jObj = new JSONObject();
                     jObj.put("id", rs.getInt("id"));
-                    jObj.put("userName", rs.getString("username"));
                     jObj.put("paymentDate", rs.getString("payment_date"));
                     jObj.put("dateDebt", rs.getString("date_debt"));
                     jObj.put("debt", rs.getString("debt"));
@@ -781,10 +797,19 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("new_payment")) {
 
-            db.query = String.format("UPDATE user_debts SET payed=1, payment_date='%s', oper_name='%s' WHERE id='%d'",
-                    date_format_full.format(new Date()), operName, rLine.getInt("id"));
-            LOGGER.info(db.query);
-            db.executeUpdate();
+            //db.query = String.format("UPDATE user_debts SET payed=1, payment_date='%s', oper_name='%s' WHERE id='%d'",
+            //        date_format_full.format(new Date()), operName, rLine.getInt("id"));
+
+            query = "UPDATE user_debts SET payed=1, payment_date=?, oper_Name=? WHERE id=?";
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setString(1, date_format_full.format(new Date()));
+                db.ps.setString(2, operName);
+                db.ps.setInt(3, rLine.getInt("id"));
+                db.ps.executeUpdate();
+            } catch (SQLException e) {
+                LOGGER.error("MYSQL ERROR: " + e.getMessage());
+            }
 
             jObj = new JSONObject();
             jObj.put("message", String.format("Uplata ID: %s je uplacena", rLine.getInt("id")));
@@ -803,7 +828,16 @@ public class ClientWorker implements Runnable {
 
 
         if (rLine.getString("action").equals("get_user_debt_total")) {
-            rs = db.query_data(String.format("SELECT SUM(debt) FROM user_debts WHERE username='%s'", rLine.getString("userName")));
+            //rs = db.query_data(String.format("SELECT SUM(debt) FROM user_debts WHERE userID=?";
+            query = "SELECT SUM(debt) FROM user_debts WHERE userID=?";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("userID"));
+                rs = db.ps.executeQuery();
+            } catch (SQLException e) {
+                LOGGER.error("MYSQL ERROR: " + e.getMessage());
+            }
             try {
                 if (rs.isBeforeFirst()) {
                     double sum = 0;
@@ -1163,6 +1197,11 @@ public class ClientWorker implements Runnable {
             jObj.put("Message", "FACTURE_ADDED");
             send_object(jObj);
 
+        }
+
+        if (rLine.getString("action").equals("PING")) {
+            jObj = new JSONObject();
+            jObj.put("Message", "PONG");
         }
     }
 

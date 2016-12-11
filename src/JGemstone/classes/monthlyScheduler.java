@@ -60,12 +60,13 @@ public class monthlyScheduler {
             query = "INSERT INTO user_debts (userID, service_id, date_debt, debt, service_name) VALUES " +
                     "(?,?,?,?,?)";
 
+
             try {
                 db.ps = db.conn.prepareStatement(query);
                 db.ps.setInt(1, userDebts.get(i).getUserID());
                 db.ps.setInt(2, userDebts.get(i).getServiceId());
                 db.ps.setString(3, userDebts.get(i).getDateDebt());
-                db.ps.setDouble(4, userDebts.get(i).getDebth());
+                db.ps.setDouble(4, get_service_price(userDebts.get(i).getServiceId()));
                 db.ps.setString(5, get_service_name(userDebts.get(i).getServiceId()));
                 db.ps.executeUpdate();
             } catch (SQLException e) {
