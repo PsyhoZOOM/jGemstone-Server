@@ -1202,6 +1202,7 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("PING")) {
             jObj = new JSONObject();
             jObj.put("Message", "PONG");
+            send_object(jObj);
         }
     }
 
