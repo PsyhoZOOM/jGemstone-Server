@@ -1204,25 +1204,40 @@ public class ClientWorker implements Runnable {
             jObj.put("Message", "PONG");
             send_object(jObj);
         }
+
+        if (rLine.getString("action").equals("activate_internet")) {
+            //query = "DELETE FROM Services_User WHERE userID=? AND "
+        }
     }
 
     private void delete_user(JSONObject mes) {
         int userId = mes.getInt("userId");
         String username = mes.getString("userName");
-        //delete from users
-        query = String.format("DELETE FROM users WHERE id='%s' ", userId);
-        db.query = query;
-        db.executeUpdate();
+        query = "DELETE FROM users WHERE id=?";
 
+        try {
+            db.ps = db.conn.prepareStatement(query);
+            db.ps.setInt(1, userId);
+            db.ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         //delete from Services_user
         query = String.format("DELETE FROM Services_User WHERE username='%s'", mes.getString("userName"));
-        db.query = query;
-        db.executeUpdate();
+        query = "DELETE FROM Services_User, user_debts,  WHERE  userID=?";
+
+        try {
+            db.ps = db.conn.prepareStatement(query);
+            db.ps.setInt(1, userId);
+            db.ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
 
         jObj = new JSONObject();
-        jObj.put("message", String.format("USER %s DELETED", username));
+        jObj.put("message", "USER_DELETED");
         send_object(jObj);
     }
 
