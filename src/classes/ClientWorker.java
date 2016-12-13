@@ -1205,9 +1205,45 @@ public class ClientWorker implements Runnable {
             send_object(jObj);
         }
 
+        if (rLine.getString("action").equals("getInternetGroups")) {
+            query = "SELECT * FROM grupa";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                rs = db.ps.executeQuery();
+
+                if (rs.isBeforeFirst()) {
+                    JSONObject grupa;
+                    JSONObject grupe = new JSONObject();
+                    int i = 0;
+                    while (rs.next()) {
+                        grupa = new JSONObject();
+                        grupa.put("id", rs.getInt("id"));
+                        grupa.put("groupName", rs.getString("groupname"));
+                        grupa.put("prepaid", rs.getInt("prepaid"));
+                        grupa.put("cena", rs.getString("cena"));
+                        grupa.put("opis", rs.getString("opis"));
+                        grupe.put(String.valueOf(i), grupa);
+                        i++;
+                    }
+                    send_object(grupe);
+                } else {
+                    jObj = new JSONObject();
+                    jObj.put("Message", "NO_GROUPS");
+                    send_object(jObj);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+
+        }
+
         if (rLine.getString("action").equals("activate_internet")) {
             //query = "DELETE FROM Services_User WHERE userID=? AND "
         }
+
+
     }
 
     private void delete_user(JSONObject mes) {
