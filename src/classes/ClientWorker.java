@@ -1095,13 +1095,28 @@ public class ClientWorker implements Runnable {
 
         if(rLine.getString("action").equals("get_fakture")){
             query = "SELECT * FROM jFakture WHERE userId=? AND brFakture LIKE ? AND godina LIKE ?";
-            query = "SELECT * FROM jFakture WHERE userID=?";
 
             try {
                 db.ps = db.conn.prepareStatement(query);
                 db.ps.setInt(1, rLine.getInt("userId"));
-                //  db.ps.setInt(2, rLine.getInt(""));
-                //  db.ps.setString(3, rLine.getString(""));
+                if (rLine.has("brFakture")) {
+                    if (rLine.get("brFakture").equals("")) {
+                        db.ps.setString(2, "%");
+                    } else {
+                        db.ps.setInt(2, rLine.getInt("brFakture"));
+                    }
+                } else {
+                    db.ps.setString(2, "%");
+                }
+                if (rLine.has("godina")) {
+                    if (rLine.get("godina").equals("")) {
+                        db.ps.setString(3, "%");
+                    } else {
+                        db.ps.setString(3, rLine.getString("godina"));
+                    }
+                } else {
+                    db.ps.setString(3, "%");
+                }
                 rs = db.ps.executeQuery();
             } catch (SQLException e) {
                 e.printStackTrace();
