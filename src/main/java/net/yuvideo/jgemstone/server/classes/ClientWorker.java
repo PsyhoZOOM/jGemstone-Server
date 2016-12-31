@@ -2533,7 +2533,6 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             query = "SELECT * FROM operateri";
             JSONObject opers;
-
             int i = 0;
 
             try {
@@ -2549,6 +2548,8 @@ public class ClientWorker implements Runnable {
                         opers.put("adresa", rs.getString("adresa"));
                         opers.put("komentar", rs.getString("komentar"));
                         opers.put("telefon", rs.getString("telefon"));
+                        opers.put("type", rs.getString("type"));
+                        opers.put("typeNo", rs.getInt("typeNo"));
                         jObj.put(String.valueOf(i), opers);
                         i++;
                     }
@@ -2565,8 +2566,8 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("saveOperater")) {
             jObj = new JSONObject();
-            query = "INSERT INTO operateri (username,password, adresa, telefon, komentar, aktivan, ime)"
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            query = "INSERT INTO operateri (username,password, adresa, telefon, komentar, aktivan, ime, type, typeNo)"
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -2577,6 +2578,8 @@ public class ClientWorker implements Runnable {
                 ps.setString(5, rLine.getString("komentar"));
                 ps.setBoolean(6, rLine.getBoolean("aktivan"));
                 ps.setString(7, rLine.getString("ime"));
+                ps.setString(8, rLine.getString("type"));
+                ps.setInt(9, rLine.getInt("typeNo"));
                 ps.executeUpdate();
                 jObj.put("Message", "OPER_SAVED");
             } catch (SQLException e) {
@@ -2592,10 +2595,10 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             if (rLine.has("password")) {
                 query = "UPDATE operateri SET  adresa=?, telefon=?, komentar=?, "
-                        + "aktivan=?, ime=?, password=? WHERE id=?";
+                        + "aktivan=?, ime=?, password=?, type=?, typeNo=? WHERE id=?";
             } else {
                 query = "UPDATE operateri  SET adresa=?, telefon=?, komentar=?, "
-                        + "aktivan=?, ime=? WHERE id=?";
+                        + "aktivan=?, ime=?, type=?, typeNo=? WHERE id=?";
             }
 
             try {
@@ -2607,9 +2610,13 @@ public class ClientWorker implements Runnable {
                 ps.setString(5, rLine.getString("ime"));
                 if (rLine.has("password")) {
                     ps.setString(6, rLine.getString("password"));
-                    ps.setInt(7, rLine.getInt("operaterID"));
+                    ps.setString(7, rLine.getString("type"));
+                    ps.setInt(8, rLine.getInt("typeNo"));
+                    ps.setInt(9, rLine.getInt("operaterID"));
                 } else {
-                    ps.setInt(6, rLine.getInt("operaterID"));
+                    ps.setString(6, rLine.getString("type"));
+                    ps.setInt(7, rLine.getInt("typeNo"));
+                    ps.setInt(8, rLine.getInt("operaterID"));
                 }
 
                 ps.executeUpdate();

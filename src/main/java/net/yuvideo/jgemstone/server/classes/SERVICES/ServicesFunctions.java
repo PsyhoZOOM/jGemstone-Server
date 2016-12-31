@@ -809,8 +809,8 @@ public class ServicesFunctions {
                 cenaService = cenaService - valueToPercent.getDiffValue(cenaService, popust);
 
 				if (rs.getBoolean("newService")) {
-					daysInMonth = date.getMonth().length(true);
-					daysToEndMonth = daysInMonth - date.getDayOfMonth();
+                    daysInMonth = date.getMonth().length(LocalDate.now().isLeapYear());
+                    daysToEndMonth = daysInMonth - date.getDayOfMonth();
 					cenaZaDan = cenaService / daysInMonth;
 					zaUplatu = cenaZaDan * daysToEndMonth;
 				} else {
