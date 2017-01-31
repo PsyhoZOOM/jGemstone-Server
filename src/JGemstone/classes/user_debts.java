@@ -15,6 +15,8 @@ public class user_debts implements Serializable {
     private String paymenthDate;
     private String operName;
     private double payed;
+    private double popust;
+    private double debtTotal;
 
 
     public int getUserID() {
@@ -87,5 +89,21 @@ public class user_debts implements Serializable {
 
     public void setPayed(double payed) {
         this.payed = payed;
+    }
+
+    public double getPopust() {
+        return popust;
+    }
+
+    public void setPopust(double popust) {
+        this.popust = popust;
+    }
+
+    public double getDebtTotal() {
+        return debtTotal;
+    }
+
+    public void setDebtTotal(double debtTotal) {
+        this.debtTotal = debtTotal;
     }
 }

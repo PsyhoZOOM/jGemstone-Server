@@ -12,8 +12,10 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,6 +38,7 @@ public class ClientWorker implements Runnable {
     private BufferedWriter Bfw;
     private database db;
     private ResultSet rs;
+    private PreparedStatement ps;
     private String query;
     private Users user = null;
     private Groups groups = null;
@@ -47,6 +50,7 @@ public class ClientWorker implements Runnable {
     private boolean client_authenticated = false;
     private Date date;
     private SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    private SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
 
 
     ///JSON PART
@@ -152,15 +156,17 @@ public class ClientWorker implements Runnable {
         if (rLine.get("action").equals("login")) {
             client_authenticated = check_Login(rLine.get("username").toString(), rLine.get("password").toString());
             this.operName = rLine.get("username").toString();
-            jObj = new JSONObject();
-            jObj.put("Message", "LOGIN OK");
-            send_object(jObj);
+            if (client_authenticated) {
+                jObj = new JSONObject();
+                jObj.put("Message", "LOGIN_OK");
+                send_object(jObj);
+            }
         }
 
         if (!client_authenticated) {
 
             jObj = new JSONObject();
-            jObj.put("Message", "Login Failed!");
+            jObj.put("Message", "LOGIN_FAILED");
             send_object(jObj);
             try {
                 client.close();
@@ -170,32 +176,25 @@ public class ClientWorker implements Runnable {
             }
         }
 
-        if (rLine.get("action").equals("get_user_id")) {
-            query = "SELECT * FROM users WHERE username=?";
-
-            try {
-                db.ps = db.conn.prepareStatement(query);
-                db.ps.setString(1, rLine.getString("userName"));
-                rs = db.ps.executeQuery();
-                if (!rs.isBeforeFirst()) {
-                    jObj = new JSONObject();
-                    jObj.put("Message", "UNKNOWN_ERROR");
-                    return;
-                }
-                rs.next();
-                jObj = new JSONObject();
-                jObj.put("userId", rs.getInt("id"));
-                send_object(jObj);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-        }
 
         if (rLine.get("action").equals("get_users")) {
-            query = String.format("SELECT * FROM users WHERE username LIKE '%%%s%%' OR ime LIKE '%%%s%%' OR jbroj LIKE '%%%s%%'", rLine.getString("username"), rLine.getString("username"), rLine.getString("username"));
-            LOGGER.info(query);
-            rs = db.query_data(query);
+            query = "SELECT * FROM users WHERE  ime LIKE ? or id LIKE ? or jBroj LIKE ?  ";
+            String userSearch;
+            if (!rLine.has("username")) {
+                userSearch = "%";
+            } else {
+                userSearch = "%" + rLine.getString("username") + "%";
+            }
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, userSearch);
+                ps.setString(2, userSearch);
+                ps.setString(3, userSearch);
+                rs = ps.executeQuery();
+            } catch (SQLException e) {
+                LOGGER.error(e.getMessage());
+            }
+            LOGGER.info(ps.toString());
             jUsers = new JSONObject();
 
             int i = 0;
@@ -205,25 +204,27 @@ public class ClientWorker implements Runnable {
                     try {
                         jObj = new JSONObject();
                         jObj.put("id", rs.getInt("id"));
-                        jObj.put("ime", rs.getString("ime"));
-                        jObj.put("username", rs.getString("username"));
+                        jObj.put("fullName", rs.getString("ime"));
                         jObj.put("mesto", rs.getString("mesto"));
                         jObj.put("adresa", (rs.getString("adresa")));
-                        jObj.put("adresaRacuna", rs.getString("adresaracun"));
-                        jObj.put("adresaKoriscenja", rs.getString("adresakoriscenja"));
+                        jObj.put("adresaUsluge", rs.getString("adresaUsluge"));
+                        jObj.put("mestoUsluge", rs.getString("mestoUsluge"));
                         jObj.put("brLk", rs.getString("brlk"));
-                        jObj.put("datumRodjenja", rs.getString("datumrodjenja"));
-                        jObj.put("telFixni", rs.getString("brtel"));
-                        jObj.put("telMobilni", rs.getString("brtelmob"));
-                        jObj.put("JMBG", rs.getString("mbr"));
-                        jObj.put("ostalo", rs.getString("ostalo"));
+                        jObj.put("datumRodjenja", rs.getString("datumRodjenja"));
+                        jObj.put("telFixni", rs.getString("telFiksni"));
+                        jObj.put("telMobilni", rs.getString("telMobilni"));
+                        jObj.put("JMBG", rs.getString("JMBG"));
                         jObj.put("komentar", rs.getString("komentar"));
                         jObj.put("postBr", rs.getString("postbr"));
+                        jObj.put("jBroj", rs.getString("jMesto") + rs.getString("jAdresa") + rs.getInt("id"));
+                        jObj.put("jAdresa", rs.getString("jAdresa"));
+                        jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
+                        jObj.put("jMesto", rs.getString("jMesto"));
 
                         LOGGER.info(jObj);
 
                     } catch (SQLException e) {
-                        e.printStackTrace();
+                        LOGGER.error(e.getMessage());
                     }
                     jUsers.put(String.valueOf(i), jObj);
                     i++;
@@ -235,27 +236,40 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.get("action").equals("get_user_data")) {
-            query = String.format("SELECT * FROM users WHERE id='%d'", rLine.getInt("userId"));
-            rs = db.query_data(query);
+            query = "SELECT * FROM users WHERE id=?";
+            jObj = new JSONObject();
+
             try {
-                while (rs.next()) {
-                    jObj = new JSONObject();
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("userId"));
+                rs = ps.executeQuery();
+            } catch (SQLException e) {
+                LOGGER.error(e.getMessage());
+            }
+
+            try {
+                if (rs.isBeforeFirst()) {
+                    rs.next();
                     jObj.put("id", rs.getInt("id"));
-                    jObj.put("userName", rs.getString("username"));
                     jObj.put("fullName", rs.getString("ime"));
-                    jObj.put("datumRodjenja", rs.getString("datumrodjenja"));
+                    jObj.put("datumRodjenja", rs.getString("datumRodjenja"));
                     jObj.put("adresa", rs.getString("adresa"));
                     jObj.put("mesto", rs.getString("mesto"));
-                    jObj.put("postBr", rs.getString("postbr"));
-                    jObj.put("telFix", rs.getString("brtel"));
-                    jObj.put("telMob", rs.getString("brtelmob"));
-                    jObj.put("brLk", rs.getString("brlk"));
-                    jObj.put("JMBG", rs.getString("mbr"));
-                    jObj.put("adresaRacuna", rs.getString("adresaracun"));
-                    jObj.put("adresaKoriscenja", rs.getString("adresakoriscenja"));
-                    jObj.put("ostalo", rs.getString("ostalo"));
+                    jObj.put("postBr", rs.getString("postBr"));
+                    jObj.put("telFix", rs.getString("telFiksni"));
+                    jObj.put("telMob", rs.getString("telMobilni"));
+                    jObj.put("brLk", rs.getString("brLk"));
+                    jObj.put("JMBG", rs.getString("JMBG"));
+                    jObj.put("mestoUsluge", rs.getString("mestoUsluge"));
+                    jObj.put("adresaUsluge", rs.getString("adresaUsluge"));
                     jObj.put("komentar", rs.getString("komentar"));
-                    jObj.put("jBroj", rs.getInt("jbroj"));
+                    jObj.put("jMesto", rs.getString("jMesto"));
+                    jObj.put("jAdresa", rs.getString("jAdresa"));
+                    jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
+                    jObj.put("jBroj", rs.getString("jMesto") + rs.getString("jAdresa") + rs.getInt("id"));
+
+                } else {
+                    jObj.put("Message", "NO_SUCH_USER");
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -265,7 +279,16 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("get_groups")) {
             query = String.format("SELECT * FROM grupa WHERE groupname LIKE '%s%%'", rLine.get("groupName"));
-            rs = db.query_data(query);
+            query = "SLEECT * FROM  grupa WHERE groupname LIKE ?";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("groupName"));
+                rs = ps.executeQuery();
+            } catch (SQLException e) {
+                LOGGER.error(e.getMessage());
+            }
+
             jObj = new JSONObject();
             jGrupe = new JSONObject();
             int b = 0;
@@ -283,16 +306,20 @@ public class ClientWorker implements Runnable {
                     b++;
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                LOGGER.error(e.getMessage());
             }
             send_object(jGrupe);
         }
 
         if (rLine.get("action").equals("get_group_data")) {
-            query = String.format("SELECT * FROM grupa WHERE id LIKE '%s'", rLine.get("groupId"));
-            System.out.println(query);
-            rs = db.query_data(query);
-
+            query = "SELECT * FROM grupa WHERE id LIKE ?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("groupId"));
+                rs = ps.executeQuery();
+            } catch (SQLException e) {
+                LOGGER.error(e.getMessage());
+            }
 
             try {
                 while (rs.next()) {
@@ -303,19 +330,29 @@ public class ClientWorker implements Runnable {
                     jObj.put("prepaid", rs.getInt("prepaid"));
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                LOGGER.error(e.getMessage());
             }
 
             send_object(jObj);
         }
 
         if (rLine.get("action").equals("save_group_data")) {
-            query = String.format("UPDATE grupa SET groupname='%s', cena='%s', prepaid='%d', opis='%s' WHERE id='%d'",
-                    rLine.get("groupName"), rLine.get("cena"), rLine.getInt("prepaid"), rLine.get("opis"), rLine.get("groupId")
-            );
-            System.out.println(query);
-            db.query = query;
-            db.executeUpdate();
+            query = "UPDATE grupa SET groupname=?, cena=?, prepaid=?, opis=? WHERE id=?";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("groupName"));
+                ps.setDouble(2, rLine.getDouble("cena"));
+                ps.setInt(3, rLine.getInt("prepaid"));
+                ps.setString(4, rLine.getString("opis"));
+                ps.setInt(5, rLine.getInt("groupId"));
+
+                ps.executeQuery();
+
+            } catch (SQLException e) {
+                LOGGER.error(e.getMessage());
+            }
+
             jObj = new JSONObject();
             jObj.put("message", "SAVED");
             send_object(jObj);
@@ -325,21 +362,39 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("delete_group")) {
 
-            query = String.format("DELETE FROM grupa WHERE ID='%s'", rLine.get("groupID"));
-            db.query = query;
-            db.executeUpdate();
+            query = "DELETE FROM grupa WHERE id=?";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("groupID"));
+                ps.executeQuery();
+            } catch (SQLException e) {
+                LOGGER.error(e.getMessage());
+            }
+
             jObj = new JSONObject();
             jObj.put("message", String.format("GRUPA IZBRISANA"));
+
             send_object(jObj);
         }
 
         if (rLine.getString("action").equals("save_group")) {
-            query = String.format("INSERT INTO grupa  (groupname, cena, prepaid, opis) VALUES " +
-                            "('%s', '%s', '%s', '%s')",
-                    rLine.getString("groupName"), rLine.getString("cena"), rLine.getInt("prepaid"),
-                    rLine.getString("opis"));
-            db.query = query;
-            db.executeUpdate();
+
+            query = "INSERT INTO grupa (groupname, cena, prepaid, opis) VALUES (?,?,?,?,)";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("groupName"));
+                ps.setDouble(2, rLine.getDouble("cena"));
+                ps.setInt(3, rLine.getInt("prepaid"));
+                ps.setString(4, rLine.getString("opis"));
+
+                ps.executeQuery();
+
+            } catch (SQLException e) {
+                LOGGER.error(e.getMessage());
+            }
+
             jObj = new JSONObject();
             jObj.put("message", String.format("GROUP %s SAVED", rLine.getString("groupName")));
             send_object(jObj);
@@ -435,82 +490,50 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("new_user")) {
 
-            query = String.format("SELECT jbroj FROM users WHERE jbroj='%s'", rLine.getString("jbroj"));
-            ResultSet rs = db.query_data(query);
-            try {
-                if (rs.next()) {
-                    jObj = new JSONObject();
-                    jObj.put("Message", "user_no_exist");
-                    send_object(jObj);
-                    return;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
 
-            query = String.format("SELECT username FROM users WHERE username='%s'", rLine.getString("userName"));
-            ResultSet rsUser = db.query_data(query);
-            try {
-                if (rsUser.next()) {
-                    jObj = new JSONObject();
-                    jObj.put("Message", "user_exist");
-                    send_object(jObj);
-                    return;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            query = "INSERT INTO users (ime, datumRodjenja, operater, postBr, mesto, brLk, JMBG, " +
+                    "adresa, brojAdrese, komentar, telFiksni, telMobilni, datumKreiranja)" +
+                    "VALUES (?, ?, ?, ?, ?, ?, ? ,? ,? ,? ,?, ?, ?)";
 
-            String username = rLine.getString("userName");
-            query = String.format("INSERT INTO users (username, ime, datumrodjenja, kreirao, postbr, mesto, brlk, " +
-                            "mbr, adresaracun, adresa, brtelmob, brtel, jbroj) " +
-                            "VALUES " +
-                            "('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s', '%s', '%s', '%d') ",
-                    rLine.getString("userName"), rLine.getString("fullName"), rLine.get("datumRodjenja"),
-                    operName, rLine.getString("postBr"), rLine.getString("mesto"), rLine.getString("brLk"),
-                    rLine.get("JMBG"), rLine.get("adresaRacuna"), rLine.getString("adresa"), rLine.getString("telMobilni"),
-                    rLine.getString("telFiksni"), rLine.getInt("jbroj")
-            );
-
-            query = "INSERT INTO users (username, ime, datumrodjenja, kreirao, postbr, mesto, brlk, mbr, adresaracun," +
-                    "adresakoriscenja, adresa, brtelmob, brtel, jbroj, komentar) " +
-                    "VALUES  (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 
             try {
-                db.ps = db.conn.prepareStatement(query);
-                db.ps.setString(1, rLine.getString("userName"));
-                db.ps.setString(2, rLine.getString("fullName"));
-                db.ps.setString(3, rLine.getString("datumRodjenja"));
-                db.ps.setString(4, getOperName());
-                db.ps.setString(5, rLine.getString("postBr"));
-                db.ps.setString(6, rLine.getString("mesto"));
-                db.ps.setString(7, rLine.getString("brLk"));
-                db.ps.setString(8, rLine.getString("JMBG"));
-                db.ps.setString(9, rLine.getString("adresaRacuna"));
-                db.ps.setString(10, rLine.getString("adresaKoriscenja"));
-                db.ps.setString(11, rLine.getString("adresa"));
-                db.ps.setString(12, rLine.getString("telMobilni"));
-                db.ps.setString(13, rLine.getString("telFiksni"));
-                db.ps.setString(14, rLine.getString("jbroj"));
-                db.ps.setString(15, rLine.getString("komentar"));
+                ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 
-                db.ps.executeUpdate();
+                ps.setString(1, rLine.getString("fullName"));
+                ps.setString(2, rLine.getString("datumRodjenja"));
+                ps.setString(3, getOperName());
+                ps.setString(4, rLine.getString("postBr"));
+                ps.setString(5, rLine.getString("mesto"));
+                ps.setString(6, rLine.getString("brLk"));
+                ps.setString(7, rLine.getString("JMBG"));
+                ps.setString(8, rLine.getString("adresa"));
+                ps.setString(9, rLine.getString("brojAdrese"));
+                ps.setString(10, rLine.getString("komentar"));
+                ps.setString(11, rLine.getString("telFiksni"));
+                ps.setString(12, rLine.getString("telMobilni"));
+                ps.setString(13, mysql_date_format.format(new Date()));
+
+                ps.executeUpdate();
 
             } catch (SQLException e) {
                 jObj = new JSONObject();
-                jObj.put("Message", e.getMessage());
-                e.printStackTrace();
-                send_object(jObj);
+                jObj.put("Message", "ERROR");
+                jObj.put("ERROR_MESSAGE", e.getMessage());
+                LOGGER.error(e.getMessage());
             }
 
-
-            db.query = query;
-            db.executeUpdate();
             jObj = new JSONObject();
-            jObj.put("Message", "user_saved");
-
-
+            try {
+                rs = ps.getGeneratedKeys();
+                rs.next();
+                jObj.put("Message", "user_saved");
+                jObj.put("userID", rs.getInt(1));
+            } catch (SQLException e) {
+                jObj.put("Message", "ERROR");
+                jObj.put("ERROR_MESSAGE", e.getMessage());
+                e.printStackTrace();
+            }
 
 
             send_object(jObj);
@@ -653,7 +676,7 @@ public class ClientWorker implements Runnable {
             calendar.setTime(date);
             String datum = format.format(calendar.getTime());
 
-            query = "INSERT into Services_User (id_service, date_added, userID) VALUES (?, ? ,?) ";
+            query = "INSERT into Services_User (id_service, date_added, userID, operName, popust) VALUES (?, ? ,?, ?, ?) ";
 
 
             try {
@@ -662,6 +685,8 @@ public class ClientWorker implements Runnable {
                 db.ps.setInt(1, rLine.getInt("id"));
                 db.ps.setString(2, String.valueOf(datum));
                 db.ps.setInt(3, rLine.getInt("userID"));
+                db.ps.setString(4, getOperName());
+                db.ps.setDouble(5, (rLine.getDouble("servicePopust")));
                 db.ps.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -688,6 +713,42 @@ public class ClientWorker implements Runnable {
             }
             jObj = new JSONObject();
             jObj.put("message", String.format("Service id:%s deleted", rLine.getInt("id")));
+
+            send_object(jObj);
+        }
+
+        if (rLine.get("action").equals("get_uplate_zaduzenja_user_single")) {
+            query = "SELECT * FROM user_debts WHERE userID=? ORDER BY date_debt";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("userID"));
+                rs = db.ps.executeQuery();
+
+                int i = 0;
+                JSONObject userDebts;
+                jObj = new JSONObject();
+                while (rs.next()) {
+                    userDebts = new JSONObject();
+                    userDebts.put("id", rs.getInt("id"));
+                    userDebts.put("userID", rs.getInt("userID"));
+                    userDebts.put("dateDebt", rs.getDate("date_debt"));
+                    userDebts.put("serviceID", rs.getInt("service_id"));
+                    userDebts.put("serviceName", rs.getString("service_name"));
+                    userDebts.put("payed", rs.getBoolean("payed"));
+                    userDebts.put("paymentDate", rs.getDate("payment_date"));
+                    userDebts.put("operName", rs.getString("oper_name"));
+                    userDebts.put("popust", rs.getDouble("popust"));
+                    userDebts.put("debtTotal", rs.getDouble("debtTotal"));
+                    jObj.put(String.valueOf(i), userDebts);
+                    i++;
+
+                }
+
+            } catch (SQLException e) {
+                jObj = new JSONObject();
+                jObj.put("Message", e.getMessage());
+            }
 
             send_object(jObj);
         }
@@ -883,11 +944,11 @@ public class ClientWorker implements Runnable {
                 db.ps = db.conn.prepareStatement(query);
                 db.ps.setString(1, rLine.getString("nazivUgovora"));
                 db.ps.setString(2, rLine.getString("textUgovora"));
-                LOGGER.info(db.ps.toString());
                 db.ps.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
-                LOGGER.error(e.getMessage());
+                jObj = new JSONObject();
+                jObj.put("Message", e.getMessage());
             }
             jObj = new JSONObject();
             jObj.put("Message", "UGOVOR_ADDED");
@@ -898,8 +959,8 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("get_ugovori")) {
             query = "SELECT * FROM ugovori_types";
             try {
-                db.ps = db.conn.prepareStatement(query);
-                rs = db.ps.executeQuery();
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -962,6 +1023,26 @@ public class ClientWorker implements Runnable {
             }
             jObj = new JSONObject();
             jObj.put("Message", "UGOVOR_DELETED");
+            send_object(jObj);
+
+
+        }
+
+        if (rLine.getString("action").equals("update_ugovor_temp")) {
+            query = "UPDATE ugovori_types SET text_ugovor=?, naziv=? WHERE id=?";
+            jObj = new JSONObject();
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("text_ugovora"));
+                ps.setString(2, rLine.getString("naziv"));
+                ps.setInt(3, rLine.getInt("id"));
+                ps.executeUpdate();
+                jObj.put("Message", "UGOVOR_UPDATED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
             send_object(jObj);
 
 
@@ -1257,12 +1338,563 @@ public class ClientWorker implements Runnable {
 
         }
 
-        if (rLine.getString("action").equals("activate_internet")) {
-            //query = "DELETE FROM Services_User WHERE userID=? AND "
+
+        if (rLine.getString("action").equals("getMesta")) {
+
+            query = "SELECT * FROM mesta";
+            try {
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
+
+                JSONObject mesta = new JSONObject();
+                JSONObject mesto;
+
+                int i = 0;
+                while (rs.next()) {
+                    mesto = new JSONObject();
+                    mesto.put("id", rs.getInt("id"));
+                    mesto.put("nazivMesta", rs.getString("naziv"));
+                    mesto.put("brojMesta", rs.getString("broj"));
+                    mesta.put(String.valueOf(i), mesto);
+                    i++;
+                }
+                send_object(mesta);
+
+            } catch (SQLException e) {
+                jObj = new JSONObject();
+                jObj.put("Message", e.getMessage());
+                send_object(jObj);
+                e.printStackTrace();
+            }
         }
 
+        if (rLine.getString("action").equals("getMesto")) {
+            query = "SELECT * FROM mesta WHERE broj=?";
+            jObj = new JSONObject();
 
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("broj"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    jObj.put("id", rs.getInt("id"));
+                    jObj.put("nazivMesta", rs.getString("naziv"));
+                    jObj.put("brojMesta", rs.getString("broj"));
+                } else {
+                    jObj.put("Message", "NO_RECORD");
+
+                }
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("addMesto")) {
+            query = "INSERT INTO mesta (naziv, broj) VALUES (?,?)";
+
+            jObj = new JSONObject();
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setString(1, rLine.getString("nazivMesta"));
+                db.ps.setString(2, rLine.getString("brojMesta"));
+                db.ps.executeUpdate();
+                jObj.put("Message", "MESTO_SAVED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+
+                e.printStackTrace();
+            }
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("getAdrese")) {
+            query = "SELECT * FROM adrese WHERE idMesta = ?";
+            jObj = new JSONObject();
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("idMesta"));
+                rs = ps.executeQuery();
+
+                JSONObject adrese = new JSONObject();
+                JSONObject adresa;
+
+                int i = 0;
+
+                while (rs.next()) {
+                    adresa = new JSONObject();
+                    adresa.put("id", rs.getInt("id"));
+                    adresa.put("nazivAdrese", rs.getString("naziv"));
+                    adresa.put("brojAdrese", rs.getString("broj"));
+                    adresa.put("idMesta", rs.getInt("idMesta"));
+                    adresa.put("brojMesta", rs.getString("brojMesta"));
+                    adresa.put("nazivMesta", rs.getString("nazivMesta"));
+                    adrese.put(String.valueOf(i), adresa);
+                    i++;
+                }
+                send_object(adrese);
+
+            } catch (SQLException e) {
+                jObj = new JSONObject();
+                jObj.put("Message", e.getMessage());
+                send_object(jObj);
+                e.printStackTrace();
+            }
+        }
+
+        if (rLine.getString("action").equals("getAdresa")) {
+            query = "SELECT * FROM adrese WHERE broj=?";
+
+            jObj = new JSONObject();
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("broj"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    jObj.put("id", rs.getInt("id"));
+                    jObj.put("nazivAdrese", rs.getString("naziv"));
+                    jObj.put("brojAdrese", rs.getString("broj"));
+                    jObj.put("idMesta", rs.getInt("idMesta"));
+                    jObj.put("brojMesta", rs.getString("brojMesta"));
+                    jObj.put("nazivMesta", rs.getString("nazivMesta"));
+                } else {
+                    jObj.put("Message", "NO_RECORD");
+                }
+
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("addAdresa")) {
+            query = "INSERT INTO adrese (naziv, broj, idMesta, brojMesta, nazivMesta) VALUES (?, ?, ?, ?, ?)";
+
+            jObj = new JSONObject();
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setString(1, rLine.getString("nazivAdrese"));
+                db.ps.setString(2, rLine.getString("brojAdrese"));
+                db.ps.setInt(3, rLine.getInt("idMesta"));
+                db.ps.setString(4, rLine.getString("brojMesta"));
+                db.ps.setString(5, rLine.getString("nazivMesta"));
+                db.ps.executeUpdate();
+                jObj.put("Message", "ADRESS_ADDED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("delAdresa")) {
+            query = "DELETE FROM adrese WHERE id=?";
+
+            jObj = new JSONObject();
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("id"));
+                db.ps.executeUpdate();
+                jObj.put("Message", "ADRESS_DELETED");
+
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("DEL_MESTO")) {
+            jObj = new JSONObject();
+
+            query = "DELETE FROM mesta WHERE id=?";
+            String query2 = "DELETE FROM jAdrese WHERE idMesta=?";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("idMesta"));
+                db.ps.executeUpdate();
+                db.ps = db.conn.prepareStatement(query2);
+                db.ps.setInt(1, rLine.getInt("idMesta"));
+                db.ps.executeUpdate();
+                jObj.put("Message", "MESTO_DELETED");
+
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("GET_OPREMA_NAZIV")) {
+            jObj = new JSONObject();
+            JSONObject nazivOprema;
+
+            query = "SELECT DISTINCT(naziv), id , naziv from oprema GROUP BY naziv";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                rs = db.ps.executeQuery();
+
+                int i = 0;
+                while (rs.next()) {
+                    nazivOprema = new JSONObject();
+                    nazivOprema.put("naziv", rs.getString("naziv"));
+                    nazivOprema.put("id", rs.getInt("id"));
+                    jObj.put(String.valueOf(i), nazivOprema);
+                    i++;
+                }
+
+
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+
+        }
+
+        if (rLine.getString("action").equals("GET_OPREMA")) {
+            jObj = new JSONObject();
+            JSONObject oprema;
+            query = "SELECT * FROM oprema";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                rs = db.ps.executeQuery();
+
+                int i = 0;
+
+                while (rs.next()) {
+                    oprema = new JSONObject();
+                    oprema.put("id", rs.getInt("id"));
+                    oprema.put("naziv", rs.getString("naziv"));
+                    oprema.put("model", rs.getString("model"));
+                    jObj.put(String.valueOf(i), oprema);
+                    i++;
+                }
+
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("GET_MODEL_OPREME")) {
+            jObj = new JSONObject();
+
+            query = "SELECT * FROM oprema WHERE naziv=?";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setString(1, rLine.getString("naziv"));
+                rs = db.ps.executeQuery();
+
+                JSONObject modelObj;
+                int i = 0;
+                while (rs.next()) {
+                    modelObj = new JSONObject();
+                    modelObj.put("id", rs.getInt("id"));
+                    modelObj.put("model", rs.getString("model"));
+                    modelObj.put("naziv", rs.getString("naziv"));
+                    jObj.put(String.valueOf(i), modelObj);
+                    i++;
+                }
+
+            } catch (SQLException e) {
+                jObj = new JSONObject();
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("ADD_OPREMA")) {
+            jObj = new JSONObject();
+
+            query = "INSERT INTO oprema (naziv, model) VALUES (?,?)";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setString(1, rLine.getString("naziv"));
+                db.ps.setString(2, rLine.getString("model"));
+                db.ps.executeUpdate();
+                jObj.put("Message", "OPREMA_SAVED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("DEL_OPREMA")) {
+            jObj = new JSONObject();
+
+            query = "DELETE FROM oprema WHERE id=?";
+
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("id"));
+                db.ps.executeUpdate();
+                jObj.put("Message", "OPREMA_DELETED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("ADD_USER_OPREMA")) {
+            jObj = new JSONObject();
+
+            query = "INSERT INTO oprema_korisnik (naziv, model, komentar, userID, sn, MAC, naplata) " +
+                    "VALUES " +
+                    "(?, ?, ? ,? ,? ,? ,?)";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setString(1, rLine.getString("naziv"));
+                db.ps.setString(2, rLine.getString("model"));
+                db.ps.setString(3, rLine.getString("komentar"));
+                db.ps.setInt(4, rLine.getInt("userID"));
+                db.ps.setString(5, rLine.getString("sn"));
+                db.ps.setString(6, rLine.getString("MAC"));
+                db.ps.setInt(7, rLine.getInt("naplata"));
+                db.ps.executeUpdate();
+                jObj.put("Message", "USER_OPREMA_ADDED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
+        if (rLine.getString("action").equals("DELETE_USER_OPREMA")) {
+            jObj = new JSONObject();
+            query = "DELETE FROM oprema_korisnik WHERE id=?";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("id"));
+                db.ps.executeUpdate();
+
+                jObj.put("Message", "USER_OPREMA_DELETED");
+
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+
+        }
+
+        if (rLine.getString("action").equals("GET_USER_OPREMA")) {
+            jObj = new JSONObject();
+
+            query = "SELECT * FROM opremaKorisnik where userID=?";
+
+            try {
+                db.ps = db.conn.prepareStatement(query);
+                db.ps.setInt(1, rLine.getInt("userID"));
+                rs = db.ps.executeQuery();
+
+                JSONObject opremaKor;
+                int i = 0;
+                while (rs.next()) {
+                    opremaKor = new JSONObject();
+                    opremaKor.put("id", rs.getInt("id"));
+                    opremaKor.put("naziv", rs.getString("naziv"));
+                    opremaKor.put("model", rs.getString("model"));
+                    opremaKor.put("komentar", rs.getString("komentar"));
+                    opremaKor.put("serial", rs.getString("sn"));
+                    opremaKor.put("MAC", rs.getString("MAC"));
+                    opremaKor.put("naplata", rs.getInt("naplata"));
+                    opremaKor.put("userID", rs.getInt("userID"));
+                    jObj.put(String.valueOf(i), opremaKor);
+                    i++;
+
+                }
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("getOperaters")) {
+            jObj = new JSONObject();
+            query = "SELECT * FROM operateri";
+            JSONObject opers;
+
+            int i = 0;
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    while (rs.next()) {
+                        opers = new JSONObject();
+                        opers.put("id", rs.getInt("Id"));
+                        opers.put("ime", rs.getString("ime"));
+                        opers.put("username", rs.getString("username"));
+                        opers.put("aktivan", rs.getBoolean("aktivan"));
+                        opers.put("adresa", rs.getString("adresa"));
+                        opers.put("komentar", rs.getString("komentar"));
+                        opers.put("telefon", rs.getString("telefon"));
+                        jObj.put(String.valueOf(i), opers);
+                        i++;
+                    }
+                }
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("saveOperater")) {
+            jObj = new JSONObject();
+            query = "INSERT INTO operateri (username,password, adresa, telefon, komentar, aktivan, ime)" +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("username"));
+                ps.setString(2, rLine.getString("password"));
+                ps.setString(3, rLine.getString("adresa"));
+                ps.setString(4, rLine.getString("telefon"));
+                ps.setString(5, rLine.getString("komentar"));
+                ps.setBoolean(6, rLine.getBoolean("aktivan"));
+                ps.setString(7, rLine.getString("ime"));
+                ps.executeUpdate();
+                jObj.put("Message", "OPER_SAVED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("updateOperater")) {
+            jObj = new JSONObject();
+            if (rLine.has("password")) {
+                query = "UPDATE operateri SET  adresa=?, telefon=?, komentar=?, " +
+                        "aktivan=?, ime=?, password=? WHERE id=?";
+            } else {
+                query = "UPDATE operateri  SET adresa=?, telefon=?, komentar=?, " +
+                        "aktivan=?, ime=? WHERE id=?";
+            }
+
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("adresa"));
+                ps.setString(2, rLine.getString("telefon"));
+                ps.setString(3, rLine.getString("komentar"));
+                ps.setBoolean(4, rLine.getBoolean("aktivan"));
+                ps.setString(5, rLine.getString("ime"));
+                if (rLine.has("password")) {
+                    ps.setString(6, rLine.getString("password"));
+                    ps.setInt(7, rLine.getInt("operaterID"));
+                } else {
+                    ps.setInt(6, rLine.getInt("operaterID"));
+                }
+
+                ps.executeUpdate();
+                jObj.put("Message", "OPER_UPDATED");
+
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("deleteOper")) {
+            jObj = new JSONObject();
+
+            query = "DELETE FROM operateri WHER id=?";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("operID"));
+                ps.executeUpdate();
+                jObj.put("Message", "OPER_DELETED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("editOperPermission")) {
+            jObj = new JSONObject();
+
+            query = "DELETE * FROM operaterDozvole WHERE dozvola = ?";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("dozvola"));
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            query = "INSERT INTO operaterDozvole (dozvola, operaterID, value) VALUES (?,?,?)";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("dozvola"));
+                ps.setInt(2, rLine.getInt("operaterID"));
+                ps.setBoolean(3, rLine.getBoolean("value"));
+                ps.executeUpdate();
+                jObj.put("Message", "PERMS_SAVED");
+            } catch (SQLException e) {
+                jObj.put("Message", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+
+        }
     }
+
 
     private void delete_user(JSONObject mes) {
         int userId = mes.getInt("userId");
@@ -1270,21 +1902,20 @@ public class ClientWorker implements Runnable {
         query = "DELETE FROM users WHERE id=?";
 
         try {
-            db.ps = db.conn.prepareStatement(query);
-            db.ps.setInt(1, userId);
-            db.ps.executeUpdate();
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, userId);
+            ps.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         //delete from Services_user
-        query = String.format("DELETE FROM Services_User WHERE username='%s'", mes.getString("userName"));
         query = "DELETE FROM Services_User, user_debts,  WHERE  userID=?";
 
         try {
-            db.ps = db.conn.prepareStatement(query);
-            db.ps.setInt(1, userId);
-            db.ps.executeUpdate();
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, userId);
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -1297,37 +1928,35 @@ public class ClientWorker implements Runnable {
 
     private void update_user(JSONObject jObj) {
         int userID = jObj.getInt("userID");
-        query = "UPDATE users SET username = ? , ime = ? , datumrodjenja = ? , adresa = ? , mesto = ? , postbr = ? , brtel = ?  , brtelmob = ? ,  brlk = ? ,  mbr =? , adresaracun = ? , ostalo = ? , adresakoriscenja = ? , komentar = ?, jbroj = ?  WHERE id = ? ";
+        query = "UPDATE users SET ime = ?, datumrodjenja = ?, adresa = ?, mesto = ?," +
+                " postbr = ?, telFiksni = ?, telMobilni = ?,  brlk = ?,  JMBG =?, adresaUsluge = ?, " +
+                "mestoUsluge = ?, jAdresaBroj=?, jAdresa = ?, jMesto=?, jBroj=?, " +
+                "komentar = ? WHERE id = ? ";
 
 
         try {
-            db.ps = db.conn.prepareStatement(query);
-            db.ps.setString(1, jObj.getString("userName"));
-            db.ps.setString(2, jObj.getString("fullName"));
-            db.ps.setString(3, jObj.getString("datumRodjenja"));
-            db.ps.setString(4, jObj.getString("adresa"));
-            db.ps.setString(5, jObj.getString("mesto"));
-            db.ps.setString(6, jObj.getString("postBr"));
-            db.ps.setString(7, jObj.getString("telFixni"));
-            db.ps.setString(8, jObj.getString("telMobilni"));
-            db.ps.setString(9, jObj.getString("brLk"));
-            db.ps.setString(10, jObj.getString("JMBG"));
-            db.ps.setString(11, jObj.getString("adresaRacuna"));
-            db.ps.setString(12, jObj.getString("ostalo"));
-            db.ps.setString(13, jObj.getString("adresaKoriscenja"));
-            db.ps.setString(14, jObj.getString("komentar"));
-            db.ps.setInt(15, jObj.getInt("jBroj"));
-            db.ps.setInt(16, userID);
-            LOGGER.info(db.ps.toString());
-            db.ps.executeUpdate();
+            ps = db.conn.prepareStatement(query);
+            ps.setString(1, jObj.getString("fullName"));
+            ps.setString(2, jObj.getString("datumRodjenja"));
+            ps.setString(3, jObj.getString("adresa"));
+            ps.setString(4, jObj.getString("mesto"));
+            ps.setString(5, jObj.getString("postBr"));
+            ps.setString(6, jObj.getString("telFiksni"));
+            ps.setString(7, jObj.getString("telMobilni"));
+            ps.setString(8, jObj.getString("brLk"));
+            ps.setString(9, jObj.getString("JMBG"));
+            ps.setString(10, jObj.getString("adresaUsluge"));
+            ps.setString(11, jObj.getString("mestoUsluge"));
+            ps.setString(12, jObj.getString("jAdresaBroj"));
+            ps.setString(13, jObj.getString("jAdresa"));
+            ps.setString(14, jObj.getString("jMesto"));
+            ps.setString(15, jObj.getString("jBroj"));
+            ps.setString(16, jObj.getString("komentar"));
+            ps.setInt(17, userID);
+            ps.executeUpdate();
 
         } catch (SQLException e) {
             e.printStackTrace();
-            try {
-                db.conn.rollback();
-            } catch (SQLException e1) {
-                e1.printStackTrace();
-            }
         }
 
 
@@ -1347,7 +1976,7 @@ public class ClientWorker implements Runnable {
         System.out.println("checking login" + username + password);
         this.setOperName(userName);
 
-        ResultSet rs = db.query_data(String.format("SELECT username,password FROM admin WHERE username='%s' AND password='%s'", username, password));
+        ResultSet rs = db.query_data(String.format("SELECT username,password FROM operateri WHERE username='%s' AND password='%s'", username, password));
         try {
             if (rs.next()) {
                 userName = rs.getString("username");

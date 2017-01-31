@@ -8,6 +8,8 @@ import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocketFactory;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 
 /**
@@ -19,6 +21,8 @@ public class Server {
     public static void main(String[] args) {
 
         Boolean DEBUG = false;
+        String query;
+        PreparedStatement ps;
 
         for (int i = 0; i < args.length; i++) {
             System.out.println(args[i]);
@@ -44,12 +48,18 @@ public class Server {
         }
 
         db = new database();
-        db.query = "UPDATE online_opers SET online='0'";
-        db.executeUpdate();
-        db.closeDatabase();
+        query = "UPDATE onlineOperaters SET online=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, 0);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
         SchedullerTask st;
         st = new SchedullerTask(1);
+        st.db = db;
 
         st.DEBUG = DEBUG;
         Thread scheduller = new Thread(st);

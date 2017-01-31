@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -19,6 +20,8 @@ public class SchedullerTask implements Runnable {
     //final int MINUTES = (60 * 1000); //for normal use
     final int MINUTES = (60 * 100); //for debuging use
     public int timeout;
+    public database db;
+    public Boolean DEBUG;
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     Date date;
     ArrayList<ClientWorker> clientWorkerArrayList = new ArrayList<ClientWorker>();
@@ -27,10 +30,9 @@ public class SchedullerTask implements Runnable {
     String check_date;
     private boolean service_run = true;
     private Thread threadClientWorker;
-    private database db = new database();
+    private PreparedStatement ps;
     private String query;
-    private monthlyScheduler monthlyScheduler = new monthlyScheduler();
-    public Boolean DEBUG;
+    private monthlyScheduler monthlyScheduler;
     private Logger LOGGER = LogManager.getLogger();
     private String info;
 
@@ -57,10 +59,18 @@ public class SchedullerTask implements Runnable {
     }
 
     private void check_scheduler_tasks() {
+        monthlyScheduler = new monthlyScheduler();
+        monthlyScheduler.db = db;
         format = new SimpleDateFormat("yyyy-MM-01");
         check_date = format.format(new Date());
-        query = String.format("SELECT value FROM scheduler WHERE name='user_debts' AND value ='%s'", check_date);
-        rs = db.query_data(query);
+        query = "SELECT value FROM scheduler WHERE name='user_debts' AND value =?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setString(1, check_date);
+            rs = ps.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
         try {
             if (!rs.next()) {
@@ -86,25 +96,39 @@ public class SchedullerTask implements Runnable {
                 LOGGER.log(Level.TRACE, info);
             }
             if (clientWorker.get_socket().isClosed()) {
-                query = String.format("UPDATE online_opers SET online='0' WHERE uniq_id='%d'",
-                        clientWorkerArrayList.get(i).hashCode());
-                db.query = query;
-                db.executeUpdate();
+                query = "UPDATE onlineOperaters SET online=0 WHERE uniqueID=?";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setInt(1, clientWorkerArrayList.get(i).hashCode());
+                    ps.executeUpdate();
+                    ps.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
                 service_run = false;
                 close_client_socket(i);
 
             } else {
                 if (clientWorkerArrayList.get(i).client_db_update == false) {
                     SimpleDateFormat datum_oper = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    db.query = String.format("INSERT online_opers SET username='%s', remote_address='%s', date='%s', " +
-                                    "online='%d', uniq_id='%d', array_id='%d'",
-                            clientWorkerArrayList.get(i).getOperName(),
-                            clientWorkerArrayList.get(i).get_socket().getRemoteSocketAddress(),
-                            datum_oper.format(new Date()), 1, clientWorkerArrayList.get(i).hashCode(), i
+                    query = "INSERT onlineOperaters SET username=?, remote_address=?, date=?, " +
+                            "online=?, uniqueID=?, arrayID=?";
+                    try {
+                        ps = db.conn.prepareStatement(query);
+                        ps.setString(1, clientWorkerArrayList.get(i).getOperName());
+                        ps.setString(2, clientWorkerArrayList.get(i).get_socket().getRemoteSocketAddress().toString());
+                        ps.setString(3, datum_oper.format(new Date()));
+                        ps.setInt(4, 1);
+                        ps.setInt(5, clientWorkerArrayList.get(i).hashCode());
+                        ps.setInt(6, i);
+                        ps.executeUpdate();
+                        ps.close();
 
-                    );
 
-                    db.executeUpdate();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+
                     clientWorkerArrayList.get(i).client_db_update = true;
                 }
             }

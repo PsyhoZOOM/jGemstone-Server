@@ -10,20 +10,22 @@ import java.sql.*;
  * Created by zoom on 8/11/16.
  */
 public class database {
-    private String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-    private String DB_URL = "jdbc:mysql://127.0.0.1/radius?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
-
     public boolean DEBUG = false;
-
+    public String query;
+    public Connection conn;
+    public Connection connRad;
+    public Connection connIPTV;
+    public PreparedStatement ps;
+    private String JDBC_DRIVER = "com.mysql.jdbc.Driver";
+    private String DB_URL = "jdbc:mysql://127.0.0.1/jgemstone?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
+    private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
+    private String DB_URL_IPTV = "jdbc:mysql://127.0.0.1/stalker_db?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
     private String UserName = "root";
     private String Password = "";
-
-    public String query;
-
-    public Connection conn;
     private Statement stmt;
+    private Statement stmtRad;
+    private Statement stmtIPTV;
     private ResultSet rs;
-    public PreparedStatement ps;
     private Logger LOGGER = LogManager.getLogger("DATABASE");
 
     public database() {
@@ -37,6 +39,8 @@ public class database {
             Class.forName(JDBC_DRIVER);
             System.out.println("Connecting to database...");
             conn = DriverManager.getConnection(DB_URL, UserName, Password);
+            connRad = DriverManager.getConnection(DB_URL_RADIUS, UserName, Password);
+            connIPTV = DriverManager.getConnection(DB_URL_IPTV, UserName, Password);
             stmt = conn.createStatement();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
