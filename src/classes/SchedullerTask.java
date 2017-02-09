@@ -63,18 +63,33 @@ public class SchedullerTask implements Runnable {
         monthlyScheduler.db = db;
         format = new SimpleDateFormat("yyyy-MM-01");
         check_date = format.format(new Date());
-        query = "SELECT value FROM scheduler WHERE name='user_debts' AND value =?";
+        query = "SELECT date FROM scheduler WHERE name=? AND date =? ";
+
         try {
             ps = db.conn.prepareStatement(query);
-            ps.setString(1, check_date);
+            ps.setString(1, "user_debts");
+            ps.setString(2, check_date);
             rs = ps.executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
         try {
-            if (!rs.next()) {
+            if (!rs.isBeforeFirst()) {
                 monthlyScheduler.monthlyScheduler();
+
+                query = "INSERT INTO scheduler (name, date) VALUES " +
+                        "(?,?)";
+
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setString(1, "user_debts");
+                    ps.setString(2, check_date);
+                    ps.executeUpdate();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
             }
 
         } catch (SQLException e) {
