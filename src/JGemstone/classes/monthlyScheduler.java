@@ -1,6 +1,7 @@
 package JGemstone.classes;
 
 import classes.database;
+import classes.valueToPercent;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -9,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -20,6 +22,7 @@ public class monthlyScheduler {
     private SimpleDateFormat format_first_day_in_month = new SimpleDateFormat("yyyy-MM-01");
     private SimpleDateFormat forma_normal_date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private SimpleDateFormat format_date = new SimpleDateFormat("yyyy-MM-dd");
+    private SimpleDateFormat format_month = new SimpleDateFormat("yyyy-MM");
     private Users users;
     private ArrayList<Users> usersArrayList = new ArrayList<>();
     private PreparedStatement ps;
@@ -38,16 +41,20 @@ public class monthlyScheduler {
     private String query;
 
     public void monthlyScheduler() {
-        query = "SELECT *  FROM ServicesUser WHERE obracun=1";
+        query = "SELECT *  FROM ServicesUser WHERE obracun=1 AND aktivan=1";
+        //koji je mesec zaduzenja. posto je prvi u mesecu kada se zaduzuje korisnik onda idemo mesec dana u nazad.
+        //obracun je za prosli mesec
 
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MONTH, -1);
         try {
             ps = db.conn.prepareStatement(query);
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 while (rs.next()) {
-                    query = "INSERT INTO userDebts (id_ServiceUser, id_service, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena)" +
+                    query = "INSERT INTO userDebts (id_ServiceUser, id_service, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena, dug, zaMesec)" +
                             "VALUES " +
-                            "(?,?,?,?,?,?,?,?)";
+                            "(?,?,?,?,?,?,?,?,?,?)";
                     psUpdateDebts = db.conn.prepareStatement(query);
                     psUpdateDebts.setInt(1, rs.getInt("id"));
                     psUpdateDebts.setInt(2, rs.getInt("id_service"));
@@ -57,7 +64,13 @@ public class monthlyScheduler {
                     psUpdateDebts.setDouble(6, rs.getDouble("popust"));
                     psUpdateDebts.setString(7, rs.getString("paketType"));
                     psUpdateDebts.setDouble(8, rs.getDouble("cena"));
-                    psUpdateDebts.executeUpdate();
+                    psUpdateDebts.setDouble(9, valueToPercent.getValue(rs.getDouble("cena"), rs.getDouble("popust")));
+                    psUpdateDebts.setString(10, format_month.format(cal.getTime()));
+                    if (rs.getInt("newService") != 1) {
+                        psUpdateDebts.executeUpdate();
+                    } else {
+                        setOldService(rs.getInt("id"));
+                    }
                 }
             } else {
                 return;
@@ -67,6 +80,17 @@ public class monthlyScheduler {
         }
 
 
+    }
+
+    private void setOldService(int id) {
+        query = "UPDATE ServicesUser set newService=0 WHERE id=?";
+        try {
+            PreparedStatement ps2 = db.conn.prepareStatement(query);
+            ps2.setInt(1, id);
+            ps2.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 
