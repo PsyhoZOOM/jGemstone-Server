@@ -1,5 +1,9 @@
 package classes;
 
+import classes.BOX.addBoxService;
+import classes.DTV.DTVFunctions;
+import classes.INTERNET.NETFunctions;
+import classes.SERVICES.ServicesFunctions;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,12 +14,9 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.Format;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 
 
 /**
@@ -531,33 +532,9 @@ public class ClientWorker implements Runnable {
             send_object(jObj);
         }
 
-        if (rLine.get("action").equals("get_services")) {
-            query = String.format("SELECT * FROM Services WHERE naziv LIKE '%s%%'", rLine.get("serviceName"));
-            System.out.println(query);
-            rs = db.query_data(query);
-            jsService = new JSONObject();
-            int jsCount = 0;
-            try {
-                while (rs.next()) {
-                    jObj = new JSONObject();
-                    jObj.put("id", rs.getInt("id"));
-                    jObj.put("naziv", rs.getString("naziv"));
-                    jObj.put("cena", rs.getInt("cena"));
-                    jObj.put("opis", rs.getString("opis"));
-                    jsService.put(String.valueOf(jsCount), jObj);
-                    jsCount++;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            System.out.println(jsService);
-
-            send_object(jsService);
-        }
-
         if (rLine.getString("action").equals("get_user_services")) {
             jObj = new JSONObject();
-            query = "SELECT *  FROM ServicesUser WHERE userID=?";
+            query = "SELECT *  FROM ServicesUser WHERE userID=? AND linkedService=false";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -575,12 +552,19 @@ public class ClientWorker implements Runnable {
                         service.put("operName", rs.getString("operName"));
                         service.put("date_added", rs.getString("date_added"));
                         service.put("nazivPaketa", rs.getString("nazivPaketa"));
-                        service.put("vrsta", rs.getString("paketType"));
+                        if (rs.getString("idDTVCard") != null)
+                            service.put("idUniqueName", rs.getString("idDTVCard"));
+                        if (rs.getString("UserName") != null)
+                            service.put("idUniqueName", rs.getString("UserName"));
                         service.put("obracun", rs.getBoolean("obracun"));
                         service.put("aktivan", rs.getBoolean("aktivan"));
-                        service.put("idUniqueName", rs.getString("id_unique_name"));
                         service.put("produzenje", rs.getInt("produzenje"));
                         service.put("id_service", rs.getInt("id_service"));
+                        service.put("box", rs.getBoolean("BOX_service"));
+                        service.put("box_ID", rs.getInt("box_id"));
+                        service.put("paketType", rs.getString("paketType"));
+                        service.put("linkedService", rs.getBoolean("linkedService"));
+                        service.put("newService", rs.getBoolean("newService"));
 
 
                         jObj.put(String.valueOf(i), service);
@@ -595,12 +579,66 @@ public class ClientWorker implements Runnable {
 
         }
 
+        if (rLine.getString("action").equals("get_user_linked_services")) {
+
+            JSONObject jObj2 = new JSONObject();
+            PreparedStatement ps2;
+            query = "SELECT * FROM ServicesUser WHERE box_id=? AND linkedService=? AND userID=?";
+            try {
+                ps2 = db.conn.prepareStatement(query);
+                ps2.setInt(1, rLine.getInt("box_ID"));
+                ps2.setInt(2, 1);
+                ps2.setInt(3, rLine.getInt("userID"));
+                ResultSet rs2 = ps2.executeQuery();
+
+                LOGGER.info(ps2.toString());
+                if (rs2.isBeforeFirst()) {
+                    JSONObject service;
+                    int i = 0;
+                    while (rs2.next()) {
+                        service = new JSONObject();
+                        service.put("id", rs2.getInt("id"));
+                        service.put("userID", rs2.getInt("userID"));
+                        service.put("id_service", rs2.getInt("id_service"));
+                        service.put("box_ID", rs2.getInt("box_id"));
+                        service.put("nazivPaketa", rs2.getString("nazivPaketa"));
+                        service.put("produzenje", rs2.getInt("produzenje"));
+                        service.put("groupName", rs2.getString("GroupName"));
+                        service.put("userName", rs2.getString("UserName"));
+                        service.put("idDTVCard", rs2.getString("idDTVCard"));
+                        service.put("MAC_IPTV", rs2.getString("MAC_IPTV"));
+                        service.put("FIKSNA_TEL", rs2.getString("FIKSNA_TEL"));
+                        service.put("popust", rs2.getDouble("popust"));
+                        service.put("cena", rs2.getDouble("cena"));
+                        service.put("linkedService", rs2.getBoolean("linkedService"));
+                        service.put("aktivan", rs2.getBoolean("aktivan"));
+                        if (rs2.getString("GroupName") != null)
+                            service.put("paketType", "NET");
+                        if (rs2.getString("idDTVCard") != null)
+                            service.put("paketType", "DTV");
+                        if (rs2.getString("DTVPaket") != null)
+                            service.put("paketType", "DTV");
+                        service.put("newService", rs2.getBoolean("newService"));
+
+
+                        jObj2.put(String.valueOf(i), service);
+                        i++;
+                    }
+
+                    rs2.close();
+                    ps2.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            send_object(jObj2);
+
+        }
+
         if (rLine.get("action").equals("activate_service")) {
 
-
-            int produzenje = rLine.getInt("produzenje");
-
-
+/*
             try {
                 calendar.setTime(normalDate.parse(rLine.getString("endDate")));
                 calendar.add(Calendar.MONTH, 1);
@@ -609,75 +647,31 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
 
-
+*/
             jObj = new JSONObject();
 
-            //INTERNET SERVICE
-            if (rLine.getString("paketType").equals("INTERNET")) {
-                query = "UPDATE radcheck SET value=? WHERE username=? AND attribute='Auth-Type'";
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    if (rLine.getBoolean("aktivan")) {
-                        ps.setString(1, "Accept");
-                    } else {
-                        ps.setString(1, "Reject");
-                    }
-                    ps.setString(2, rLine.getString("idUniqueName"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
+            if (rLine.get("actionService").equals("activate_BOX_service")) {
+                if (rLine.getBoolean("newService")) {
+                    ServicesFunctions.activateBoxServiceNew(rLine, getOperName(), this.db);
                 }
-
-                query = "UPDATE radcheck SET value=? WHERE username=? AND attribute='Expiration'";
-                calendar.add(Calendar.MONTH, produzenje);
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    String end = radcheckEndDate.format(calendar.getTime());
-                    ps.setString(1, radcheckEndDate.format(calendar.getTime()));
-                    ps.setString(2, rLine.getString("idUniqueName"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    jObj.put("Error", e.getMessage());
-                    e.printStackTrace();
-                }
-
-                query = "UPDATE radreply SET value=? WHERE username=? AND attribute='WISPR-Session-Terminate-time'";
-                calendar.add(Calendar.MINUTE, -1);
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, radreplyEndDate.format(calendar.getTime()));
-                    ps.setString(2, rLine.getString("idUniqueName"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    jObj.put("Error", e.getMessage());
-                    e.printStackTrace();
-                }
-
-                add_user_debt_first_time(rLine);
-
             }
 
-            //DTV SERVICE
-            if (rLine.getString("paketType").equals("DTV")) {
-                query = "UPDATE DTVKartice SET endDate=? where idKartica=?";
-                calendar.add(Calendar.MONTH, produzenje);
-
-                try {
-                    ps = db.conn.prepareStatement(query);
-                    ps.setString(1, normalDate.format(calendar.getTime()));
-                    ps.setString(2, rLine.getString("idUniqueName"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    jObj.put("Error", e.getMessage());
-                    e.printStackTrace();
+            if (rLine.get("actionService").equals("activate_DTV_service")) {
+                if (rLine.getBoolean("newService")) {
+                    ServicesFunctions.activateDTVServiceNew(rLine, getOperName(), this.db);
                 }
-
-                add_user_debt_first_time(rLine);
+            }
+            if (rLine.get("actionService").equals("activate_NET_service")) {
+                if (rLine.getBoolean("newService")) {
+                    ServicesFunctions.activateNetServiceNew(rLine, getOperName(), this.db);
+                }
             }
 
+            jObj.put("Message", "SERVICE_AKTIVATED");
 
+
+
+            /*
             query = "UPDATE ServicesUser SET aktivan =? where id=?";
 
             try {
@@ -697,324 +691,52 @@ public class ClientWorker implements Runnable {
                 jObj.put("Error", e.getMessage());
                 e.printStackTrace();
             }
-
+            */
 
             send_object(jObj);
 
 
         }
 
-        if (rLine.get("action").equals("get_services_data")) {
-            query = String.format("SELECT * FROM Services where id='%d'", rLine.getInt("serviceId"));
-            System.out.println(query);
-            rs = db.query_data(query);
-            try {
-                while (rs.next()) {
-                    jObj = new JSONObject();
-                    jObj.put("id", rs.getInt("id"));
-                    jObj.put("naziv", rs.getString("naziv"));
-                    jObj.put("cena", rs.getString("cena"));
-                    jObj.put("opis", rs.getString("opis"));
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            send_object(jObj);
-        }
-
-        if (rLine.get("action").equals("new_service")) {
-            query = String.format("INSERT INTO Services (naziv,cena,opis) VALUES ('%s', '%d', '%s')",
-                    rLine.getString("naziv"), (int) rLine.getDouble("cena"), rLine.getString("opis"));
-            db.query = query;
-            db.executeUpdate();
-
+        if (rLine.getString("action").equals("add_BOX_Service")) {
             jObj = new JSONObject();
-            jObj.put("message", "SERVICE_SAVED");
-            send_object(jObj);
-            //send_object(mes);
 
-        }
+            //provera da li korisnik, kartica postoji. Ako postoji prijaviti operateru da ne moze da se napravi servis
+            Boolean checkNet = false;
+            Boolean checkDtv = false;
 
-        if (rLine.get("action").equals("delete_service")) {
-            query = String.format("DELETE FROM Services WHERE id='%s' ", rLine.getInt("serviceId"));
-            db.query = query;
-            db.executeUpdate();
-
-
-            jObj = new JSONObject();
-            jObj.put("message", String.format("SERVICE ID:%d DELETED", rLine.getInt("serviceId")));
-            send_object(jObj);
-
-        }
-
-        if (rLine.get("action").equals("save_service")) {
-            query = String.format("UPDATE Services SET naziv='%s', cena='%s', opis='%s' WHERE id='%s'",
-                    rLine.getString("naziv"), (int) rLine.getDouble("cena"), rLine.getString("opis"),
-                    rLine.getInt("serviceId"));
-
-            db.query = query;
-            db.executeUpdate();
-            jObj = new JSONObject();
-            jObj.put("message", "SERVICE_UPDATED");
-            send_object(jObj);
-        }
-
-        if (rLine.getString("action").equals("add_service_to_user")) {
-
-            jObj = new JSONObject();
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            GregorianCalendar calendar = new GregorianCalendar();
-            Date date = new Date();
-            calendar.setTime(date);
-            String datum = format.format(calendar.getTime());
-            int box_ID = 0;
-            ResultSet rsBoxId;
-
-
-            //service internet;
-            boolean user_exist = false;
-
-
-            if (rLine.getString("paketType").equals("INTERNET") && user_exist == false) {
-                query = "SELECT * FROM radcheck WHERE username=?";
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    rs = ps.executeQuery();
-                    if (rs.isBeforeFirst()) {
-                        user_exist = true;
-                        jObj.put("Error", "USER_EXIST");
-                        send_object(jObj);
-                        return;
-                    }
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                query = "INSERT INTO radusergroup (username, groupname, priority ) VALUES " +
-                        "(?,?,?)";
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.setString(2, rLine.getString("nazivPaketa"));
-                    ps.setInt(3, 1);
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                query = "INSERT  INTO   radcheck (username, attribute, op, value) VALUES" +
-                        "(?,?,?,?)";
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.setString(2, "MD5-Password");
-                    ps.setString(3, ":=");
-                    ps.setString(4, rLine.getString("password"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                query = "INSERT INTO radcheck (username, attribute, op, value) VALUES" +
-                        "(?,?,?,?)";
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.setString(2, "Simultaneous-Use");
-                    ps.setString(3, ":=");
-                    ps.setString(4, "1");
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                query = "INSERT INTO radcheck (username, attribute, op, value) VALUES " +
-                        "(?,?,?,?)";
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.setString(2, "Auth-Type");
-                    ps.setString(3, ":=");
-                    ps.setString(4, "Reject");
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                query = "INSERT  INTO radreply (username, attribute, op , value) VALUES" +
-                        "(?,?,?,?)";
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.setString(2, "WISPR-Session-Terminate-time");
-                    ps.setString(3, "=");
-                    ps.setString(4, "1970-1-1T23:59:59");
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                query = "INSERT INTO radcheck (username, attribute, op, value) VALUES" +
-                        "(?,?,?,?)";
-
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.setString(2, "Expiration");
-                    ps.setString(3, ":=");
-                    ps.setString(4, "01 Jan 1970");
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
+            if (rLine.has("groupName")) {
+                //createInternetService;
+                checkNet = NETFunctions.check_userName_busy(rLine.getString("userName"), db);
 
             }
 
-            //service DTV
-
-            if (rLine.getString("paketType").equals("DTV")) {
-                query = "INSERT INTO DTVKartice (idKartica, userID, paketID, endDate) VALUES " +
-                        "(?,?,?,?)";
-
-                try {
-                    ps = db.conn.prepareStatement(query);
-                    ps.setInt(1, rLine.getInt("idUniqueName"));
-                    ps.setInt(2, rLine.getInt("userID"));
-                    ps.setInt(3, rLine.getInt("packetID"));
-                    ps.setString(4, "1970-01-01");
-                    ps.executeUpdate();
-
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-            }
-
-            if (rLine.getString("paketType").equals("BOX")) {
-                query = "INSERT INTO users_Paket_BOX () " +
-                        "VALUES " +
-                        "()";
+            if (rLine.has("DTVCardID")) {
+                //create DTV SERVICE
+                checkDtv = DTVFunctions.check_card_busy(rLine.getInt("cardID"), db);
 
             }
 
 
-            //Service user
-            if (user_exist == false && !rLine.getString("paketType").equals("BOX")) {
-                query = "INSERT into ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, paketType, cena, obracun, brojUgovora, id_unique_name, aktivan, produzenje ) " +
-                        "VALUES (?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            //ako je user ili kartica zauzeta poslati obavestenje u suprotnom napraviti boxPaket serivis i dodati ostrale servise koriniku
+            if (checkDtv || checkNet) {
+                String message = null;
+                if (checkDtv)
+                    message = "DTV Kartica je zauzeta";
+                jObj.put("Error", message);
 
-
-                try {
-                    ps = db.conn.prepareStatement(query);
-                    ps.setInt(1, rLine.getInt("id"));
-                    ps.setString(2, rLine.getString("nazivPaketa"));
-                    ps.setString(3, String.valueOf(datum));
-                    ps.setInt(4, rLine.getInt("userID"));
-                    ps.setString(5, getOperName());
-                    ps.setDouble(6, (rLine.getDouble("servicePopust")));
-                    ps.setString(7, rLine.getString("paketType"));
-                    ps.setDouble(8, rLine.getDouble("cena"));
-                    ps.setBoolean(9, rLine.getBoolean("obracun"));
-                    ps.setInt(10, rLine.getInt("brojUgovora"));
-                    ps.setString(11, rLine.getString("idUniqueName"));
-                    ps.setBoolean(12, false);
-                    ps.setInt(13, rLine.getInt("produzenje"));
-                    ps.executeUpdate();
-
-
-                    jObj.put("Message", String.format("Service id: %d added to user: %d", rLine.getInt("id"), rLine.getInt("userID")));
-                } catch (SQLException e) {
-                    jObj.put("Message", "ERROR");
-                    jObj.put("Error", e.getMessage());
-                    e.printStackTrace();
-                }
+                if (checkNet)
+                    message = "Internet korisnicko ime je zauzeto";
+                jObj.put("Error", message);
             } else {
-
-                //BOX PAKET
-                query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, " +
-                        "paketType, cena, obracun, brojUgovora, aktivan, produzenje, linkedService)" +
-                        "VALUES " +
-                        "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-                try {
-                    ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-                    ps.setInt(1, rLine.getInt("id"));
-                    ps.setString(2, rLine.getString("nazivPaketa"));
-                    ps.setString(3, String.valueOf(datum));
-                    ps.setInt(4, rLine.getInt("userID"));
-                    ps.setString(5, getOperName());
-                    ps.setDouble(6, rLine.getDouble("popust"));
-                    ps.setString(7, rLine.getString("paketType"));
-                    ps.setDouble(8, rLine.getDouble("cena"));
-                    ps.setBoolean(9, rLine.getBoolean("obracun"));
-                    ps.setInt(10, rLine.getInt("brojUgovora"));
-                    ps.setBoolean(11, false);
-                    ps.setInt(12, rLine.getInt("produzenje"));
-                    ps.setBoolean(13, false);
-                    ps.executeUpdate();
-                    rsBoxId = ps.getGeneratedKeys();
-                    rsBoxId.next();
-                    box_ID = rs.getInt(1);
-                } catch (SQLException e) {
-                    jObj.put("Error", e.getMessage());
-                    e.printStackTrace();
-                }
-
-                //BOX DTV
-                query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, paketType, " +
-                        "linkedService, linkedServiceID) VALUES (?,?,?,?,?,?,?,?)";
-
-                try {
-
-
-                    if (rLine.has("DTV_id")) {
-                        ps = db.conn.prepareStatement(query);
-                        ps.setInt(1, rLine.getInt("DTV_id"));
-                        ps.setString(2, rLine.getString("DTV_naziv"));
-                        ps.setString(3, String.valueOf(datum));
-                        ps.setInt(4, rLine.getInt("userID"));
-                        ps.setString(5, getOperName());
-                        ps.setString(6, rLine.getString("paketType"));
-                        ps.setBoolean(7, true);
-                        ps.setInt(8, box_ID);
-                        ps.executeUpdate();
-                    }
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                //NET
-                query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName paketType," +
-                        "linkedService, linkedServiceID) VALUES (?,?,?,?,?,?,?,?)";
-
-
-                if (rLine.has("NET_id")) {
-                    try {
-                        ps = db.conn.prepareStatement(query);
-                        ps.setInt(1, rLine.getInt("NET_id"));
-                        ps.setString(2, rLine.getString("DTV_naziv"));
-                        ps.setString(3, String.valueOf(datum));
-                        ps.setInt(4, rLine.getInt("userID"));
-                        ps.setString(5, getOperName());
-                        ps.setBoolean(7, true);
-                        ps.setInt(9, box_ID);
-                        ps.executeUpdate();
-
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                }
+                //add BOX to servicesUser
+                addBoxService addBox = new addBoxService();
+                addBox.db = db;
+                addBox.addBox(rLine, getOperName());
 
 
             }
+
 
 
             send_object(jObj);
@@ -1040,9 +762,11 @@ public class ClientWorker implements Runnable {
                         paketBox.put("id", rs.getInt("id"));
                         paketBox.put("naziv", rs.getString("naziv"));
                         paketBox.put("cena", rs.getDouble("cena"));
+                        paketBox.put("paketType", "BOX");
                         if (rs.getString("DTV_naziv") != null) {
                             paketBox.put("DTV_id", rs.getInt("DTV_id"));
                             paketBox.put("DTV_naziv", get_paket_naziv("digitalniTVPaketi", rs.getInt("DTV_id")));
+                            paketBox.put("DTV_PAKET_ID", DTVFunctions.getPacketCriteriaGroup(rs.getInt("DTV_id"), this.db));
                         }
 
                         if (rs.getString("NET_naziv") != null) {
@@ -1070,6 +794,38 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("add_service_to_user_DTV")) {
+            jObj = new JSONObject();
+
+            String serviceAdded = ServicesFunctions.addServiceDTV(rLine.getInt("id"), rLine.getString("nazivPaketa"),
+                    rLine.getInt("userID"), getOperName(), rLine.getDouble("servicePopust"),
+                    rLine.getDouble("cena"), rLine.getBoolean("obracun"), rLine.getString("brojUgovora"),
+                    rLine.getInt("produzenje"), rLine.getString("idUniqueName"), rLine.getInt("packetID"), this.db);
+
+            if (serviceAdded.equals("SERVICE_ADDED")) {
+                jObj.put("Message", "SERVICE_ADDED");
+            } else {
+                jObj.put("Error", serviceAdded);
+            }
+            send_object(jObj);
+
+
+        }
+
+        if (rLine.getString("action").equals("add_service_to_user_NET")) {
+            jObj = new JSONObject();
+            String userAdded = ServicesFunctions.addServiceNET(rLine, getOperName(), this.db);
+            if (userAdded.equals("USER_EXIST")) {
+                jObj.put("Error", "USER_EXIST");
+            } else {
+                jObj.put("Message", "USER_ADDED");
+            }
+
+            send_object(jObj);
+
 
         }
 
@@ -1105,8 +861,6 @@ public class ClientWorker implements Runnable {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-
-
             }
 
             //DTV SERVICE DELETE
@@ -1259,15 +1013,26 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("uplata_servisa")) {
             jObj = new JSONObject();
-            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, dug=? WHERE id=?";
+
+            if (rLine.getString("paketType").equals("BOX")) {
+                ServicesFunctions.produziBOX(rLine, getOperName(), db);
+            }
+            if (rLine.getString("paketType").equals("DTV")) {
+                ServicesFunctions.produziDTV(rLine, getOperName(), db);
+            }
+            if (rLine.getString("paketType").equals("NET")) {
+                ServicesFunctions.produziNET(rLine, getOperName(), db);
+            }
+
+
+            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?  WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
                 ps.setDouble(1, rLine.getDouble("uplaceno"));
                 ps.setString(2, date_format_full.format(Calendar.getInstance().getTime()));
                 ps.setString(3, getOperName());
-                ps.setDouble(4, rLine.getDouble("dug") - rLine.getDouble("uplaceno"));
-                ps.setInt(5, rLine.getInt("id"));
+                ps.setInt(4, rLine.getInt("id"));
                 ps.executeUpdate();
                 jObj.put("Message", "SERVICE_PAYMENTS_DONE");
             } catch (SQLException e) {
@@ -1275,7 +1040,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
 
-            produzi_uslugu(rLine);
+
             send_object(jObj);
 
         }
@@ -2543,129 +2308,6 @@ public class ClientWorker implements Runnable {
             e.printStackTrace();
         }
         return naziv;
-    }
-
-    private void produzi_uslugu(JSONObject rLine) {
-        DateTimeFormatter formatNormal = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        DateTimeFormatter formatYM = DateTimeFormatter.ofPattern("yyyy-MM");
-        int produzenje = 0;
-
-        //produzi internet
-        if (rLine.getString("paketType").equals("INTERNET")) {
-        }
-
-
-        //produzi dtv
-        if (rLine.getString("paketType").equals("DTV")) {
-            String idKartica = null;
-            String endDate = null;
-
-
-            query = "SELECT * FROM ServicesUser WHERE userID=? AND id_service=?";
-
-            try {
-                ps = db.conn.prepareStatement(query);
-                ps.setInt(1, rLine.getInt("userID"));
-                ps.setInt(2, rLine.getInt("userServiceID"));
-                rs = ps.executeQuery();
-
-                if (rs.isBeforeFirst()) {
-                    rs.next();
-                    idKartica = rs.getString("id_unique_name");
-                    produzenje = rs.getInt("produzenje");
-
-                } else {
-                    //izaci iz funkcije ako id_kartice nije pronadjena
-                    return;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-
-            query = "SELECT * FROM DTVKartice WHERE idKartica=? AND userID=?";
-
-            try {
-                ps = db.conn.prepareStatement(query);
-                ps.setString(1, idKartica);
-                ps.setInt(2, rLine.getInt("userID"));
-                rs = ps.executeQuery();
-                if (rs.isBeforeFirst()) {
-                    rs.next();
-                    endDate = rs.getString("endDate");
-                } else {
-                    //u ovom slucaju je greska. Izaci iz funkcije posto endDate ne postoji
-                    return;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-
-            Calendar callProduzenje = Calendar.getInstance();
-            Calendar callEndDate = Calendar.getInstance();
-
-            callProduzenje.setTime((Date) formatNormal.parse(rLine.getString("zaMesec")));
-            callProduzenje.add(Calendar.MONTH, produzenje);
-
-            callEndDate.setTime((Date) formatNormal.parse(endDate));
-
-            if (callEndDate.getTime().before(callProduzenje.getTime())) {
-                query = "UPDATE DTVKartice set endDate=? WHERE userId=? and idKartica=?";
-                try {
-                    ps = db.conn.prepareStatement(query);
-                    ps.setString(1, String.valueOf(callProduzenje.getTime()));
-                    ps.setInt(2, rLine.getInt("userID"));
-                    ps.setString(3, idKartica);
-                    ps.executeUpdate();
-
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-            }
-            return;
-
-        }
-
-
-        query = "UPDATE DTVKartice set endDate=? where idKartica=?";
-        try {
-            ps = db.conn.prepareStatement(query);
-            ps.setString(1, "DATEUMM");
-            ps.setString(2, rLine.getString("id_unique_name"));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-
-    }
-
-    private void add_user_debt_first_time(JSONObject rLine) {
-        //zaduzenje korisnika dana do kraja meseca
-        query = "INSERT INTO userDebts (id_ServiceUser, id_service, nazivPaketa, datumZaduzenja, userID, " +
-                "popust,paketType, cena, dug,  zaduzenOd, zaMesec) " +
-                "VALUES " +
-                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try {
-            ps = db.conn.prepareStatement(query);
-            ps.setInt(1, rLine.getInt("id"));
-            ps.setInt(2, rLine.getInt("idService"));
-            ps.setString(3, rLine.getString("nazivPaketa"));
-            ps.setString(4, normalDate.format(Calendar.getInstance().getTime()));
-            ps.setInt(5, rLine.getInt("userID"));
-            ps.setDouble(6, rLine.getDouble("popust"));
-            ps.setString(7, rLine.getString("paketType"));
-            ps.setDouble(8, rLine.getDouble("cena"));
-            ps.setDouble(9, rLine.getDouble("dug"));
-            ps.setString(10, getOperName());
-            ps.setString(11, formatMonthDate.format(Calendar.getInstance().getTime()));
-            ps.executeUpdate();
-
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 
 

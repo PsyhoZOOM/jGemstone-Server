@@ -41,7 +41,7 @@ public class monthlyScheduler {
     private String query;
 
     public void monthlyScheduler() {
-        query = "SELECT *  FROM ServicesUser WHERE obracun=1 AND aktivan=1";
+        query = "SELECT *  FROM ServicesUser WHERE obracun=1 AND aktivan=1 AND linkedService=0  ";
         //koji je mesec zaduzenja. posto je prvi u mesecu kada se zaduzuje korisnik onda idemo mesec dana u nazad.
         //obracun je za prosli mesec
 
