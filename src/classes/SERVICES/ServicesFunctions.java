@@ -864,5 +864,244 @@ public class ServicesFunctions {
         }
 
     }
+
+    public static void deleteServiceDTV(JSONObject rLine, String operName, database db) {
+        PreparedStatement ps;
+        PreparedStatement psDelete;
+        ResultSet rs;
+
+        String DTVKartica;
+
+        String query = "SELECT * FROM ServicesUser WHERE id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("serviceId"));
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                DTVKartica = rs.getString("idDTVCard");
+                query = "DELETE FROM DTVKartice WHERE idKartica=? AND userID=?";
+                psDelete = db.conn.prepareStatement(query);
+                psDelete.setInt(1, Integer.valueOf(DTVKartica));
+                psDelete.setInt(2, rLine.getInt("userID"));
+                psDelete.executeUpdate();
+
+                query = "DELETE FROM ServicesUser WHERE id=?";
+                psDelete = db.conn.prepareStatement(query);
+                psDelete.setInt(1, rLine.getInt("serviceId"));
+                psDelete.executeUpdate();
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    public static void deleteServiceNET(JSONObject rLine, String operName, database db) {
+        PreparedStatement ps;
+        PreparedStatement psDelete;
+        ResultSet rs;
+
+        String userName;
+
+        String query = "SELECT * FROM ServicesUser WHERE id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("serviceId"));
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                userName = rs.getString("UserName");
+                query = "DELETE FROM radusergroup WHERE username=? ";
+                psDelete = db.connRad.prepareStatement(query);
+                psDelete.setString(1, userName);
+                psDelete.executeUpdate();
+
+                query = "DELETE from radreply WHERE username=?";
+                psDelete = db.connRad.prepareStatement(query);
+                psDelete.setString(1, userName);
+                psDelete.executeUpdate();
+
+                query = "DELETE from radcheck WHERE username=?";
+                psDelete = db.connRad.prepareStatement(query);
+                psDelete.setString(1, userName);
+                psDelete.executeUpdate();
+
+                query = "DELETE FROM ServicesUser WHERE id=?";
+                psDelete = db.conn.prepareStatement(query);
+                psDelete.setInt(1, rLine.getInt("serviceId"));
+                psDelete.executeUpdate();
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void deleteServiceBOX(JSONObject rLine, String operName, database db) {
+        JSONObject rLineDelete;
+        PreparedStatement ps;
+        ResultSet rs;
+        String query = "SELECT * FROM ServicesUser WHERE box_id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("serviceId"));
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                while (rs.next()) {
+                    if (rs.getString("paketType").equals("LINKED_NET")) {
+                        rLineDelete = new JSONObject();
+                        rLineDelete.put("serviceId", rs.getInt("id"));
+                        deleteServiceNET(rLineDelete, operName, db);
+                    }
+                    if (rs.getString("paketType").equals("LINKED_DTV")) {
+                        rLineDelete = new JSONObject();
+                        rLine.put("serviceId", rs.getInt("id"));
+                        rLine.put("userID", rLine.getInt("userID"));
+                        deleteServiceDTV(rLineDelete, operName, db);
+                    }
+
+                }
+                query = "DELETE FROM ServicesUser WHERE id=?";
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("serviceId"));
+                ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static String getDatumIsteka(JSONObject rLine, database db) {
+        PreparedStatement ps;
+        ResultSet rs;
+        String query = "SELECT * FROM ServicesUser WHERE id=?";
+        String datumIsteka = null;
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("serviceID"));
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                if (rs.getString("paketType").equals("BOX")) {
+                    datumIsteka = getDatumIstekaBOX(rs.getInt("id"), db);
+                }
+                if (rs.getString("paketType").equals("DTV")) {
+                    datumIsteka = getDatumIstekaDTV(rs.getInt("id"), db);
+                }
+                if (rs.getString("paketType").equals("NET")) {
+                    datumIsteka = getDatumIstekaNET(rs.getInt("id"), db);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return datumIsteka;
+
+
+    }
+
+    private static String getDatumIstekaNET(int id, database db) {
+        PreparedStatement ps;
+        PreparedStatement psRadius;
+        ResultSet rs;
+        ResultSet rsRadius;
+        String datumIsteka = null;
+        String query = "SELECT * FROM ServicesUser WHERE id=?";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, id);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                query = "SELECT value from radcheck WHERE username=? and attribute='Expiration'";
+                psRadius = db.connRad.prepareStatement(query);
+                psRadius.setString(1, rs.getString("UserName"));
+                rsRadius = psRadius.executeQuery();
+                if (rsRadius.isBeforeFirst()) {
+                    rsRadius.next();
+                    datumIsteka = rsRadius.getString("value");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        Calendar cal = Calendar.getInstance();
+        try {
+            cal.setTime((Date) dtfRadCheck.parseObject(datumIsteka));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        datumIsteka = dtfNormalDate.format(cal.getTime());
+        return datumIsteka;
+
+    }
+
+    private static String getDatumIstekaDTV(int id, database db) {
+        PreparedStatement ps;
+        PreparedStatement psEndDate;
+        ResultSet rs;
+        ResultSet rsEndDate;
+        String datumIsteka = null;
+        String query = "SELECT * FROM ServicesUser WHERE id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, id);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                query = "SELECT endDate FROM DTVKartice WHERE idKartica=? and userID=?";
+                psEndDate = db.conn.prepareStatement(query);
+                psEndDate.setInt(1, Integer.parseInt(rs.getString("idDTVCard")));
+                psEndDate.setInt(2, rs.getInt("userID"));
+                rsEndDate = psEndDate.executeQuery();
+                if (rsEndDate.isBeforeFirst()) {
+                    rsEndDate.next();
+                    datumIsteka = rsEndDate.getString("endDate");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return datumIsteka;
+
+    }
+
+    private static String getDatumIstekaBOX(int id, database db) {
+        PreparedStatement ps;
+        ResultSet rs;
+        String datumIsteka = null;
+        String query = "SELECT * FROM ServicesUser WHERE box_id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, id);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                while (rs.next()) {
+                    if (rs.getString("paketType").equals("LINKED_NET")) {
+                        datumIsteka = getDatumIstekaNET(rs.getInt("id"), db);
+                    }
+                    if (rs.getString("paketType").equals("LINKED_DTV")) {
+                        datumIsteka = getDatumIstekaDTV(rs.getInt("id"), db);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return datumIsteka;
+
+    }
+
+    public static void addCustomService(JSONObject rLine) {
+
+    }
 }
 

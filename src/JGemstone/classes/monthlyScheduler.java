@@ -67,7 +67,9 @@ public class monthlyScheduler {
                     psUpdateDebts.setDouble(9, valueToPercent.getValue(rs.getDouble("cena"), rs.getDouble("popust")));
                     psUpdateDebts.setString(10, format_month.format(cal.getTime()));
                     if (rs.getInt("newService") != 1) {
-                        psUpdateDebts.executeUpdate();
+                        //ako servis je vec zaduzen onda preskociti zaduzenje od strane servera :)
+                        if (!check_skip_userDebt(rs.getInt("id"), rs.getInt("userID"), format_month.format(cal.getTime())))
+                            psUpdateDebts.executeUpdate();
                     } else {
                         setOldService(rs.getInt("id"));
                     }
@@ -91,6 +93,25 @@ public class monthlyScheduler {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    private Boolean check_skip_userDebt(int id_service, int userID, String zaMesec) {
+        PreparedStatement psCheck;
+        ResultSet rsCheck;
+        Boolean check = false;
+
+        String queryCheck = "SELECT * FROM userDebts WHERE id_ServiceUserm=? AND userID=? and zaMesec=?";
+        try {
+            psCheck = db.conn.prepareStatement(queryCheck);
+            psCheck.setInt(1, id_service);
+            psCheck.setInt(2, userID);
+            psCheck.setString(3, zaMesec);
+            check = rs.isBeforeFirst();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return check;
     }
 
 

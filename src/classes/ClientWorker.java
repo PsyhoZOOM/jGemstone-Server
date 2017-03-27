@@ -11,7 +11,6 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.Format;
 import java.text.SimpleDateFormat;
@@ -90,7 +89,7 @@ public class ClientWorker implements Runnable {
 
             if (Isr == null) {
                 try {
-                    Isr = new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8);
+                    Isr = new InputStreamReader(client.getInputStream());
                     Bfr = new BufferedReader(Isr);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -141,7 +140,7 @@ public class ClientWorker implements Runnable {
 
         if (Osw == null) {
             try {
-                Osw = new OutputStreamWriter(client.getOutputStream(), StandardCharsets.UTF_8);
+                Osw = new OutputStreamWriter(client.getOutputStream());
                 Bfw = new BufferedWriter(Osw);
 
             } catch (IOException e) {
@@ -217,7 +216,6 @@ public class ClientWorker implements Runnable {
                         jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
                         jObj.put("jMesto", rs.getString("jMesto"));
 
-                        LOGGER.info(jObj);
 
                     } catch (SQLException e) {
                         LOGGER.error(e.getMessage());
@@ -638,16 +636,6 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("activate_service")) {
 
-/*
-            try {
-                calendar.setTime(normalDate.parse(rLine.getString("endDate")));
-                calendar.add(Calendar.MONTH, 1);
-                calendar.set(Calendar.DAY_OF_MONTH, 1);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-
-*/
             jObj = new JSONObject();
 
             if (rLine.get("actionService").equals("activate_BOX_service")) {
@@ -669,34 +657,18 @@ public class ClientWorker implements Runnable {
 
             jObj.put("Message", "SERVICE_AKTIVATED");
 
+            send_object(jObj);
+        }
 
+        if (rLine.getString("action").equals("get_datum_isteka_servisa")) {
+            jObj = new JSONObject();
+            String datumIsteka = ServicesFunctions.getDatumIsteka(rLine, db);
 
-            /*
-            query = "UPDATE ServicesUser SET aktivan =? where id=?";
-
-            try {
-                ps = db.conn.prepareStatement(query);
-                ps.setBoolean(1, rLine.getBoolean("aktivan"));
-                ps.setInt(2, rLine.getInt("id"));
-                ps.executeUpdate();
-                jObj.put("Message", "SERVICE_UPDATED");
-                if (rLine.getBoolean("aktivan")) {
-                    jObj.put("activate", "aktivna");
-                } else {
-                    jObj.put("activate", "nije aktivna");
-                }
-
-            } catch (SQLException e) {
-                jObj.put("Message", "ERROR");
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-            */
-
+            jObj.put("datumIsteka", datumIsteka);
             send_object(jObj);
 
-
         }
+
 
         if (rLine.getString("action").equals("add_BOX_Service")) {
             jObj = new JSONObject();
@@ -832,73 +804,25 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("delete_service_user")) {
             jObj = new JSONObject();
 
-
-            //INTERNET RADIUS DELETE
-            if (rLine.getString("paketType").equals("INTERNET")) {
-                query = "DELETE FROM radcheck where username=?";
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                query = "DELETE FROM radusergroup WHERE username=?";
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                query = "DELETE FROM radreply WHERE username=?";
-                try {
-                    ps = db.connRad.prepareStatement(query);
-                    ps.setString(1, rLine.getString("idUniqueName"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            //DTV SERVICE DELETE
             if (rLine.getString("paketType").equals("DTV")) {
-                query = "DELETE FROM DTVKartice WHERE userID=? AND idKartica=?";
-                try {
-                    ps = db.conn.prepareStatement(query);
-                    ps.setInt(1, rLine.getInt("userID"));
-                    ps.setInt(2, rLine.getInt("idUniqueName"));
-                    ps.executeUpdate();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+                ServicesFunctions.deleteServiceDTV(rLine, getOperName(), db);
+            }
+            if (rLine.getString("paketType").equals("NET")) {
+                ServicesFunctions.deleteServiceNET(rLine, getOperName(), db);
+            }
+            if (rLine.getString("paketType").equals("BOX")) {
+                ServicesFunctions.deleteServiceBOX(rLine, getOperName(), db);
             }
 
-            //SERVICES USER DELETE
-            try {
-                query = "DELETE FROM ServicesUser WHERE id=?";
-
-                db.ps = db.conn.prepareStatement(query);
-                db.ps.setInt(1, rLine.getInt("serviceId"));
-                db.ps.executeUpdate();
 
 
-                jObj.put("message", String.format("Service id:%s deleted", rLine.getInt("serviceId")));
-
-            } catch (SQLException e) {
-                jObj.put("Message", "ERROR");
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
 
             send_object(jObj);
         }
 
         if (rLine.getString("action").equals("new_uplata")) {
             jObj = new JSONObject();
-            query = "INSERT INTO uplate (datumUplate, uplaceno, mesto, operater, userID) VALUES (?,?,?,?,?)";
+            query = "INSERT INTO uplate (datumUplate, uplaceno, mesto, operater, userID, napomena) VALUES (?,?,?,?,?,?)";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -907,6 +831,7 @@ public class ClientWorker implements Runnable {
                 ps.setString(3, rLine.getString("mesto"));
                 ps.setString(4, getOperName());
                 ps.setInt(5, rLine.getInt("userID"));
+                ps.setString(6, rLine.getString("napomena"));
                 ps.executeUpdate();
                 jObj.put("Message", "UPLATA_UPLACENA");
             } catch (SQLException e) {
@@ -955,6 +880,7 @@ public class ClientWorker implements Runnable {
                         uplate.put("datumUplate", rs.getDate("datumUplate"));
                         uplate.put("mesto", rs.getString("mesto"));
                         uplate.put("operater", rs.getString("operater"));
+                        uplate.put("napomena", rs.getString("napomena"));
                         jObj.put(String.valueOf(i), uplate);
                         i++;
                     }
@@ -994,6 +920,7 @@ public class ClientWorker implements Runnable {
                         userDebt.put("datumUplate", rs.getString("datumUplate"));
                         userDebt.put("dug", rs.getDouble("dug"));
                         userDebt.put("operater", rs.getString("operater"));
+                        userDebt.put("zaduzenOd", rs.getString("zaduzenOd"));
                         userDebt.put("zaMesec", rs.getString("zaMesec"));
                         jObj.put(String.valueOf(i), userDebt);
                         i++;
@@ -1040,6 +967,46 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
 
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("zaduzi_servis_manual")) {
+            jObj = new JSONObject();
+            Calendar cal = Calendar.getInstance();
+
+            query = "INSERT INTO userDebts (nazivPaketa, datumZaduzenja, userID, popust," +
+                    " cena, uplaceno, dug, zaduzenOd, zaMesec)" +
+                    " VALUES" +
+                    " (?,?,?,?,?,?,?,?,?) ";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("nazivPaketa"));
+                ps.setString(2, date_format_full.format(cal.getTime()));
+                ps.setInt(3, rLine.getInt("userID"));
+                ps.setDouble(4, 0.00);
+                ps.setDouble(5, rLine.getDouble("cena"));
+                if (rLine.has("uplaceno")) {
+                    if (rLine.getBoolean("uplaceno")) {
+                        ps.setDouble(6, rLine.getDouble("cena"));
+                    } else {
+                        ps.setDouble(6, 0.00);
+                    }
+                } else {
+                    ps.setDouble(6, 0.00);
+                }
+                ps.setDouble(7, rLine.getDouble("cena"));
+                ps.setString(8, getOperName());
+                ps.setString(9, rLine.getString("zaMesec"));
+                ps.executeUpdate();
+
+
+                LOGGER.info(ps.toString());
+            } catch (SQLException e) {
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
 
             send_object(jObj);
 

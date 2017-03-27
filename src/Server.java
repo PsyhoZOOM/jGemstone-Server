@@ -23,6 +23,7 @@ public class Server {
         Boolean DEBUG = false;
         String query;
         PreparedStatement ps;
+        int portNumber = 8543;
 
         for (int i = 0; i < args.length; i++) {
             System.out.println(args[i]);
@@ -33,19 +34,21 @@ public class Server {
         }
 
         database db;
-        ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
+
+
+        //OLDY NON CRYPT
         ServerSocket serverSocket = null;
-
-        int portNumber = 8543;
-
+        ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
         try {
+            //nonSecure
             serverSocket = new ServerSocket(portNumber);
 
             //TODO Create secure connection
-            //  serverSocket = ssf.createServerSocket(portNumber);
+            // serverSocket = ssf.createServerSocket(portNumber);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
 
         db = new database();
         query = "UPDATE onlineOperaters SET online=?";
