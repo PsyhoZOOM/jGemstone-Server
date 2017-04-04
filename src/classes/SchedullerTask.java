@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -154,6 +155,11 @@ public class SchedullerTask implements Runnable {
         System.out.println(String.format("Client %s IP: %s disconected..",
                 clientWorkerArrayList.get(i).getOperName(),
                 clientWorkerArrayList.get(i).get_socket().getInetAddress()).replaceFirst("/", ""));
+        try {
+            clientWorkerArrayList.get(i).get_socket().close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         clientWorkerArrayList.remove(i);
         threadClientWorker.interrupt();
     }

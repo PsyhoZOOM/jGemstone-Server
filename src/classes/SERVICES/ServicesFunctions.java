@@ -1100,7 +1100,67 @@ public class ServicesFunctions {
 
     }
 
-    public static void addCustomService(JSONObject rLine) {
+
+    public static String addService(JSONObject rLine, String operName, database db) {
+        PreparedStatement ps;
+        Calendar cal = Calendar.getInstance();
+        Calendar calZaMesec = Calendar.getInstance();
+
+
+        try {
+            calZaMesec.setTime((Date) dtfMesecZaduzenja.parseObject(rLine.getString("zaMesec")));
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+
+
+        String query = "INSERT INTO userDebts (id_ServiceUser, id_service, nazivPaketa, datumZaduzenja, userID, popust, " +
+                "paketType, cena, uplaceno, datumUplate, dug,  zaduzenOd, zaMesec) VALUES" +
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("id_ServiceUser"));
+            ps.setInt(2, rLine.getInt("id_service"));
+            ps.setString(3, rLine.getString("nazivPaketa"));
+            ps.setString(4, dtfNormalDate.format(cal.getTime()));
+            ps.setInt(5, rLine.getInt("userID"));
+            ps.setDouble(6, rLine.getDouble("popust"));
+            ps.setString(7, rLine.getString("paketType"));
+            ps.setDouble(8, rLine.getDouble("cena"));
+            ps.setDouble(9, 0.00);
+            ps.setString(10, "1000-01-01 00:00:00");
+            ps.setDouble(11, valueToPercent.getValue(rLine.getDouble("cena"), rLine.getDouble("popust")));
+            ps.setString(12, operName);
+            ps.setString(13, dtfMesecZaduzenja.format(calZaMesec.getTime()));
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+
+
+        return "Usluga zaduzena";
+    }
+
+    public static Boolean check_service_exist(int id_ServiceUser, int userID, String zaMesec, database db) {
+        PreparedStatement ps;
+        ResultSet rs;
+        boolean serviceExist = false;
+        String query = "SELECT * from userDebts WHERE id_ServiceUser=? AND userID=? AND zaMesec=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, id_ServiceUser);
+            ps.setInt(2, userID);
+            ps.setString(3, zaMesec);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst())
+                serviceExist = true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return serviceExist;
 
     }
 }

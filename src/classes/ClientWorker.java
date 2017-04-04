@@ -12,7 +12,9 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.Socket;
 import java.sql.*;
+import java.text.DecimalFormat;
 import java.text.Format;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -23,6 +25,7 @@ import java.util.Date;
  */
 public class ClientWorker implements Runnable {
 
+    private static DecimalFormat df = new DecimalFormat("#.##");
     public boolean DEBUG = false;
     public boolean client_db_update = false;
     private Logger LOGGER = LogManager.getLogger("CLIENT");
@@ -40,15 +43,11 @@ public class ClientWorker implements Runnable {
     private Date date;
     private SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     private SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
-
     private Calendar calendar = Calendar.getInstance();
-
     private SimpleDateFormat radcheckEndDate = new SimpleDateFormat("dd MMM yyyy");
     private SimpleDateFormat radreplyEndDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private SimpleDateFormat normalDate = new SimpleDateFormat("yyyy-MM-dd");
     private SimpleDateFormat formatMonthDate = new SimpleDateFormat("yyyy-MM");
-
-
     ///JSON PART
     private JSONObject jObj;
 
@@ -563,6 +562,7 @@ public class ClientWorker implements Runnable {
                         service.put("paketType", rs.getString("paketType"));
                         service.put("linkedService", rs.getBoolean("linkedService"));
                         service.put("newService", rs.getBoolean("newService"));
+                        service.put("DTVPaketID", rs.getInt("DTVPaket"));
 
 
                         jObj.put(String.valueOf(i), service);
@@ -894,7 +894,7 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("get_zaduzenja_user")) {
             jObj = new JSONObject();
-            query = "SELECT * FROM userDebts where userID=? ORDER BY datumZaduzenja DESC";
+            query = "SELECT * FROM userDebts where userID=? ORDER BY zaMesec ASC";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -975,37 +975,63 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("zaduzi_servis_manual")) {
             jObj = new JSONObject();
             Calendar cal = Calendar.getInstance();
-
-            query = "INSERT INTO userDebts (nazivPaketa, datumZaduzenja, userID, popust," +
-                    " cena, uplaceno, dug, zaduzenOd, zaMesec)" +
-                    " VALUES" +
-                    " (?,?,?,?,?,?,?,?,?) ";
+            Calendar calRate = Calendar.getInstance();
+            calRate.set(Calendar.DAY_OF_MONTH, 1);
             try {
-                ps = db.conn.prepareStatement(query);
-                ps.setString(1, rLine.getString("nazivPaketa"));
-                ps.setString(2, date_format_full.format(cal.getTime()));
-                ps.setInt(3, rLine.getInt("userID"));
-                ps.setDouble(4, 0.00);
-                ps.setDouble(5, rLine.getDouble("cena"));
-                if (rLine.has("uplaceno")) {
-                    if (rLine.getBoolean("uplaceno")) {
-                        ps.setDouble(6, rLine.getDouble("cena"));
-                    } else {
-                        ps.setDouble(6, 0.00);
-                    }
-                } else {
-                    ps.setDouble(6, 0.00);
-                }
-                ps.setDouble(7, rLine.getDouble("cena"));
-                ps.setString(8, getOperName());
-                ps.setString(9, rLine.getString("zaMesec"));
-                ps.executeUpdate();
-
-
-                LOGGER.info(ps.toString());
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
+                calRate.setTime(formatMonthDate.parse(rLine.getString("zaMesec")));
+            } catch (ParseException e) {
                 e.printStackTrace();
+            }
+            int rate = rLine.getInt("rate");
+            int month = 0;
+
+
+            for (int i = 0; i < rate; i++) {
+
+                query = "INSERT INTO userDebts (id_ServiceUser, id_service, nazivPaketa, datumZaduzenja, userID, popust," +
+                        " paketType, cena, uplaceno, dug, zaduzenOd, zaMesec)" +
+                        " VALUES" +
+                        " (?,?,?,?,?,?,?,?,?,?,?,?)";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setNull(1, Types.INTEGER);
+                    ps.setNull(2, Types.INTEGER);
+                    ps.setString(3, rLine.getString("nazivPaketa"));
+                    ps.setString(4, normalDate.format(cal.getTime()));
+                    ps.setInt(5, rLine.getInt("userID"));
+                    ps.setDouble(6, 0.00);
+                    ps.setString(7, rLine.getString("paketType"));
+                    ps.setDouble(8, rLine.getDouble("cena"));
+                    ps.setDouble(9, 0.00);
+                    ps.setDouble(10, Double.parseDouble(df.format(rLine.getDouble("cena") / rate)));
+                    ps.setString(11, getOperName());
+                    calRate.add(Calendar.MONTH, month);
+                    if (month == 0)
+                        month++;
+                    ps.setString(12, formatMonthDate.format(calRate.getTime()));
+                    ps.executeUpdate();
+
+
+                    LOGGER.info(ps.toString());
+                } catch (SQLException e) {
+                    jObj.put("Error", e.getMessage());
+                    e.printStackTrace();
+                }
+
+            }
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("zaduzi_uslugu")) {
+            jObj = new JSONObject();
+            JSONObject Message = new JSONObject();
+            if (!ServicesFunctions.check_service_exist(rLine.getInt("id_ServiceUser"), rLine.getInt("userID"), rLine.getString("zaMesec"), db)) {
+                Message.put("serviceExist", ServicesFunctions.addService(rLine, getOperName(), db));
+                jObj.put("Message", "Usluga za mesec " + rLine.getString("zaMesec") + " zaduzena");
+            } else {
+                jObj.put("Error", "Usluga za mesec " + rLine.getString("zaMesec") + " postoji!");
             }
 
             send_object(jObj);
@@ -1201,6 +1227,34 @@ public class ClientWorker implements Runnable {
             } catch (SQLException e) {
                 jObj.put("Message", "ERROR");
                 jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+
+        }
+
+        if (rLine.getString("action").equals("get_ugovor_user")) {
+            jObj = new JSONObject();
+            query = "SELECT * FROM ugovori_korisnik WHERE id=?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("ugovorID"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    jObj.put("textUgovora", rs.getString("textUgovora"));
+                    jObj.put("id", rs.getInt("id"));
+                    jObj.put("naziv", rs.getString("naziv"));
+                    jObj.put("komentar", rs.getString("komentar"));
+                    jObj.put("pocetakUgovora", rs.getString("pocetakUgovora"));
+                    jObj.put("krajUgovora", rs.getString("krajUgovora"));
+                    jObj.put("userID", rs.getInt("userID"));
+                    jObj.put("serviceID", rs.getInt("serviceID"));
+                    jObj.put("brojUgovora", rs.getShort("brojUgovora"));
+
+                }
+            } catch (SQLException e) {
                 e.printStackTrace();
             }
 

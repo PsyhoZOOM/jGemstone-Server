@@ -100,7 +100,7 @@ public class monthlyScheduler {
         ResultSet rsCheck;
         Boolean check = false;
 
-        String queryCheck = "SELECT * FROM userDebts WHERE id_ServiceUserm=? AND userID=? and zaMesec=?";
+        String queryCheck = "SELECT * FROM userDebts WHERE id_ServiceUser=? AND userID=? and zaMesec=?";
         try {
             psCheck = db.conn.prepareStatement(queryCheck);
             psCheck.setInt(1, id_service);
