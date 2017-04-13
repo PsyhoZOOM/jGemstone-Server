@@ -9,6 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.Socket;
 import java.sql.*;
@@ -26,6 +28,7 @@ import java.util.Date;
 public class ClientWorker implements Runnable {
 
     private static DecimalFormat df = new DecimalFormat("#.##");
+    private static byte[] keyValue = new byte[]{'0', '2', '3', '4', '5', '6', '7', '8', '9', '1', '2', '3', '4', '5', '6', '7'};// your key
     public boolean DEBUG = false;
     public boolean client_db_update = false;
     private Logger LOGGER = LogManager.getLogger("CLIENT");
@@ -48,22 +51,18 @@ public class ClientWorker implements Runnable {
     private SimpleDateFormat radreplyEndDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private SimpleDateFormat normalDate = new SimpleDateFormat("yyyy-MM-dd");
     private SimpleDateFormat formatMonthDate = new SimpleDateFormat("yyyy-MM");
-    ///JSON PART
-    private JSONObject jObj;
 
     //JSON Grupa
-
+    ///JSON PART
+    private JSONObject jObj;
     private JSONObject jGrupe;
-
     //JSON Services
     private JSONObject jsService;
-
     //JSON Users
     private JSONObject jUsers;
-
     //JSON Uplate
     private JSONObject jUplate;
-
+    private SecretKey key = new SecretKeySpec(keyValue, "AES");
 
     public ClientWorker(Socket client) {
         this.client = client;
@@ -72,6 +71,7 @@ public class ClientWorker implements Runnable {
     public Socket get_socket() {
         return this.client;
     }
+
 
     @Override
     public void run() {
@@ -97,8 +97,12 @@ public class ClientWorker implements Runnable {
 
             System.out.println("Waitin for client data..");
             try {
+
+//unencripted
                 String A = Bfr.readLine();
-                //jObj=new JSONObject(Bfr.readLine());
+                System.out.println("READLINE: " + A);
+
+
                 if (A == null) {
                     client.close();
                     break;
@@ -113,6 +117,8 @@ public class ClientWorker implements Runnable {
                     e1.printStackTrace();
                 }
                 break;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             System.out.println("Reading Bfr.readline()" + jObj);
             object_worker(jObj);
@@ -2462,7 +2468,8 @@ public class ClientWorker implements Runnable {
     }
 
     public void send_object(JSONObject obj) {
-        System.out.println("Sending OBject: " + obj.toString());
+        LOGGER.info("Sending Object: " + obj.toString());
+
         if (client.isClosed()) {
             LOGGER.warn("CLIENT DISCONNECTED!!");
             try {
@@ -2473,10 +2480,13 @@ public class ClientWorker implements Runnable {
             }
         }
         try {
+
             Bfw.write(obj.toString());
             Bfw.newLine();
             Bfw.flush();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -2484,4 +2494,10 @@ public class ClientWorker implements Runnable {
 
 
 }
+
+
+
+
+
+
 
