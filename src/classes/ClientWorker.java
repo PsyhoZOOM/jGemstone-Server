@@ -155,6 +155,7 @@ public class ClientWorker implements Runnable {
 
 
         if (rLine.get("action").equals("login")) {
+            LOGGER.info("LOGIN CRED", rLine);
             client_authenticated = check_Login(rLine.get("username").toString(), rLine.get("password").toString());
             this.operName = rLine.get("username").toString();
             if (client_authenticated) {
