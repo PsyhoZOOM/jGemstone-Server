@@ -15,16 +15,19 @@ public class database {
     public Connection conn;
     public Connection connRad;
     public Connection connIPTV;
+    public Connection connCSV;
     public PreparedStatement ps;
     private String JDBC_DRIVER = "com.mysql.jdbc.Driver";
     private String DB_URL = "jdbc:mysql://127.0.0.1/jgemstone?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
     private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
     private String DB_URL_IPTV = "jdbc:mysql://127.0.0.1/stalker_db?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
+    private String DV_URL_CSV = "jdbc:mysql://127.0.0.1/csv?useUnicode=true&characterEncoding=UTF-8&autoreconnect=true";
     private String UserName = "root";
     private String Password = "";
     private Statement stmt;
     private Statement stmtRad;
     private Statement stmtIPTV;
+    private Statement stmtCSV;
     private ResultSet rs;
     private Logger LOGGER = LogManager.getLogger("DATABASE");
 
@@ -41,6 +44,7 @@ public class database {
             conn = DriverManager.getConnection(DB_URL, UserName, Password);
             connRad = DriverManager.getConnection(DB_URL_RADIUS, UserName, Password);
             connIPTV = DriverManager.getConnection(DB_URL_IPTV, UserName, Password);
+            connCSV = DriverManager.getConnection(DV_URL_CSV, UserName, Password);
             stmt = conn.createStatement();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
