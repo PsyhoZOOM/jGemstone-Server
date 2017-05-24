@@ -21,7 +21,7 @@ public class database {
     private String DB_URL = "jdbc:mysql://127.0.0.1/jgemstone?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
     private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
     private String DB_URL_IPTV = "jdbc:mysql://127.0.0.1/stalker_db?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
-    private String DV_URL_CSV = "jdbc:mysql://127.0.0.1/csv?useUnicode=true&characterEncoding=UTF-8&autoreconnect=true";
+    private String DV_URL_CSV = "jdbc:mysql://127.0.0.1/CSV?useUnicode=true&characterEncoding=UTF-8&autoreconnect=true";
     private String UserName = "root";
     private String Password = "";
     private Statement stmt;
