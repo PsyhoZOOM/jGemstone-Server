@@ -380,7 +380,7 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("save_group")) {
 
-            query = "INSERT INTO grupa (groupname, cena, prepaid, opis) VALUES (?,?,?,?,)";
+            query = "INSERT INTO grupa ('groupname', 'cena', 'prepaid', 'opis') VALUES (?,?,?,?,)";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -2319,6 +2319,93 @@ public class ClientWorker implements Runnable {
 
             send_object(jObj);
 
+        }
+
+        if (rLine.get("action").equals("show_fixTel_paketi")) {
+            JSONObject paket;
+            jObj = new JSONObject();
+
+            try {
+                ps = db.connCSV.prepareStatement("SELECT * FROM paketi");
+                rs = ps.executeQuery();
+                int i = 0;
+                if (rs.isBeforeFirst()) {
+                    while (rs.next()) {
+                        paket = new JSONObject();
+                        paket.put("id", rs.getInt("id"));
+                        paket.put("naziv", rs.getString("naziv"));
+                        paket.put("pretplata", rs.getDouble("pretplata"));
+                        paket.put("PDV", rs.getDouble("PDV"));
+                        paket.put("besplatniMinutiFiksna", rs.getInt("besplatniMinutiFiksna"));
+                        jObj.put(String.valueOf(i), paket);
+                        i++;
+                    }
+                }
+                ps.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
+
+        if (rLine.get("action").equals("add_fixTel_paket")) {
+            jObj = new JSONObject();
+            try {
+                ps = db.connCSV.prepareStatement("INSERT INTO paketi" +
+                        "(naziv, pretplata, PDV, besplatniMinutiFiksna) VALUES (?,?,?,?)");
+                ps.setString(1, rLine.getString("naziv"));
+                ps.setDouble(2, rLine.getDouble("pretplata"));
+                ps.setDouble(3, rLine.getDouble("PDV"));
+                ps.setInt(4, rLine.getInt("besplatniMinutiFiksna"));
+                ps.executeUpdate();
+                ps.close();
+                jObj.put("Message", String.format("Paket %s snimljen", rLine.getString("naziv")));
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                jObj.put("Error", e.getMessage());
+            }
+            send_object(jObj);
+        }
+
+        if (rLine.get("action").equals("del_fixTel_paket")) {
+            jObj = new JSONObject();
+            String query = "DELETE FROM paketi WHERE id=?";
+
+            try {
+                ps = db.connCSV.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("id"));
+                ps.executeUpdate();
+                ps.close();
+                jObj.put("Message", "PAKET_DELETED");
+
+            } catch (SQLException e) {
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jObj);
+        }
+
+        if (rLine.get("action").equals("edit_fixTel_paket")) {
+            jObj = new JSONObject();
+            String query = "UPDATE paketi SET naziv=?, pretplata=?, PDV=?, besplatniMinutiFiksna=? WHERE id=?";
+
+            try {
+                ps = db.connCSV.prepareStatement(query);
+                ps.setString(1, rLine.getString("naziv"));
+                ps.setDouble(2, rLine.getDouble("pretplata"));
+                ps.setDouble(3, rLine.getDouble("PDV"));
+                ps.setInt(4, rLine.getInt("besplatniMinutiFiksna"));
+                ps.setInt(5, rLine.getInt("id"));
+                ps.executeUpdate();
+                ps.close();
+                jObj.put("Message", "PAKET_EDIT_SAVED");
+            } catch (SQLException e) {
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jObj);
         }
     }
 
