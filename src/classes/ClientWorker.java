@@ -2349,6 +2349,8 @@ public class ClientWorker implements Runnable {
             send_object(jObj);
         }
 
+
+        //FIKSNA TLEFONIJA PAKETI
         if (rLine.get("action").equals("add_fixTel_paket")) {
             jObj = new JSONObject();
             try {
@@ -2401,6 +2403,78 @@ public class ClientWorker implements Runnable {
                 ps.executeUpdate();
                 ps.close();
                 jObj.put("Message", "PAKET_EDIT_SAVED");
+            } catch (SQLException e) {
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jObj);
+        }
+
+        //END FIKSNA TELEFONIJA PAKETI
+
+
+        //FIKSNA TELEFONIJA ZONE
+
+        if (rLine.get("action").equals("get_fiksna_zone")) {
+            jObj = new JSONObject();
+            String query = "SELECT * FROM zone";
+            JSONObject zone;
+            try {
+                ps = db.connCSV.prepareStatement(query);
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    int i = 0;
+                    while (rs.next()) {
+                        zone = new JSONObject();
+                        zone.put("id", rs.getInt("id"));
+                        zone.put("naziv", rs.getString("naziv"));
+                        zone.put("opis", rs.getString("opis"));
+                        zone.put("zona", rs.getString("zona"));
+                        zone.put("zonaID", rs.getInt("zonaID"));
+                        jObj.put(String.valueOf(i), zone);
+                        i++;
+
+                    }
+                    ps.close();
+                }
+            } catch (SQLException e) {
+                try {
+                    ps.close();
+                } catch (SQLException e1) {
+                    e1.printStackTrace();
+                }
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("get_fiksna_zoneCene")) {
+            JSONObject zoneCene;
+            jObj = new JSONObject();
+            String query = "SELECT * FROM zoneCene";
+            try {
+                ps = db.connCSV.prepareStatement(query);
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    int i = 0;
+                    while (rs.next()) {
+                        zoneCene = new JSONObject();
+                        zoneCene.put("id", rs.getInt("id"));
+                        zoneCene.put("vrstaUsluge", rs.getString("vrstaUsluge"));
+                        zoneCene.put("providerCena", rs.getDouble("proiderCena"));
+                        zoneCene.put("providerPDV", rs.getDouble("providerPDV"));
+                        zoneCene.put("cena", rs.getDouble("cena"));
+                        zoneCene.put("PDV", rs.getDouble("PDV"));
+                        zoneCene.put("otherCena", rs.getDouble("otherCena"));
+                        jObj.put(String.valueOf(i), zoneCene);
+                        i++;
+
+                    }
+                    ps.close();
+
+                }
             } catch (SQLException e) {
                 jObj.put("Error", e.getMessage());
                 e.printStackTrace();
