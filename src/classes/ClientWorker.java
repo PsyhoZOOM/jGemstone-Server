@@ -2463,7 +2463,7 @@ public class ClientWorker implements Runnable {
                         zoneCene = new JSONObject();
                         zoneCene.put("id", rs.getInt("id"));
                         zoneCene.put("vrstaUsluge", rs.getString("vrstaUsluge"));
-                        zoneCene.put("providerCena", rs.getDouble("proiderCena"));
+                        zoneCene.put("providerCena", rs.getDouble("providerCena"));
                         zoneCene.put("providerPDV", rs.getDouble("providerPDV"));
                         zoneCene.put("cena", rs.getDouble("cena"));
                         zoneCene.put("PDV", rs.getDouble("PDV"));
@@ -2480,6 +2480,21 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("delete_zone_id")) {
+            jObj = new JSONObject();
+            String query = "DELETE FROM zone WHERE id=?";
+
+            try {
+                ps = db.connCSV.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("id"));
+                ps.executeUpdate();
+                jObj.put("Message", "Zone Delete");
+            } catch (SQLException e) {
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
