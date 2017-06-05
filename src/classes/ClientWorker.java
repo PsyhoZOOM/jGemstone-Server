@@ -2496,6 +2496,22 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
         }
+
+        if (rLine.getString("action").equals("izmeniZonuID")) {
+            jObj = new JSONObject();
+            String query = "UPDATE zone SET naziv=?, opis=?, zona=? zonaID=? WHERE id=?";
+
+            try {
+                ps = db.connCSV.prepareStatement(query);
+                ps.setString(1, rLine.getString("naziv"));
+                ps.setString(2, rLine.getString("opis"));
+                ps.setString(3, rLine.getString("zona"));
+                ps.setInt(4, rLine.getInt("zonaID"));
+                ps.setInt(5, rLine.getInt("id"));
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private String get_paket_naziv(String digitalniTVPaket, int dtv_id) {
