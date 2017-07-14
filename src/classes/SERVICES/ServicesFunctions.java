@@ -225,8 +225,43 @@ public class ServicesFunctions {
 
         Message = "USER_ADDED";
         return Message;
-
     }
+
+    public static String addServiceFIX(JSONObject rLine, String opername, database db){
+        String Message;
+
+        PreparedStatement ps;
+        String query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, " +
+                "obracun, brojUgovora, aktivan, produzenje, newService, FIKSNA_TEL, paketType) " +
+                "VALUES " +
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("id"));
+            ps.setString(2, rLine.getString("nazivPaketa"));
+            ps.setString(3, dtf.format(new Date()));
+            ps.setInt(4, rLine.getInt("userID"));
+            ps.setString(5, opername);
+            ps.setDouble(6, rLine.getDouble("popust"));
+            ps.setDouble(7, rLine.getDouble("cena"));
+            ps.setBoolean(8, rLine.getBoolean("obracun"));
+            ps.setString(9, rLine.getString("brojUgovora"));
+            ps.setBoolean(10, false);
+            ps.setInt(11, 0);
+            ps.setBoolean(12, true);
+            ps.setString(13,rLine.getString("brojTel"));
+            ps.setString(14, "FIX");
+            ps.executeUpdate();
+            ps.close();
+            Message = "SERVICE_ADDED";
+        } catch (SQLException e) {
+            Message = e.getMessage();
+            e.printStackTrace();
+        }
+        return Message;
+    }
+
 
     public static void activateBoxServiceNew(JSONObject rLine, String operName, database db) {
         PreparedStatement ps;
@@ -614,6 +649,20 @@ public class ServicesFunctions {
 
     }
 
+    public static void activateFixServiceNew(JSONObject rLine, String operName, database db) {
+        PreparedStatement ps;
+        String query = "UPDATE ServicesUser set aktivan=? WHERE id=?";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setBoolean(1,true);
+            ps.setInt(2, rLine.getInt("id"));
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
     public static void produziBOX(JSONObject rLine, String operName, database db) {
         PreparedStatement ps;
         ResultSet rs;
@@ -1163,5 +1212,6 @@ public class ServicesFunctions {
         return serviceExist;
 
     }
+
 }
 

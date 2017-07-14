@@ -22,8 +22,8 @@ public class database {
     private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
     private String DB_URL_IPTV = "jdbc:mysql://127.0.0.1/stalker_db?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
     private String DV_URL_CSV = "jdbc:mysql://127.0.0.1/CSV?useUnicode=true&characterEncoding=UTF-8&autoreconnect=true";
-    private String UserName = "root";
-    private String Password = "";
+    private String UserName = "jgemstone";
+    private String Password = "jgemstone";
     private Statement stmt;
     private Statement stmtRad;
     private Statement stmtIPTV;

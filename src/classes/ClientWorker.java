@@ -566,6 +566,7 @@ public class ClientWorker implements Runnable {
                         service.put("id_service", rs.getInt("id_service"));
                         service.put("box", rs.getBoolean("BOX_service"));
                         service.put("box_ID", rs.getInt("box_id"));
+                        service.put("brojTel", rs.getString("FIKSNA_TEL"));
                         service.put("paketType", rs.getString("paketType"));
                         service.put("linkedService", rs.getBoolean("linkedService"));
                         service.put("newService", rs.getBoolean("newService"));
@@ -659,6 +660,13 @@ public class ClientWorker implements Runnable {
             if (rLine.get("actionService").equals("activate_NET_service")) {
                 if (rLine.getBoolean("newService")) {
                     ServicesFunctions.activateNetServiceNew(rLine, getOperName(), this.db);
+                }
+            }
+
+            if (rLine.get("actionService").equals("activate_FIX_service")){
+                if(rLine.getBoolean("newService")){
+                    System.out.println("AKTIVATING");
+                    ServicesFunctions.activateFixServiceNew(rLine, getOperName(), this.db);
                 }
             }
 
@@ -2672,6 +2680,15 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+        }
+
+
+        if(rLine.getString("action").equals("addFixUslugu")){
+            jObj = new JSONObject();
+            String message = ServicesFunctions.addServiceFIX(rLine, getOperName(), db);
+            jObj.put("Message", message);
+            send_object(jObj);
+
         }
     }
 
