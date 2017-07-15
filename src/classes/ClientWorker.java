@@ -762,8 +762,8 @@ public class ClientWorker implements Runnable {
                         }
 
                         if (rs.getString("TEL_naziv") != null) {
-                            paketBox.put("TEL_id", rs.getInt("TEL_id"));
-                            paketBox.put("TEL_naziv", get_paket_naziv("", 0));
+                            paketBox.put("FIX_id", rs.getInt("TEL_id"));
+                            paketBox.put("FIX_naziv", get_paket_naziv("FIXPaketi", rs.getInt("TEL_id")));
                         }
 
                         if (rs.getString("IPTV_naziv") != null) {
@@ -2300,9 +2300,9 @@ public class ClientWorker implements Runnable {
                     ps.setNull(5, Types.VARCHAR);
                 }
 
-                if (rLine.has("TEL_id")) {
-                    ps.setInt(6, rLine.getInt("TEL_id"));
-                    ps.setString(7, rLine.getString("TEL_naziv"));
+                if (rLine.has("FIX_id")) {
+                    ps.setInt(6, rLine.getInt("FIX_id"));
+                    ps.setString(7, rLine.getString("FIX_naziv"));
                 } else {
                     ps.setNull(6, Types.INTEGER);
                     ps.setNull(7, Types.VARCHAR);
@@ -2695,8 +2695,14 @@ public class ClientWorker implements Runnable {
     private String get_paket_naziv(String digitalniTVPaket, int dtv_id) {
         String naziv = "";
         try {
-            ps = db.conn.prepareStatement("SELECT * FROM " + digitalniTVPaket + " WHERE id=?");
-            ps.setInt(1, dtv_id);
+            if (digitalniTVPaket.equals("FIXPaketi")) {
+                String query = String.format("SELECT * FROM paketi WHERE id=?", digitalniTVPaket);
+                ps = db.connCSV.prepareStatement(query);
+                ps.setInt(1, dtv_id);
+            } else {
+                ps = db.conn.prepareStatement("SELECT * FROM " + digitalniTVPaket + " WHERE id=?");
+                ps.setInt(1, dtv_id);
+            }
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 rs.next();
