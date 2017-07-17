@@ -2,6 +2,7 @@ package classes;
 
 import classes.BOX.addBoxService;
 import classes.DTV.DTVFunctions;
+import classes.FIX.FIXFunctions;
 import classes.INTERNET.NETFunctions;
 import classes.SERVICES.ServicesFunctions;
 import org.apache.logging.log4j.Level;
@@ -624,6 +625,8 @@ public class ClientWorker implements Runnable {
                             service.put("paketType", "DTV");
                         if (rs2.getString("DTVPaket") != null)
                             service.put("paketType", "DTV");
+                        if (rs2.getString("FIKSNA_TEL") != null)
+                            service.put("paketType", "FIX");
                         service.put("newService", rs2.getBoolean("newService"));
 
 
@@ -691,6 +694,7 @@ public class ClientWorker implements Runnable {
             //provera da li korisnik, kartica postoji. Ako postoji prijaviti operateru da ne moze da se napravi servis
             Boolean checkNet = false;
             Boolean checkDtv = false;
+            Boolean checkFix = false;
 
             if (rLine.has("groupName")) {
                 //createInternetService;
@@ -704,17 +708,29 @@ public class ClientWorker implements Runnable {
 
             }
 
+            if (rLine.has("FIX_TEL")) {
+                //create FIX SERVICE
+                checkFix = FIXFunctions.check_TELBr_bussy(rLine.getString("FIX_TEL"), db);
+            }
+
 
             //ako je user ili kartica zauzeta poslati obavestenje u suprotnom napraviti boxPaket serivis i dodati ostrale servise koriniku
             if (checkDtv || checkNet) {
                 String message = null;
-                if (checkDtv)
+                if (checkDtv) {
                     message = "DTV Kartica je zauzeta";
-                jObj.put("Error", message);
+                    jObj.put("Error", message);
+                }
 
-                if (checkNet)
+                if (checkNet) {
                     message = "Internet korisnicko ime je zauzeto";
-                jObj.put("Error", message);
+                    jObj.put("Error", message);
+                }
+
+                if (checkFix) {
+                    message = "Broj telefona je zauzet";
+                    jObj.put("Error", message);
+                }
             } else {
                 //add BOX to servicesUser
                 addBoxService addBox = new addBoxService();
@@ -764,6 +780,7 @@ public class ClientWorker implements Runnable {
                         if (rs.getString("TEL_naziv") != null) {
                             paketBox.put("FIX_id", rs.getInt("TEL_id"));
                             paketBox.put("FIX_naziv", get_paket_naziv("FIXPaketi", rs.getInt("TEL_id")));
+                            paketBox.put("FIX_PAKET_ID", FIXFunctions.getPaketID(paketBox.getString("FIX_naziv"), this.db));
                         }
 
                         if (rs.getString("IPTV_naziv") != null) {
@@ -2334,7 +2351,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
 
             try {
-                ps = db.connCSV.prepareStatement("SELECT * FROM paketi");
+                ps = db.conn.prepareStatement("SELECT * FROM FIX_paketi");
                 rs = ps.executeQuery();
                 int i = 0;
                 if (rs.isBeforeFirst()) {
@@ -2362,7 +2379,7 @@ public class ClientWorker implements Runnable {
         if (rLine.get("action").equals("add_fixTel_paket")) {
             jObj = new JSONObject();
             try {
-                ps = db.connCSV.prepareStatement("INSERT INTO paketi" +
+                ps = db.conn.prepareStatement("INSERT INTO FIX_paketi" +
                         "(naziv, pretplata, PDV, besplatniMinutiFiksna) VALUES (?,?,?,?)");
                 ps.setString(1, rLine.getString("naziv"));
                 ps.setDouble(2, rLine.getDouble("pretplata"));
@@ -2381,10 +2398,10 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("del_fixTel_paket")) {
             jObj = new JSONObject();
-            String query = "DELETE FROM paketi WHERE id=?";
+            String query = "DELETE FROM FIX_paketi WHERE id=?";
 
             try {
-                ps = db.connCSV.prepareStatement(query);
+                ps = db.conn.prepareStatement(query);
                 ps.setInt(1, rLine.getInt("id"));
                 ps.executeUpdate();
                 ps.close();
@@ -2399,10 +2416,10 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("edit_fixTel_paket")) {
             jObj = new JSONObject();
-            String query = "UPDATE paketi SET naziv=?, pretplata=?, PDV=?, besplatniMinutiFiksna=? WHERE id=?";
+            String query = "UPDATE FIX_paketi SET naziv=?, pretplata=?, PDV=?, besplatniMinutiFiksna=? WHERE id=?";
 
             try {
-                ps = db.connCSV.prepareStatement(query);
+                ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("naziv"));
                 ps.setDouble(2, rLine.getDouble("pretplata"));
                 ps.setDouble(3, rLine.getDouble("PDV"));
@@ -2418,270 +2435,6 @@ public class ClientWorker implements Runnable {
             send_object(jObj);
         }
 
-        //END FIKSNA TELEFONIJA PAKETI
-
-
-        //FIKSNA TELEFONIJA ZONE
-
-        if (rLine.get("action").equals("get_fiksna_zone")) {
-            jObj = new JSONObject();
-            String query = "SELECT * FROM zone";
-            JSONObject zone;
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                rs = ps.executeQuery();
-                if (rs.isBeforeFirst()) {
-                    int i = 0;
-                    while (rs.next()) {
-                        zone = new JSONObject();
-                        zone.put("id", rs.getInt("id"));
-                        zone.put("naziv", rs.getString("naziv"));
-                        zone.put("opis", rs.getString("opis"));
-                        zone.put("zona", rs.getString("zona"));
-                        zone.put("zonaID", rs.getInt("zonaID"));
-                        jObj.put(String.valueOf(i), zone);
-                        i++;
-
-                    }
-                    ps.close();
-                }
-            } catch (SQLException e) {
-                try {
-                    ps.close();
-                } catch (SQLException e1) {
-                    e1.printStackTrace();
-                }
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-
-            send_object(jObj);
-        }
-
-        if (rLine.getString("action").equals("add_new_fiksnaZone")) {
-            jObj = new JSONObject();
-            String query = "INSERT INTO zone (naziv, opis, zona, zonaID) " +
-                    "VALUES " +
-                    "(?,?,?,?)";
-
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                ps.setString(1, rLine.getString("naziv"));
-                ps.setString(2, rLine.getString("opis"));
-                ps.setString(3, rLine.getString("zona"));
-                ps.setInt(4, rLine.getInt("zonaID"));
-                ps.executeUpdate();
-                jObj.put("Message", "ZONE_SAVED");
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-
-            send_object(jObj);
-        }
-
-        if (rLine.getString("action").equals("get_fiksna_zoneCene_single")) {
-            JSONObject zoneCene;
-            jObj = new JSONObject();
-            String query = "SELECT * FROM zoneCene WHERE id=?";
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                ps.setInt(1, rLine.getInt("id"));
-                rs = ps.executeQuery();
-                if (rs.isBeforeFirst()) {
-                    int i = 0;
-                    while (rs.next()) {
-                        zoneCene = new JSONObject();
-                        zoneCene.put("id", rs.getInt("id"));
-                        zoneCene.put("vrstaUsluge", rs.getString("vrstaUsluge"));
-                        zoneCene.put("providerCena", rs.getDouble("providerCena"));
-                        zoneCene.put("providerPDV", rs.getDouble("providerPDV"));
-                        zoneCene.put("cena", rs.getDouble("cena"));
-                        zoneCene.put("PDV", rs.getDouble("PDV"));
-                        zoneCene.put("otherCena", rs.getDouble("otherCena"));
-                        jObj.put(String.valueOf(i), zoneCene);
-                        i++;
-
-                    }
-                    ps.close();
-
-                }
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-            send_object(jObj);
-        }
-
-        if (rLine.getString("action").equals("get_fiksna_zoneCene")) {
-            JSONObject zoneCene;
-            jObj = new JSONObject();
-            String query = "SELECT * FROM zoneCene";
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                rs = ps.executeQuery();
-                if (rs.isBeforeFirst()) {
-                    int i = 0;
-                    while (rs.next()) {
-                        zoneCene = new JSONObject();
-                        zoneCene.put("id", rs.getInt("id"));
-                        zoneCene.put("vrstaUsluge", rs.getString("vrstaUsluge"));
-                        zoneCene.put("providerCena", rs.getDouble("providerCena"));
-                        zoneCene.put("providerPDV", rs.getDouble("providerPDV"));
-                        zoneCene.put("cena", rs.getDouble("cena"));
-                        zoneCene.put("PDV", rs.getDouble("PDV"));
-                        zoneCene.put("otherCena", rs.getDouble("otherCena"));
-                        jObj.put(String.valueOf(i), zoneCene);
-                        i++;
-
-                    }
-                    ps.close();
-
-                }
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-            send_object(jObj);
-        }
-
-        if (rLine.getString("action").equals("update_fiksna_zoneCene")) {
-            jObj = new JSONObject();
-            String query = "UPDATE zoneCene SET vrstaUsluge=?, providerCena=?, providerPDV=?, cena=?, PDV=?, otherCena=? WHERE id=?";
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                ps.setString(1, rLine.getString("vrstaUsluge"));
-                ps.setDouble(2, rLine.getDouble("providerCena"));
-                ps.setDouble(3, rLine.getDouble("providerPDV"));
-                ps.setDouble(4, rLine.getDouble("cena"));
-                ps.setDouble(5, rLine.getDouble("PDV"));
-                ps.setDouble(6, rLine.getDouble("otherCena"));
-                ps.setInt(7, rLine.getInt("id"));
-                ps.executeUpdate();
-                jObj.put("Message", "ZONA_CENE_UPDATED");
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-            send_object(jObj);
-        }
-
-        if (rLine.getString("action").equals("nov_fiksna_zoneCene")) {
-            jObj = new JSONObject();
-            String query = "INSERT INTO zoneCene (vrstaUsluge, providerCena, providerPDV, cena, PDV, otherCena)" +
-                    " VALUES " +
-                    "(?,?,?,?,?,?)";
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                ps.setString(1, rLine.getString("vrstaUsluge"));
-                ps.setDouble(2, rLine.getDouble("providerCena"));
-                ps.setDouble(3, rLine.getDouble("providerPDV"));
-                ps.setDouble(4, rLine.getDouble("cena"));
-                ps.setDouble(5, rLine.getDouble("PDV"));
-                ps.setDouble(6, rLine.getDouble("otherCena"));
-                ps.executeUpdate();
-                jObj.put("Message", "ZONA_ADDED");
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-
-            send_object(jObj);
-
-        }
-
-        if (rLine.getString("action").equals("delete_zone_id")) {
-            jObj = new JSONObject();
-            String query = "DELETE FROM zone WHERE id=?";
-
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                ps.setInt(1, rLine.getInt("id"));
-                ps.executeUpdate();
-                jObj.put("Message", "Zone Delete");
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-            send_object(jObj);
-        }
-
-        if (rLine.getString("action").equals("izmeniZonuID")) {
-            jObj = new JSONObject();
-            String query = "UPDATE zone SET naziv=?, opis=?, zona=?, zonaID=? WHERE id=?";
-
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                ps.setString(1, rLine.getString("naziv"));
-                ps.setString(2, rLine.getString("opis"));
-                ps.setString(3, rLine.getString("zona"));
-                ps.setInt(4, rLine.getInt("zonaID"));
-                ps.setInt(5, rLine.getInt("id"));
-                ps.executeUpdate();
-                ps.close();
-                jObj.put("Message", "ZoneID: " + rLine.getInt("zonaID") + " EDITED");
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-
-            send_object(jObj);
-        }
-
-        if (rLine.getString("action").equals("getFiksnaPaketi")) {
-            jObj = new JSONObject();
-            String query = "SELECT * FROM zoneCene";
-            JSONObject zoneCene;
-
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                rs = ps.executeQuery();
-                if (rs.isBeforeFirst()) {
-                    int i = 0;
-                    while (rs.next()) {
-                        zoneCene = new JSONObject();
-                        zoneCene.put("id", rs.getInt("id"));
-                        zoneCene.put("nazivPaketa", rs.getString("vrstaUsluge"));
-                        zoneCene.put("providerCena", rs.getDouble("providerCena"));
-                        zoneCene.put("providerPDV", rs.getDouble("providerPDV"));
-                        zoneCene.put("cena", rs.getDouble("cena"));
-                        zoneCene.put("PDV", rs.getDouble("PDV"));
-                        zoneCene.put("cenaPDV", rs.getDouble("cenaPDV"));
-                        zoneCene.put("otherCena", rs.getDouble("otherCena"));
-                        jObj.put(String.valueOf(i), zoneCene);
-                        i++;
-                    }
-                }
-                ps.close();
-                rs.close();
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-
-            send_object(jObj);
-        }
-
-
-        if (rLine.getString("action").equals("DELETE_ZONE_CENE")) {
-            jObj = new JSONObject();
-
-            String query = "DELETE FROM zoneCene WHERE id=?";
-
-            try {
-                ps = db.connCSV.prepareStatement(query);
-                ps.setInt(1, rLine.getInt("id"));
-                ps.executeUpdate();
-                ps.close();
-                jObj.put("Message", "ZONE_DELETED");
-            } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
-                e.printStackTrace();
-            }
-
-            send_object(jObj);
-        }
-
 
         if(rLine.getString("action").equals("addFixUslugu")){
             jObj = new JSONObject();
@@ -2690,14 +2443,17 @@ public class ClientWorker implements Runnable {
             send_object(jObj);
 
         }
+
+
+        //END FIKSNA TELEFONIJA PAKETI
     }
 
     private String get_paket_naziv(String digitalniTVPaket, int dtv_id) {
         String naziv = "";
         try {
             if (digitalniTVPaket.equals("FIXPaketi")) {
-                String query = String.format("SELECT * FROM paketi WHERE id=?", digitalniTVPaket);
-                ps = db.connCSV.prepareStatement(query);
+                String query = String.format("SELECT * FROM FIX_paketi WHERE id=?", digitalniTVPaket);
+                ps = db.conn.prepareStatement(query);
                 ps.setInt(1, dtv_id);
             } else {
                 ps = db.conn.prepareStatement("SELECT * FROM " + digitalniTVPaket + " WHERE id=?");

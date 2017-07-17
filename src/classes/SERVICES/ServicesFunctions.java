@@ -131,6 +131,31 @@ public class ServicesFunctions {
         }
     }
 
+    public static void addServiceFIXLinked(JSONObject rLine, String opername, int box_service_id, database db) {
+        PreparedStatement ps;
+        String query = "INSERT INTO ServicesUser (id_service, box_id, nazivPaketa, date_added, userID, operName," +
+                " FIKSNA_TEL, FIKSNA_TEL_PAKET_ID, linkedService, paketType)" +
+                "VALUES " +
+                "(?,?,?,?,?,?,?,?,?,?)";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("FIKSNA_service_ID"));
+            ps.setInt(2, box_service_id);
+            ps.setString(3, rLine.getString("nazivPaketaFIKSNA"));
+            ps.setString(4, dtf.format(new Date()));
+            ps.setInt(5, rLine.getInt("userID"));
+            ps.setString(6, opername);
+            ps.setString(7, rLine.getString("FIX_TEL"));
+            ps.setInt(8, rLine.getInt("FIKSNA_PAKET_ID"));
+            ps.setBoolean(9, true);
+            ps.setString(10, "LINKED_FIX");
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
     public static String addServiceDTV(int id_service, String nazivPaketa, int userID,
                                        String opername, double popust, double cena, Boolean obracun,
                                        String brojUgovora, int produzenje, String idDTVCard, int DTVPaket, database db) {
@@ -1149,7 +1174,6 @@ public class ServicesFunctions {
 
     }
 
-
     public static String addService(JSONObject rLine, String operName, database db) {
         PreparedStatement ps;
         Calendar cal = Calendar.getInstance();
@@ -1212,6 +1236,7 @@ public class ServicesFunctions {
         return serviceExist;
 
     }
+
 
 }
 

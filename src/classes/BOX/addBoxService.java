@@ -1,6 +1,7 @@
 package classes.BOX;
 
 import classes.DTV.DTVFunctions;
+import classes.FIX.FIXFunctions;
 import classes.INTERNET.NETFunctions;
 import classes.SERVICES.ServicesFunctions;
 import classes.database;
@@ -64,8 +65,8 @@ public class addBoxService {
             } else {
                 ps.setNull(16, Types.VARCHAR);
             }
-            if (rLine.has("FIKSNA_TEL")) {
-                ps.setString(17, rLine.getString("FIKSNA_TEL"));
+            if (rLine.has("FIX_TEL")) {
+                ps.setString(17, rLine.getString("FIX_TEL"));
             } else {
                 ps.setNull(17, Types.VARCHAR);
             }
@@ -83,6 +84,9 @@ public class addBoxService {
             }
             if (rLine.has("DTVKartica")) {
                 add_dtv(rLine, opername);
+            }
+            if (rLine.has("FIX_TEL")) {
+                add_fix(rLine, opername);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -106,6 +110,11 @@ public class addBoxService {
 
         DTVFunctions.addCard(rLine, opername, this.db);
         ServicesFunctions.addServiceDTVLinked(rLine, opername, BOX_Service_ID, this.db);
+    }
+
+    private void add_fix(JSONObject rLine, String opername) {
+        FIXFunctions.addBroj(rLine, opername, this.db);
+        ServicesFunctions.addServiceFIXLinked(rLine, opername, BOX_Service_ID, this.db);
     }
 
 }
