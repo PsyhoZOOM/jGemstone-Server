@@ -309,12 +309,20 @@ public class ServicesFunctions {
                         if (rs.getString("paketType").equals("LINKED_NET")) {
                             activateNetServiceBoxNew(rLine, rs, operName, db);
                         }
+                        if (rs.getString("paketType").equals("LINKED_FIX")) {
+                            //aktiviraj fix nov
+                            activateFixServiceBoxNew(rLine, rs, operName, db);
+                        }
                     } else {
                         if (rs.getString("paketType").equals("LINKED_DTV")) {
                             activateDTVServiceBox(rLine, rs, operName, db);
                         }
                         if (rs.getString("paketType").equals("LINKED_NET")) {
                             activateNetServiceBox(rLine, rs, operName, db);
+                        }
+
+                        if (rs.getString("paketType").equals("LINKED_FIX")) {
+                            //aktiviraj fix stari
                         }
                     }
                 }
@@ -451,6 +459,20 @@ public class ServicesFunctions {
             e.printStackTrace();
         }
 
+    }
+
+    public static void activateFixServiceBoxNew(JSONObject rLine, ResultSet rs, String operName, database db) {
+        PreparedStatement ps;
+        String query = "UPDATE ServicesUser set aktivan=true WHERE id=? and userID=?";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rs.getInt("id"));
+            ps.setInt(2, rs.getInt("userID"));
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void activateDTVService(JSONObject rLine, ResultSet rs, String operName, database db) {
