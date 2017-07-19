@@ -1122,14 +1122,18 @@ public class ServicesFunctions {
                 if (rsRadius.isBeforeFirst()) {
                     rsRadius.next();
                     datumIsteka = rsRadius.getString("value");
+                    System.out.println(rsRadius.toString());
                 }
+                System.out.println(ps.toString());
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         Calendar cal = Calendar.getInstance();
         try {
-            cal.setTime((Date) dtfRadCheck.parseObject(datumIsteka));
+            System.out.println("datum isteka NET: " + datumIsteka);
+            if (datumIsteka != null)
+                cal.setTime((Date) dtfRadCheck.parseObject(datumIsteka));
         } catch (ParseException e) {
             e.printStackTrace();
         }
