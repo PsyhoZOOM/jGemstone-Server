@@ -9,9 +9,10 @@ import org.json.JSONObject;
 public class IPTVFunctions {
 
 
-    public static void add_account(JSONObject rLine, database db) {
+    public static JSONObject add_account(JSONObject rLine, database db) {
         StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
-        restAPI2.saveUSER(rLine);
+        JSONObject jsonObject = restAPI2.saveUSER(rLine);
+        return jsonObject;
     }
 
     public static Boolean checkUserBussy(String STB_MAC, database db) {

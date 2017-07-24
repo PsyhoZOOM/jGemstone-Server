@@ -4,6 +4,7 @@ import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
+import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
@@ -24,7 +25,7 @@ public class addBoxService {
     private int BOX_Service_ID;
     private SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
 
-    public void addBox(JSONObject rLine, String opername) {
+    public String addBox(JSONObject rLine, String opername) {
 
 
         query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, " +
@@ -81,6 +82,14 @@ public class addBoxService {
             ResultSet rsBoxId = ps.getGeneratedKeys();
             rsBoxId.next();
             BOX_Service_ID = rsBoxId.getInt(1);
+
+            StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+            if (!stalkerRestAPI2.isHostAlive) {
+                return "IPTV Server nije u funkciji.\n Probajte kasnije ili se obratite tehnickoj podrsci!";
+            }
+            if (rLine.has("STB_MAC")) {
+                add_iptv(rLine, opername);
+            }
             if (rLine.has("groupName")) {
                 add_internet(rLine, opername);
             }
@@ -91,20 +100,23 @@ public class addBoxService {
                 if (!rLine.getString("FIX_TEL").isEmpty())
                     add_fix(rLine, opername);
             }
-            if (rLine.has("STB_MAC")) {
-                add_iptv(rLine, opername);
-            }
+
         } catch (SQLException e) {
             e.printStackTrace();
 
         }
 
 
+        return "OK";
     }
 
-    private void add_iptv(JSONObject rLine, String opername) {
-        IPTVFunctions.add_account(rLine, this.db);
+    private String add_iptv(JSONObject rLine, String opername) {
+        JSONObject json = IPTVFunctions.add_account(rLine, this.db);
+        if (json.has("ERROR")) {
+            return json.getString("ERROR");
+        }
         ServicesFunctions.addServiceIPTVLinked(rLine, opername, BOX_Service_ID, this.db);
+        return "OK";
     }
 
     public int getBOX_ID() {

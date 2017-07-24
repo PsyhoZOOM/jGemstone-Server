@@ -866,6 +866,7 @@ public class ServicesFunctions {
 				produzenje = rs.getInt("produzenje");
 				UserName = rs.getString("UserName");
 				idCard = rs.getInt("idDTVCard");
+				IPTV_MAC = rs.getString("IPTV_MAC");
 
 				if (newService) {
 					endDate = endDate.plusMonths(produzenje);
@@ -1059,4 +1060,25 @@ public class ServicesFunctions {
         }
         return result;
     }
+
+	public static boolean boxHaveFIX(int id_serviceUser, database db) {
+		PreparedStatement ps;
+		ResultSet rs;
+		boolean haveFix = false;
+		String query = "SELECT FIKSNA_TEL FROM servicesUser WHERE id=? AND FIKSNA_TEL IS NOT NULL AND FIKSNA_TEL != '' ";
+		try {
+			ps = db.conn.prepareStatement(query);
+			ps.setInt(1, id_serviceUser);
+			rs = ps.executeQuery();
+			if (rs.isBeforeFirst()) {
+				haveFix = true;
+			}
+			rs.close();
+			ps.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return haveFix;
+	}
 }

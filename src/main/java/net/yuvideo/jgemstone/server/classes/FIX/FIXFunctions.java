@@ -170,10 +170,10 @@ public class FIXFunctions {
             ps.setInt(4, rs.getInt("userID"));
             ps.setDouble(5, rs.getDouble("popust"));
             ps.setString(6, "FIX_SAOBRACAJ");
-            ps.setDouble(7, ukupno);
+            ps.setDouble(7, Double.valueOf(df.format(ukupno)));
             ps.setDouble(8, 0.00);
             ps.setString(9, "1000-01-01 00:00:00");
-            ps.setDouble(10, ukupno);
+            ps.setDouble(10, Double.valueOf(df.format(ukupno)));
             ps.setString(11, "");
             ps.setString(12, "SYSTEM");
             ps.setString(13, zaMesec);
@@ -240,6 +240,8 @@ public class FIXFunctions {
                 jsonObject.put("pdv", pdv);
 
             }
+
+
             ps.close();
             rs.close();
         } catch (SQLException e) {

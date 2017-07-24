@@ -7,6 +7,7 @@ import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
+import net.yuvideo.jgemstone.server.classes.MISC.firmaData;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import org.json.JSONObject;
 
@@ -220,6 +221,18 @@ public class ClientWorker implements Runnable {
 						jObj.put("jMesto", rs.getString("jMesto"));
 						jObj.put("dug", df.format(get_userDebt(rs.getInt("id"))));
 						jObj.put("firma", rs.getBoolean("firma"));
+						if (rs.getBoolean("firma")) {
+							firmaData fData = new firmaData();
+							fData.getFirmaData(jObj.getInt("id"), db);
+							jObj.put("nazivFirme", fData.getNazivFirme());
+							jObj.put("kontaktOsoba", fData.getKontaktOsoba());
+							jObj.put("kodBanke", fData.getKodBanke());
+							jObj.put("PIB", fData.getPIB());
+							jObj.put("maticniBroj", fData.getMaticniBroj());
+							jObj.put("tekuciRacun", fData.getTekuciRacun());
+							jObj.put("fax", fData.getFax());
+							jObj.put("adresaFirme", fData.getAdresaFirme());
+						}
 						jUsers.put(String.valueOf(i), jObj);
 						i++;
 					} catch (SQLException e) {
@@ -865,7 +878,8 @@ public class ClientWorker implements Runnable {
 				//add BOX to servicesUser
 				addBoxService addBox = new addBoxService();
 				addBox.db = db;
-				addBox.addBox(rLine, getOperName());
+				String hostIsAlive = addBox.addBox(rLine, getOperName());
+				jObj.put("ERROR", hostIsAlive);
 
 			}
 
@@ -1071,10 +1085,13 @@ public class ClientWorker implements Runnable {
 						userDebt.put("zaduzenOd", rs.getString("zaduzenOd"));
 						userDebt.put("zaMesec", rs.getString("zaMesec"));
 						userDebt.put("skipProduzenje", rs.getBoolean("skipProduzenje"));
+						userDebt.put("haveFIX", ServicesFunctions.boxHaveFIX(rs.getInt("id_ServiceUser"), db));
 						jObj.put(String.valueOf(i), userDebt);
 						i++;
 					}
 				}
+				rs.close();
+				ps.close();
 
 			} catch (SQLException e) {
 				jObj.put("Message", "ERROR");
@@ -1170,8 +1187,8 @@ public class ClientWorker implements Runnable {
             //ako je uplata fiksne telefonije uzimamo paket i saobracaj iz userDebta i vrsimo uplatu
             //uplaceno - paketDug = ostatak (update paket fix dug)
             //ostatak - saobracaj dug = uplacenoSaobracaj (update paket saobracaj fix dug)
-            if (rLine.getString("paketType").equals("FIX")) {
-                double uplaceno = rLine.getDouble("uplaceno");
+			if (rLine.getBoolean("haveFIX")) {
+				double uplaceno = rLine.getDouble("uplaceno");
                 int idFixPaket = 0;
                 int idFixSaobracaj = 0;
                 double paketDug = 0;
@@ -1189,7 +1206,10 @@ public class ClientWorker implements Runnable {
                     rs = ps.executeQuery();
                     if (rs.isBeforeFirst()) {
                         while (rs.next()) {
-                            if (rs.getString("paketType").equals("FIX")) {
+							if (rs.getString("paketType").equals("BOX")) {
+								idFixPaket = rs.getInt("id");
+							}
+							if (rs.getString("paketType").equals("FIX")) {
                                 idFixPaket = rs.getInt("id");
                             }
                             if (rs.getString("paketType").equals("FIX_SAOBRACAJ")) {
@@ -1267,8 +1287,8 @@ public class ClientWorker implements Runnable {
                 query = "UPDATE userDebts set uplaceno = ? where id=?";
                 try {
                     ps = db.conn.prepareStatement(query);
-                    ps.setDouble(1, zaUplatuPaket);
-                    ps.setInt(2, idFixPaket);
+					ps.setDouble(1, Double.parseDouble(df.format(zaUplatuPaket)));
+					ps.setInt(2, idFixPaket);
                     ps.executeUpdate();
                     ps.close();
                 } catch (SQLException e) {
@@ -1279,14 +1299,13 @@ public class ClientWorker implements Runnable {
                 query = "UPDATE userDebts set uplaceno =? where id=?";
                 try {
                     ps = db.conn.prepareStatement(query);
-                    ps.setDouble(1, zaUplatuSaobracaj);
-                    ps.setInt(2, idFixSaobracaj);
+					ps.setDouble(1, Double.parseDouble(df.format(zaUplatuSaobracaj)));
+					ps.setInt(2, idFixSaobracaj);
                     ps.executeUpdate();
                 } catch (SQLException e) {
                     jObj.put("ERROR", e.getMessage());
                     e.printStackTrace();
                 }
-
 
             } else {
 				//uplata za   obicne servise
@@ -1310,8 +1329,8 @@ public class ClientWorker implements Runnable {
 
                 try {
                     ps = db.conn.prepareStatement(query);
-                    ps.setDouble(1, zaUplatu);
-                    ps.setString(2, date_format_full.format(Calendar.getInstance().getTime()));
+					ps.setDouble(1, Double.valueOf(df.format(zaUplatu)));
+					ps.setString(2, date_format_full.format(Calendar.getInstance().getTime()));
                     ps.setString(3, getOperName());
                     ps.setInt(4, rLine.getInt("id"));
                     ps.executeUpdate();
@@ -1323,7 +1342,9 @@ public class ClientWorker implements Runnable {
                 }
 
             }
-			//uplata box paketa
+
+
+			//produzenje Servisa
 			if (rLine.getString("paketType").equals("BOX")) {
 				query = "SELECT * FROM servicesUser WHERE box_id=?";
             } else {
@@ -1351,6 +1372,7 @@ public class ClientWorker implements Runnable {
 				e.printStackTrace();
 			}
 
+
             //UPLATA LOG SVAKE UPLATE
             JSONObject logUplate = new JSONObject();
             logUplate.put("uplaceno", rLine.getDouble("uplaceno"));
@@ -1361,8 +1383,8 @@ public class ClientWorker implements Runnable {
 			logUplate.put("identification", rLine.getString("identification"));
 			logUplate.put("id_ServiceUser", rLine.getInt("id_ServiceUser"));
 
-
             ServicesFunctions.uplataLOG(logUplate, db);
+
 
 			send_object(jObj);
 			return;
@@ -3270,9 +3292,33 @@ public class ClientWorker implements Runnable {
 			JSONObject jObj;
 			StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
 			jObj = stAPI2.saveUSER(rLine);
-			ServicesFunctions.addServiceIPTV(rLine, operName, db);
+			if (!jObj.has("ERROR")) {
+				ServicesFunctions.addServiceIPTV(rLine, operName, db);
+			}
 			send_object(jObj);
 			return;
+		}
+
+		if (rLine.getString("action").equals("getNextFreeUgovorID")) {
+			int userID = rLine.getInt("userID");
+			int noUgovor = 1;
+			PreparedStatement ps;
+			ResultSet rs;
+			String query = "SELECT count(brojUgovora) FROM ugovori_korisnik WHERE userID=?";
+			try {
+				ps = db.conn.prepareStatement(query);
+				ps.setInt(1, userID);
+				rs = ps.executeQuery();
+				if (rs.isBeforeFirst()) {
+					rs.next();
+					noUgovor += rs.getInt(1);
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("NO_UGOVORA", noUgovor);
+			send_object(jsonObject);
 		}
 
 		if (rLine.getString("action").equals("get_paket_IPTV")) {

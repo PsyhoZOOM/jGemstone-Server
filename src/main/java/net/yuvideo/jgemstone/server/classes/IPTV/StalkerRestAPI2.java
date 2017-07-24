@@ -1,10 +1,5 @@
 package net.yuvideo.jgemstone.server.classes.IPTV;
 
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.glassfish.jersey.client.ClientConfig;
@@ -15,6 +10,11 @@ import org.json.JSONObject;
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,7 +24,6 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 
 /**
  * Created by PsyhoZOOM@gmail.com on 7/21/17.
@@ -142,6 +141,14 @@ public class StalkerRestAPI2 {
 	}
 
 	public JSONObject saveUSER(JSONObject rLine) {
+		checkIsHostAlive();
+		if (!isHostAlive) {
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("ERROR", "HOST_IS_DEAD - IPTV SERVER NIJE DOSTUPAN. \n SERVIS NIJE MOGUCE NAPRAVITI. \n " +
+					"POKUSAJTE PONOVO KASNIJE ILI SE OBRATITE ADMINISTRATORU!");
+			return jsonObject;
+
+		}
 		JSONObject jsonObject = new JSONObject();
 		target = target.path("accounts");
 
@@ -341,7 +348,15 @@ public class StalkerRestAPI2 {
 			URL urlSite = new URL(this.url);
 			HttpURLConnection connection = (HttpURLConnection) urlSite.openConnection();
 			connection.setRequestMethod("GET");
-			connection.connect();
+			try {
+				connection.connect();
+
+			} catch (ConnectException e) {
+				e.getMessage();
+			} finally {
+				this.isHostAlive = false;
+			}
+
 
 
 			int code= connection.getResponseCode();
