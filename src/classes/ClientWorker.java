@@ -4,6 +4,7 @@ import classes.BOX.addBoxService;
 import classes.DTV.DTVFunctions;
 import classes.FIX.FIXFunctions;
 import classes.INTERNET.NETFunctions;
+import classes.IPTV.StalkerRestAPI2;
 import classes.SERVICES.ServicesFunctions;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -2446,6 +2447,16 @@ public class ClientWorker implements Runnable {
 
 
         //END FIKSNA TELEFONIJA PAKETI
+
+
+        //IPTV
+        if (rLine.getString("action").equals("getIPTVPakets")) {
+            jObj = new JSONObject();
+            StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
+
+            send_object(stAPI2.getPakets_ALL());
+
+        }
     }
 
     private String get_paket_naziv(String digitalniTVPaket, int dtv_id) {
