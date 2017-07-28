@@ -561,7 +561,6 @@ public class ServicesFunctions {
         cena = cena / days;
         cena = cena * est_days;
         cena = valueToPercent.getValue(cena, rLine.getDouble("popust"));
-        System.out.println("DUG: " + cena);
 
         //date zaduzenja
         Calendar calDatumZaduzenja = Calendar.getInstance();
@@ -925,7 +924,6 @@ public class ServicesFunctions {
             ps = db.connRad.prepareStatement(query);
             ps.setString(1, username);
             ps.setString(2, "Expiration");
-            System.out.println(ps.toString());
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 rs.next();
@@ -952,13 +950,10 @@ public class ServicesFunctions {
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
-
-
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
     }
 
     public static void deleteServiceDTV(JSONObject rLine, String operName, database db) {
@@ -1122,16 +1117,13 @@ public class ServicesFunctions {
                 if (rsRadius.isBeforeFirst()) {
                     rsRadius.next();
                     datumIsteka = rsRadius.getString("value");
-                    System.out.println(rsRadius.toString());
                 }
-                System.out.println(ps.toString());
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         Calendar cal = Calendar.getInstance();
         try {
-            System.out.println("datum isteka NET: " + datumIsteka);
             if (datumIsteka != null)
                 cal.setTime((Date) dtfRadCheck.parseObject(datumIsteka));
         } catch (ParseException e) {

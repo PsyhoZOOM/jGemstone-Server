@@ -6,6 +6,7 @@ import classes.FIX.FIXFunctions;
 import classes.INTERNET.NETFunctions;
 import classes.IPTV.StalkerRestAPI2;
 import classes.SERVICES.ServicesFunctions;
+import com.csvreader.CsvReader;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,6 +14,7 @@ import org.json.JSONObject;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.net.ssl.SSLSocket;
 import java.io.*;
 import java.net.Socket;
 import java.sql.*;
@@ -34,7 +36,8 @@ public class ClientWorker implements Runnable {
     public boolean DEBUG = false;
     public boolean client_db_update = false;
     private Logger LOGGER = LogManager.getLogger("CLIENT");
-    private Socket client;
+    //private Socket client;
+    private SSLSocket client;
     private InputStreamReader Isr = null;
     private OutputStreamWriter Osw = null;
     private BufferedReader Bfr;
@@ -66,7 +69,8 @@ public class ClientWorker implements Runnable {
     private JSONObject jUplate;
     private SecretKey key = new SecretKeySpec(keyValue, "AES");
 
-    public ClientWorker(Socket client) {
+    public ClientWorker(SSLSocket client) {
+        //this.client = client;
         this.client = client;
     }
 
@@ -84,7 +88,7 @@ public class ClientWorker implements Runnable {
         LOGGER.log(Level.INFO, String.valueOf(DEBUG));
 
 
-        System.out.println(String.format("CLient connected: %s", this.client
+        System.out.println(String.format("Client connected: %s", this.client
                 .getRemoteSocketAddress()));
         while (!client.isClosed()) {
 
@@ -669,7 +673,6 @@ public class ClientWorker implements Runnable {
 
             if (rLine.get("actionService").equals("activate_FIX_service")){
                 if(rLine.getBoolean("newService")){
-                    System.out.println("AKTIVATING");
                     ServicesFunctions.activateFixServiceNew(rLine, getOperName(), this.db);
                 }
             }
@@ -2437,6 +2440,12 @@ public class ClientWorker implements Runnable {
         }
 
 
+        //FIXNA OBRACUNI
+        if(rLine.get("action").equals("obracun_fiksne_zaMesec")){
+
+        }
+
+
         if(rLine.getString("action").equals("addFixUslugu")){
             jObj = new JSONObject();
             String message = ServicesFunctions.addServiceFIX(rLine, getOperName(), db);
@@ -2445,6 +2454,109 @@ public class ClientWorker implements Runnable {
 
         }
 
+        if(rLine.get("action").equals("add_CSV_FIX_Telefonija")){
+            CsvReader csvReader = null;
+            PreparedStatement ps;
+            String query = "INSERT INTO csv (account, `from`, `to`, country, description, connectTime, chargedTimeMS, " +
+                    "chargedTimeS, chargedAmountRSD, serviceName, chargedQuantity, serviceUnit, customerID, fileName)" +
+                    "VALUES" +
+                    "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            jObj = new JSONObject();
+            for(String key : rLine.keySet()){
+                try {
+                    csvReader = new CsvReader(new StringReader((String) rLine.get(key)));
+                    csvReader.setDelimiter(',');
+                    csvReader.readHeaders();
+                    while (csvReader.readRecord()){
+                        //ako je csv fajl  na kraju prekinuti import
+                        if (csvReader.get("Account").equals("SUBTOTAL") || csvReader.get("Account").isEmpty() ||
+                                csvReader.get("Service Name").equals("Payments"))
+                            break;
+                        String filename = key;
+                        String customerID =  key.substring(key.lastIndexOf("-"));
+                        customerID = customerID.replace("-customer", "");
+                        customerID = customerID.replace(".csv", "");
+
+
+                        ps = db.conn.prepareStatement(query);
+                        ps.setString(1, csvReader.get("Account"));
+                        ps.setString(2, csvReader.get("From"));
+                        ps.setString(3, csvReader.get("To"));
+                        if(csvReader.get("Country").isEmpty()){
+                            ps.setString(4, "Lokalni poziv");
+                        }else {
+                            ps.setString(4, csvReader.get("Country"));
+                        }
+                        ps.setString(5, csvReader.get("Description"));
+                        ps.setString(6,csvReader.get("Connect Time"));
+                        ps.setString(7, csvReader.get("Charged Time, min:sec"));
+                        ps.setInt(8, Integer.parseInt(csvReader.get("Charged Time, sec.")));
+                        ps.setDouble(9, Double.parseDouble(csvReader.get("Charged Amount, RSD")));
+                        ps.setString(10, csvReader.get("Service Name"));
+                        ps.setInt(11, Integer.parseInt(csvReader.get("Charged quantity")));
+                        ps.setString(12, csvReader.get("Service unit"));
+                        ps.setString(13, customerID);
+                        ps.setString(14, filename);
+
+                        ps.executeUpdate();
+                        ps.close();
+                        jObj.put("Mesage", "CSV_IMPORT_SUCCESS");
+                    }
+                } catch (FileNotFoundException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+                } catch (SQLException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+                }
+
+            }
+
+            send_object(jObj);
+        }
+
+        if(rLine.getString("action").equals("get_CSV_Data")){
+            jObj = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT * FROM csv";
+            int i=0;
+            try {
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
+                if(rs.isBeforeFirst()){
+                    JSONObject csvData;
+                    while(rs.next()){
+                        csvData = new JSONObject();
+                        csvData.put("id", rs.getInt("id"));
+                        csvData.put("account", rs.getString("account"));
+                        csvData.put("from", rs.getString("from"));
+                        csvData.put("to", rs.getString("to"));
+                        csvData.put("country", rs.getString("country"));
+                        csvData.put("description", rs.getString("description"));
+                        csvData.put("connectTime", rs.getString("connectTime"));
+                        csvData.put("chargedTimeMS", rs.getString("chargedTimeMS"));
+                        csvData.put("chargedTimeS", rs.getInt("chargedTimeS"));
+                        csvData.put("chargedAmountRSD", rs.getDouble("chargedAmountRSD"));
+                        csvData.put("serviceName", rs.getString("serviceName"));
+                        csvData.put("chargedQuantity", rs.getInt("chargedQuantity"));
+                        csvData.put("serviceUnit", rs.getString("serviceUnit"));
+                        csvData.put("customerID", rs.getString("customerID"));
+                        csvData.put("fileName", rs.getString("fileName"));
+                        jObj.put(String.valueOf(i), csvData);
+                        i++;
+                    }
+                }
+            } catch (SQLException e) {
+                jObj.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
 
         //END FIKSNA TELEFONIJA PAKETI
 
@@ -2561,7 +2673,6 @@ public class ClientWorker implements Runnable {
         String userName = null;
         String passWord = null;
         boolean aktivan = false;
-        System.out.println("checking login" + username + password);
         this.setOperName(userName);
 
         try {
@@ -2587,7 +2698,6 @@ public class ClientWorker implements Runnable {
 
         if (userName != null && passWord != null) {
             if (userName.equals(username) && passWord.equals(password) && aktivan == true) {
-                System.out.println("usr loged in");
                 client_authenticated = true;
                 this.operName = userName;
             }

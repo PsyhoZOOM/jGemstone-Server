@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.PropertyPermission;
 
 /**
  * Created by PsyhoZOOM@gmail.com on 7/15/17.
@@ -73,4 +74,22 @@ public class FIXFunctions {
         System.out.println("PAKET_ID=" + paketID);
         return paketID;
     }
+
+    public static boolean check_if_obracun_postoji(String zaMesec, database db){
+        PreparedStatement ps;
+        ResultSet rs;
+        String query = "SELECT zaMesec";
+        boolean exist = true;
+
+        try {
+            //ovde sam stao!
+            ps = db.conn.prepareStatement(query);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return exist;
+    }
+
 }

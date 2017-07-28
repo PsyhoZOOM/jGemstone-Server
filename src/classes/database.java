@@ -55,20 +55,6 @@ public class database {
 
     }
 
-
-    public ResultSet query_data(String query) {
-        if (DEBUG) System.out.println(String.format("query_data: %s", query));
-        try {
-            rs = stmt.executeQuery(query);
-        } catch (SQLException e) {
-            e.printStackTrace();
-
-        }
-
-
-        return rs;
-    }
-
     public void executeUpdate() {
 
         try {

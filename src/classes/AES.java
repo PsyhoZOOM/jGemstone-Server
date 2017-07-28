@@ -59,19 +59,15 @@ public class AES {
         /**  Ecnryption and decryption of value1 **/
         String encryptedValue1 = symmetricEncrypt(value1, secretKey);
         String decryptedValue1 = symmetricDecrypt(encryptedValue1, secretKey);
-        System.out.println(decryptedValue1);
 
         /**  Decryption of  enctypedValue1 **/
         String decryptedValue2 = symmetricDecrypt(enctypedValue1, secretKey);
-        System.out.println(decryptedValue2);
 
         /**  Decryption of  enctypedValue2 **/
         String decryptedValue3 = symmetricDecrypt(enctypedValue2, secretKey);
-        System.out.println(decryptedValue3);
 
         /**  Ecnryption and decryption of value4 **/
         String encryptedValue4 = symmetricEncrypt(value4, secretKey);
         String decryptedValue4 = symmetricDecrypt(encryptedValue4, secretKey);
-        System.out.println(decryptedValue4);
     }
 }

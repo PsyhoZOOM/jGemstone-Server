@@ -5,9 +5,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.net.ServerSocketFactory;
-import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -20,14 +24,14 @@ public class Server {
 
     public static void main(String[] args) {
 
+        SSLServerSocket serverSock = null;
+        SSLSocket socket = null;
         Boolean DEBUG = false;
         String query;
         PreparedStatement ps;
         int portNumber = 8543;
 
         for (int i = 0; i < args.length; i++) {
-            System.out.println(args[i]);
-
             if (args[i].contains("debug=1")) {
                 DEBUG = true;
             }
@@ -35,7 +39,38 @@ public class Server {
 
         database db;
 
+        System.out.println(System.getProperty("user.dir"));
 
+        try {
+            KeyStore serverKeys = KeyStore.getInstance("JKS");
+            serverKeys.load(new FileInputStream("ssl/plainserver.jks"), "jgemstone".toCharArray());
+            KeyManagerFactory serverKeyManager = KeyManagerFactory.getInstance("SunX509");
+            serverKeyManager.init(serverKeys, "jgemstone".toCharArray());
+            KeyStore clientPub = KeyStore.getInstance("JKS");
+            clientPub.load(new FileInputStream("ssl/clientpub.jks"), "jgemstone".toCharArray());
+            TrustManagerFactory trustManager = TrustManagerFactory.getInstance("SunX509");
+            trustManager.init(clientPub);
+            SSLContext ssl = SSLContext.getInstance("TLS");
+            ssl.init(serverKeyManager.getKeyManagers(), trustManager.getTrustManagers(), SecureRandom.getInstance("SHA1PRNG"));
+            serverSock = (SSLServerSocket) ssl.getServerSocketFactory().createServerSocket(portNumber);
+            //socket = (SSLSocket) serverSock.accept();
+
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
+        }
+        /*
         //OLDY NON CRYPT
         ServerSocket serverSocket = null;
         ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
@@ -48,6 +83,9 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        //end of non crpted
+        */
 
 
         db = new database();
@@ -76,7 +114,7 @@ public class Server {
                 //Scheduler tasks timout in minutes
 
 
-                cw = new ClientWorker(serverSocket.accept());
+                cw = new ClientWorker((SSLSocket) serverSock.accept());
                 cw.DEBUG = DEBUG;
                 Thread th = new Thread(cw);
                 th.start();

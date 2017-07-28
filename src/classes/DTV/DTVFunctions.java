@@ -75,7 +75,6 @@ public class DTVFunctions {
             e.printStackTrace();
         }
 
-        System.out.println("PAKET ID: " + paketID + "id_packeta: " + id_packet);
         return paketID;
     }
 
