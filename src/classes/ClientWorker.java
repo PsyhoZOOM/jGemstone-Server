@@ -12,8 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLSocket;
 import java.io.*;
 import java.net.Socket;
@@ -32,7 +30,6 @@ import java.util.Date;
 public class ClientWorker implements Runnable {
 
     private static DecimalFormat df = new DecimalFormat("#.##");
-    private static byte[] keyValue = new byte[]{'0', '2', '3', '4', '5', '6', '7', '8', '9', '1', '2', '3', '4', '5', '6', '7'};// your key
     public boolean DEBUG = false;
     public boolean client_db_update = false;
     private Logger LOGGER = LogManager.getLogger("CLIENT");
@@ -51,9 +48,6 @@ public class ClientWorker implements Runnable {
     private Date date;
     private SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     private SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
-    private Calendar calendar = Calendar.getInstance();
-    private SimpleDateFormat radcheckEndDate = new SimpleDateFormat("dd MMM yyyy");
-    private SimpleDateFormat radreplyEndDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private SimpleDateFormat normalDate = new SimpleDateFormat("yyyy-MM-dd");
     private SimpleDateFormat formatMonthDate = new SimpleDateFormat("yyyy-MM");
 
@@ -61,13 +55,8 @@ public class ClientWorker implements Runnable {
     ///JSON PART
     private JSONObject jObj;
     private JSONObject jGrupe;
-    //JSON Services
-    private JSONObject jsService;
     //JSON Users
     private JSONObject jUsers;
-    //JSON Uplate
-    private JSONObject jUplate;
-    private SecretKey key = new SecretKeySpec(keyValue, "AES");
 
     public ClientWorker(SSLSocket client) {
         //this.client = client;
@@ -2568,6 +2557,20 @@ public class ClientWorker implements Runnable {
 
             send_object(stAPI2.getPakets_ALL());
 
+        }
+
+        if (rLine.getString("action").equals("getIPTVUsers")) {
+            jObj = new JSONObject();
+            StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
+
+
+        }
+
+        if (rLine.getString("action").equals("save_IPTV_USER")) {
+            JSONObject jObj;
+            StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
+            jObj = stAPI2.saveUSER(rLine);
+            send_object(jObj);
         }
     }
 
