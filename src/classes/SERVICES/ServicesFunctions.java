@@ -287,6 +287,39 @@ public class ServicesFunctions {
         return Message;
     }
 
+    public static String addServiceIPTV(JSONObject rLine, String opername, database db) {
+        String Message = null;
+        PreparedStatement ps;
+        String query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena," +
+                "obracun, brojUgovora, aktivan, produzenje, newService, IPTV_ID, paketType" +
+                "VALUES " +
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("id"));
+            ps.setString(2, rLine.getString("tarrif_plan"));
+            ps.setString(3, dtf.format(new Date()));
+            ps.setInt(4, rLine.getInt("userID"));
+            ps.setString(5, opername);
+            ps.setDouble(6, rLine.getDouble("popust"));
+            ps.setDouble(7, rLine.getDouble("cena"));
+            ps.setBoolean(8, rLine.getBoolean("obracun"));
+            ps.setString(9, rLine.getString("brojUgovora"));
+            ps.setBoolean(10, false);
+            ps.setString(11, rLine.getString("tarrif_plan"));
+            ps.setString(12, "IPTV");
+            ps.executeUpdate();
+            ps.close();
+            Message = "SERVICE_ADDED";
+
+        } catch (SQLException e) {
+            Message = e.getMessage();
+            e.printStackTrace();
+        }
+        return Message;
+    }
+
 
     public static void activateBoxServiceNew(JSONObject rLine, String operName, database db) {
         PreparedStatement ps;

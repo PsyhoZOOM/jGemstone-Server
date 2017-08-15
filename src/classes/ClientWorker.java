@@ -2551,12 +2551,101 @@ public class ClientWorker implements Runnable {
 
 
         //IPTV
+
+        if (rLine.getString("action").equals("snimiNovIPTVPaket")) {
+            jObj = new JSONObject();
+
+            PreparedStatement ps;
+            String query = "INSERT INTO IPTV_Paketi (name, iptv_id, external_id, cena, opis) " +
+                    "VALUES" +
+                    " (?,?,?,?,?)";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("name"));
+                ps.setInt(2, rLine.getInt("iptv_id"));
+                ps.setInt(3, rLine.getInt("external_id"));
+                ps.setDouble(4, rLine.getDouble("cena"));
+                ps.setString(5, rLine.getString("opis"));
+                ps.executeUpdate();
+                rs.close();
+                jObj.put("Message", "PAKET_SAVED");
+            } catch (SQLException e) {
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
+
+
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("snimiEditIPTVPaket")) {
+            jObj = new JSONObject();
+
+            PreparedStatement ps;
+            String query = "UPDATE IPTV_Paketi SET " +
+                    "name = ?, iptv_id=? , external_id=?, cena=?, opis=?" +
+                    "WHERE id=?";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("name"));
+                ps.setInt(2, rLine.getInt("iptv_id"));
+                ps.setInt(3, rLine.getInt("external_id"));
+                ps.setDouble(4, rLine.getDouble("cena"));
+                ps.setString(5, rLine.getString("opis"));
+                ps.setInt(6, rLine.getInt("id"));
+
+                ps.executeUpdate();
+                rs.close();
+
+            } catch (SQLException e) {
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
+
+            jObj.put("Message", "PAKET_EDITED");
+
+            send_object(jObj);
+
+        }
+
         if (rLine.getString("action").equals("getIPTVPakets")) {
             jObj = new JSONObject();
             StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
 
             send_object(stAPI2.getPakets_ALL());
 
+        }
+
+        if (rLine.getString("action").equals("getIPTVDataLocal")) {
+            jObj = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT  * FROM IPTV_Paketi";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
+                int i = 0;
+                if (rs.isBeforeFirst()) {
+                    while (rs.next()) {
+                        JSONObject paketObj = new JSONObject();
+                        paketObj.put("name", rs.getString("name"));
+                        paketObj.put("cena", rs.getString("cena"));
+                        paketObj.put("opis", rs.getString("opis"));
+                        paketObj.put("external_id", rs.getInt("external_id"));
+                        paketObj.put("id", rs.getInt("id"));
+                        paketObj.put("IPTV_id", rs.getInt("iptv_id"));
+                        jObj.put(String.valueOf(i), paketObj);
+                        i++;
+                    }
+                }
+                rs.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            send_object(jObj);
         }
 
         if (rLine.getString("action").equals("getIPTVUsers")) {

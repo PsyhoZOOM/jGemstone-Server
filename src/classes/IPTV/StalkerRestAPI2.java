@@ -66,13 +66,11 @@ public class StalkerRestAPI2 {
     }
 
     public JSONObject getPakets_ALL() {
-        System.out.println("APIV2: " + username + " pass: " + pass + " URL: " + url);
         webResource = apiClient.resource(url + "tariffs");
         clientResponse = webResource.accept("application/json")
                 .header("Authorization", "Basic " + AuthStringENC)
                 .get(ClientResponse.class);
         String tariffs = clientResponse.getEntity(String.class);
-        System.out.println(tariffs);
 
         JSONObject tarifobj = new JSONObject(tariffs);
 
@@ -89,7 +87,6 @@ public class StalkerRestAPI2 {
     }
 
     public JSONObject getUsersData(int accountID) {
-        System.out.println("APIV3: " + username + " pass: " + pass + "  URL: " + url);
         webResource = apiClient.resource(url + "accounts");
         clientResponse = webResource.accept("application/json")
                 .header("Authorization", "Basic " + AuthStringENC)
@@ -121,4 +118,27 @@ public class StalkerRestAPI2 {
         respObj.put("Message", clientResponse.getEntity(String.class));
         return respObj;
     }
+
+    public boolean checkExternalID(int external_id) {
+        Boolean exist = false;
+        webResource = apiClient.resource(url + "tariffs");
+        clientResponse = webResource.accept("application/json")
+                .header("Authorization", "Basic " + AuthStringENC)
+                .get(ClientResponse.class);
+        String tarrifs = clientResponse.getEntity(String.class);
+        JSONObject tarrifobj = new JSONObject(tarrifs);
+        JSONArray tarrifArr = tarrifobj.getJSONArray("results");
+
+        //check if external_id exist
+        for (int i = 0; i < tarrifArr.length(); i++) {
+            System.out.println(tarrifArr.get(i));
+            JSONObject tf = (JSONObject) tarrifArr.get(i);
+            if (tf.getInt("external_id") == external_id)
+                exist = true;
+        }
+
+        return exist;
+
+    }
+
 }
