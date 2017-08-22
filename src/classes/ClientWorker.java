@@ -555,6 +555,12 @@ public class ClientWorker implements Runnable {
                             service.put("idUniqueName", rs.getString("idDTVCard"));
                         if (rs.getString("UserName") != null)
                             service.put("idUniqueName", rs.getString("UserName"));
+                        if (rs.getString("IPTV_MAC") != null) {
+                            service.put("idUniqueName", rs.getString("IPTV_MAC"));
+                            service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
+                            service.put("STB_MAC", rs.getString("IPTV_MAC"));
+                            service.put("external_id", rs.getString("IPTV_EXT_ID"));
+                        }
                         service.put("obracun", rs.getBoolean("obracun"));
                         service.put("aktivan", rs.getBoolean("aktivan"));
                         service.put("produzenje", rs.getInt("produzenje"));
@@ -663,6 +669,12 @@ public class ClientWorker implements Runnable {
             if (rLine.get("actionService").equals("activate_FIX_service")){
                 if(rLine.getBoolean("newService")){
                     ServicesFunctions.activateFixServiceNew(rLine, getOperName(), this.db);
+                }
+            }
+
+            if (rLine.get("actionService").equals("activate_IPTV_service")) {
+                if (rLine.getBoolean("newService")) {
+                    ServicesFunctions.activateIPTVServiceNew(rLine, getOperName(), this.db);
                 }
             }
 
@@ -837,6 +849,9 @@ public class ClientWorker implements Runnable {
             }
             if (rLine.getString("paketType").equals("BOX")) {
                 ServicesFunctions.deleteServiceBOX(rLine, getOperName(), db);
+            }
+            if (rLine.getString("paketType").equals("IPTV")) {
+                ServicesFunctions.deleteServiceIPTV(rLine, operName, db);
             }
 
 
@@ -2552,6 +2567,15 @@ public class ClientWorker implements Runnable {
 
         //IPTV
 
+        //test
+        if (rLine.getString("action").equals("test_REST_API")) {
+            StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+            stalkerRestAPI2.changeMac(1, "00:1A:79:00:39:EE");
+
+            jObj = new JSONObject();
+            send_object(jObj);
+        }
+
         if (rLine.getString("action").equals("snimiNovIPTVPaket")) {
             jObj = new JSONObject();
 
@@ -2562,9 +2586,9 @@ public class ClientWorker implements Runnable {
 
             try {
                 ps = db.conn.prepareStatement(query);
-                ps.setString(1, rLine.getString("name"));
+                ps.setString(1, rLine.getString("nazivPaketa"));
                 ps.setInt(2, rLine.getInt("iptv_id"));
-                ps.setInt(3, rLine.getInt("external_id"));
+                ps.setString(3, rLine.getString("external_id"));
                 ps.setDouble(4, rLine.getDouble("cena"));
                 ps.setString(5, rLine.getString("opis"));
                 ps.executeUpdate();
@@ -2591,7 +2615,7 @@ public class ClientWorker implements Runnable {
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("name"));
                 ps.setInt(2, rLine.getInt("iptv_id"));
-                ps.setInt(3, rLine.getInt("external_id"));
+                ps.setString(3, rLine.getString("external_id"));
                 ps.setDouble(4, rLine.getDouble("cena"));
                 ps.setString(5, rLine.getString("opis"));
                 ps.setInt(6, rLine.getInt("id"));
@@ -2634,9 +2658,10 @@ public class ClientWorker implements Runnable {
                         paketObj.put("name", rs.getString("name"));
                         paketObj.put("cena", rs.getString("cena"));
                         paketObj.put("opis", rs.getString("opis"));
-                        paketObj.put("external_id", rs.getInt("external_id"));
+                        paketObj.put("external_id", rs.getString("external_id"));
                         paketObj.put("id", rs.getInt("id"));
                         paketObj.put("IPTV_id", rs.getInt("iptv_id"));
+                        paketObj.put("prekoracenje", rs.getInt("prekoracenje"));
                         jObj.put(String.valueOf(i), paketObj);
                         i++;
                     }
@@ -2659,6 +2684,7 @@ public class ClientWorker implements Runnable {
             JSONObject jObj;
             StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
             jObj = stAPI2.saveUSER(rLine);
+            ServicesFunctions.addServiceIPTV(rLine, operName, db);
             send_object(jObj);
         }
     }

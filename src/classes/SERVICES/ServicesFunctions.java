@@ -1,6 +1,8 @@
 package classes.SERVICES;
 
 import classes.INTERNET.NETFunctions;
+import classes.IPTV.IPTVFunctions;
+import classes.IPTV.StalkerRestAPI2;
 import classes.database;
 import classes.valueToPercent;
 import org.json.JSONObject;
@@ -291,14 +293,14 @@ public class ServicesFunctions {
         String Message = null;
         PreparedStatement ps;
         String query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena," +
-                "obracun, brojUgovora, aktivan, produzenje, newService, IPTV_ID, paketType" +
+                "obracun, brojUgovora, aktivan, produzenje, newService, IPTV_EXT_ID, IPTV_MAC, paketType)" +
                 "VALUES " +
-                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, rLine.getInt("id"));
-            ps.setString(2, rLine.getString("tarrif_plan"));
+            ps.setString(2, rLine.getString("nazivPaketa"));
             ps.setString(3, dtf.format(new Date()));
             ps.setInt(4, rLine.getInt("userID"));
             ps.setString(5, opername);
@@ -307,8 +309,11 @@ public class ServicesFunctions {
             ps.setBoolean(8, rLine.getBoolean("obracun"));
             ps.setString(9, rLine.getString("brojUgovora"));
             ps.setBoolean(10, false);
-            ps.setString(11, rLine.getString("tarrif_plan"));
-            ps.setString(12, "IPTV");
+            ps.setInt(11, rLine.getInt("prekoracenje"));
+            ps.setBoolean(12, true);
+            ps.setString(13, rLine.getString("external_id"));
+            ps.setString(14, rLine.getString("STB_MAC"));
+            ps.setString(15, "IPTV");
             ps.executeUpdate();
             ps.close();
             Message = "SERVICE_ADDED";
@@ -742,6 +747,28 @@ public class ServicesFunctions {
         }
 
     }
+
+    public static void activateIPTVServiceNew(JSONObject rLine, String operName, database db) {
+        PreparedStatement ps;
+        String query = "UPDATE ServicesUser SET aktivan=? WHERE id=?";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setBoolean(1, true);
+            ps.setInt(2, rLine.getInt("id"));
+
+            if (IPTVFunctions.activateNewService(rLine, db))
+                ps.executeUpdate();
+
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+
     public static void produziBOX(JSONObject rLine, String operName, database db) {
         PreparedStatement ps;
         ResultSet rs;
@@ -1064,6 +1091,24 @@ public class ServicesFunctions {
         }
     }
 
+    public static void deleteServiceIPTV(JSONObject rLine, String operName, database db) {
+        PreparedStatement ps;
+        String query = "DELETE FROM ServicesUser WHERE id=?";
+        StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("serviceId"));
+            ps.executeUpdate();
+
+            //brisanje IPTV tarife RESTAPIjem
+            stalkerRestAPI2.deleteAccount(rLine.getString("STB_MAC"));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     public static void deleteServiceBOX(JSONObject rLine, String operName, database db) {
         JSONObject rLineDelete;
         PreparedStatement ps;
@@ -1098,6 +1143,7 @@ public class ServicesFunctions {
         }
 
     }
+
 
     public static String getDatumIsteka(JSONObject rLine, database db) {
         PreparedStatement ps;

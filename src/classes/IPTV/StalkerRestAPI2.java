@@ -8,9 +8,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import sun.misc.BASE64Encoder;
 
+import javax.ws.rs.core.MediaType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Created by PsyhoZOOM@gmail.com on 7/21/17.
@@ -66,12 +69,15 @@ public class StalkerRestAPI2 {
     }
 
     public JSONObject getPakets_ALL() {
-        webResource = apiClient.resource(url + "tariffs");
-        clientResponse = webResource.accept("application/json")
+        webResource = apiClient.resource(url);
+        clientResponse = webResource
+                .path("tariffs")
                 .header("Authorization", "Basic " + AuthStringENC)
+                .accept(MediaType.APPLICATION_JSON)
                 .get(ClientResponse.class);
         String tariffs = clientResponse.getEntity(String.class);
 
+        System.out.println(tariffs);
         JSONObject tarifobj = new JSONObject(tariffs);
 
         JSONArray tarrifArr = tarifobj.getJSONArray("results");
@@ -81,7 +87,6 @@ public class StalkerRestAPI2 {
         for (int i = 0; i < tarrifArr.length(); i++) {
             jObj.put(String.valueOf(i), tarrifArr.get(i));
         }
-
 
         return jObj;
     }
@@ -99,23 +104,29 @@ public class StalkerRestAPI2 {
     }
 
     public JSONObject saveUSER(JSONObject rLine) {
-        webResource = apiClient.resource(url + "accounts");
-        String request;
+        webResource = apiClient.resource(url);
+        webResource.path("accounts");
 
+        String request;
         request = "&login=" + rLine.getString("login");
         request += "&full_name=" + rLine.getString("full_name");
-        request += "&account_number=" + rLine.getInt("account_number");
-        request += "&tarrif_plan=" + rLine.getString("tarrif_plan");
+        request += "&account_number=" + rLine.getInt("userID");
+        request += "&end_date=" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toString();
+        request += "&tariff_plan=" + rLine.getString("tariff_plan");
         request += "&password=" + rLine.getString("password");
-        request += "&status=1";
-
-        clientResponse = webResource.accept("application/json")
+        request += "&stb_mac=" + rLine.getString("STB_MAC");
+        request += "&status=0";
+        clientResponse = webResource
+                .path("accounts")
+                .accept(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Basic " + AuthStringENC)
                 .post(ClientResponse.class, request);
 
+        String resp = clientResponse.getEntity(String.class);
 
+        System.out.println("RESPONSE: " + resp);
         JSONObject respObj = new JSONObject();
-        respObj.put("Message", clientResponse.getEntity(String.class));
+        respObj.put("Message", resp);
         return respObj;
     }
 
@@ -141,4 +152,60 @@ public class StalkerRestAPI2 {
 
     }
 
+    public JSONObject setEndDate(JSONObject rLine, String endDate) {
+        webResource = apiClient.resource(url);
+        clientResponse = webResource.path("stb").path("1")
+                .queryParam("end_date", endDate)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Basic " + AuthStringENC)
+                .put(ClientResponse.class, "end_date=" + endDate);
+        String aa = clientResponse.getEntity(String.class);
+        System.out.println("ACC INFO:" + aa);
+        System.out.println(webResource.toString());
+
+        JSONObject accInfo = new JSONObject();
+
+        getAccInfo(rLine.getString("STB_MAC"), endDate);
+        return accInfo;
+
+
+    }
+
+    public JSONObject getAccInfo(String stb_mac, String endDate) {
+        webResource = apiClient.resource(url);
+        clientResponse = webResource.path("accounts").path(stb_mac)
+                .accept("application/json")
+                .header("Authorization", "Basic " + AuthStringENC)
+                .get(ClientResponse.class);
+        String aa = clientResponse.getEntity(String.class);
+        System.out.println("ACC INFO:" + aa);
+        System.out.println(webResource.toString());
+
+        JSONObject accInfo = new JSONObject();
+        return accInfo;
+    }
+
+    public void deleteAccount(String stb_mac) {
+        webResource = apiClient.resource(url);
+        clientResponse = webResource.path("stb").path(stb_mac)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Basic " + AuthStringENC)
+                .delete(ClientResponse.class);
+
+        String aa = clientResponse.getEntity(String.class);
+        System.out.println("DELETE ACCOUNT: " + aa);
+    }
+
+    public void changeMac(int acc, String stb_mac) {
+        webResource = apiClient.resource(url);
+        clientResponse = webResource
+                .path("accounts")
+                .path("4")
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Basic " + AuthStringENC)
+                .put(ClientResponse.class);
+
+        String aa = clientResponse.getEntity(String.class);
+        System.out.println("CHANGE MAC: " + aa);
+    }
 }
