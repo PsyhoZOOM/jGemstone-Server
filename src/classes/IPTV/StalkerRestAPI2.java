@@ -77,7 +77,6 @@ public class StalkerRestAPI2 {
                 .get(ClientResponse.class);
         String tariffs = clientResponse.getEntity(String.class);
 
-        System.out.println(tariffs);
         JSONObject tarifobj = new JSONObject(tariffs);
 
         JSONArray tarrifArr = tarifobj.getJSONArray("results");
@@ -207,5 +206,27 @@ public class StalkerRestAPI2 {
 
         String aa = clientResponse.getEntity(String.class);
         System.out.println("CHANGE MAC: " + aa);
+    }
+
+    public Boolean checkUser(String STB_MAC) {
+        boolean userExists = true;
+        webResource = apiClient.resource(url);
+        clientResponse = webResource.
+                path("accounts")
+                .path(String.valueOf(STB_MAC))
+                .header("Authorization", "Basic " + AuthStringENC)
+                .accept(MediaType.APPLICATION_JSON)
+                .get(ClientResponse.class);
+        String resp = clientResponse.getEntity(String.class);
+        System.out.println(resp);
+        JSONObject jsonObject = new JSONObject(resp);
+
+        if (jsonObject.get("results") == JSONObject.NULL) {
+            System.out.println("NEMA USERS");
+            userExists = false;
+        }
+
+        System.out.println(userExists);
+        return userExists;
     }
 }

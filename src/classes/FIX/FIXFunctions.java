@@ -6,7 +6,6 @@ import org.json.JSONObject;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.PropertyPermission;
 
 /**
  * Created by PsyhoZOOM@gmail.com on 7/15/17.
@@ -92,4 +91,8 @@ public class FIXFunctions {
         return exist;
     }
 
+    public static void deleteService(String brojTelefona, database db) {
+        PreparedStatement ps;
+        String query = "DELETE FROM FIX_brojevi";
+    }
 }

@@ -3,6 +3,7 @@ package classes.BOX;
 import classes.DTV.DTVFunctions;
 import classes.FIX.FIXFunctions;
 import classes.INTERNET.NETFunctions;
+import classes.IPTV.IPTVFunctions;
 import classes.SERVICES.ServicesFunctions;
 import classes.database;
 import org.json.JSONObject;
@@ -60,8 +61,8 @@ public class addBoxService {
             } else {
                 ps.setNull(15, Types.VARCHAR);
             }
-            if (rLine.has("MAC_IPTV")) {
-                ps.setString(16, rLine.getString("MAC_IPTV"));
+            if (rLine.has("STB_MAC")) {
+                ps.setString(16, rLine.getString("STB_MAC"));
             } else {
                 ps.setNull(16, Types.VARCHAR);
             }
@@ -86,7 +87,11 @@ public class addBoxService {
                 add_dtv(rLine, opername);
             }
             if (rLine.has("FIX_TEL")) {
-                add_fix(rLine, opername);
+                if (!rLine.getString("FIX_TEL").isEmpty())
+                    add_fix(rLine, opername);
+            }
+            if (rLine.has("STB_MAC")) {
+                add_iptv(rLine, opername);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -94,6 +99,11 @@ public class addBoxService {
         }
 
 
+    }
+
+    private void add_iptv(JSONObject rLine, String opername) {
+        IPTVFunctions.add_account(rLine, this.db);
+        ServicesFunctions.addServiceIPTVLinked(rLine, opername, BOX_Service_ID, this.db);
     }
 
     public int getBOX_ID() {

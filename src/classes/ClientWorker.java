@@ -4,6 +4,7 @@ import classes.BOX.addBoxService;
 import classes.DTV.DTVFunctions;
 import classes.FIX.FIXFunctions;
 import classes.INTERNET.NETFunctions;
+import classes.IPTV.IPTVFunctions;
 import classes.IPTV.StalkerRestAPI2;
 import classes.SERVICES.ServicesFunctions;
 import com.csvreader.CsvReader;
@@ -613,7 +614,8 @@ public class ClientWorker implements Runnable {
                         service.put("groupName", rs2.getString("GroupName"));
                         service.put("userName", rs2.getString("UserName"));
                         service.put("idDTVCard", rs2.getString("idDTVCard"));
-                        service.put("MAC_IPTV", rs2.getString("MAC_IPTV"));
+                        service.put("MAC_IPTV", rs2.getString("IPTV_MAC"));
+                        service.put("STB_MAC", rs2.getString("IPTV_MAC"));
                         service.put("FIKSNA_TEL", rs2.getString("FIKSNA_TEL"));
                         service.put("popust", rs2.getDouble("popust"));
                         service.put("cena", rs2.getDouble("cena"));
@@ -627,6 +629,9 @@ public class ClientWorker implements Runnable {
                             service.put("paketType", "DTV");
                         if (rs2.getString("FIKSNA_TEL") != null)
                             service.put("paketType", "FIX");
+                        if (rs2.getString("IPTV_MAC") != null) {
+                            service.put("paketType", "IPTV");
+                        }
                         service.put("newService", rs2.getBoolean("newService"));
 
 
@@ -700,6 +705,8 @@ public class ClientWorker implements Runnable {
             Boolean checkNet = false;
             Boolean checkDtv = false;
             Boolean checkFix = false;
+            Boolean checkIptv = false;
+
 
             if (rLine.has("groupName")) {
                 //createInternetService;
@@ -707,9 +714,9 @@ public class ClientWorker implements Runnable {
 
             }
 
-            if (rLine.has("DTVCardID")) {
+            if (rLine.has("DTVKartica")) {
                 //create DTV SERVICE
-                checkDtv = DTVFunctions.check_card_busy(rLine.getInt("cardID"), db);
+                checkDtv = DTVFunctions.check_card_busy(rLine.getInt("DTVKartica"), db);
 
             }
 
@@ -718,9 +725,13 @@ public class ClientWorker implements Runnable {
                 checkFix = FIXFunctions.check_TELBr_bussy(rLine.getString("FIX_TEL"), db);
             }
 
+            if (rLine.has("STB_MAC")) {
+                checkIptv = IPTVFunctions.checkUserBussy(rLine.getString("STB_MAC"), db);
+            }
+
 
             //ako je user ili kartica zauzeta poslati obavestenje u suprotnom napraviti boxPaket serivis i dodati ostrale servise koriniku
-            if (checkDtv || checkNet) {
+            if (checkDtv || checkNet || checkFix || checkIptv) {
                 String message = null;
                 if (checkDtv) {
                     message = "DTV Kartica je zauzeta";
@@ -734,6 +745,11 @@ public class ClientWorker implements Runnable {
 
                 if (checkFix) {
                     message = "Broj telefona je zauzet";
+                    jObj.put("Error", message);
+                }
+
+                if (checkIptv) {
+                    message = "IPTV STB_MAC je zauzet";
                     jObj.put("Error", message);
                 }
             } else {
@@ -790,7 +806,8 @@ public class ClientWorker implements Runnable {
 
                         if (rs.getString("IPTV_naziv") != null) {
                             paketBox.put("IPTV_id", rs.getInt("IPTV_id"));
-                            paketBox.put("IPTV_naziv", get_paket_naziv("", 0));
+                            paketBox.put("IPTV_naziv", get_paket_naziv("IPTV_Paketi", rs.getInt("IPTV_id")));
+                            paketBox.put("tariff_plan", get_paket_naziv("IPTV_Paketi", rs.getInt("IPTV_id")));
                         }
                         paketBox.put("cena", rs.getDouble("cena"));
                         jObj.put(String.valueOf(i), paketBox);
@@ -852,6 +869,9 @@ public class ClientWorker implements Runnable {
             }
             if (rLine.getString("paketType").equals("IPTV")) {
                 ServicesFunctions.deleteServiceIPTV(rLine, operName, db);
+            }
+            if (rLine.getString("paketType").equals("FIX")) {
+                ServicesFunctions.deleteServiceFIX(rLine, operName, db);
             }
 
 
@@ -2335,7 +2355,7 @@ public class ClientWorker implements Runnable {
 
                 if (rLine.has("IPTV_id")) {
                     ps.setInt(8, rLine.getInt("IPTV_id"));
-                    ps.setString(9, rLine.getString("IPTV_naizv"));
+                    ps.setString(9, rLine.getString("IPTV_naziv"));
                 } else {
                     ps.setNull(8, Types.INTEGER);
                     ps.setNull(9, Types.VARCHAR);
@@ -2461,7 +2481,7 @@ public class ClientWorker implements Runnable {
         if(rLine.get("action").equals("add_CSV_FIX_Telefonija")){
             CsvReader csvReader = null;
             PreparedStatement ps;
-            String query = "INSERT INTO csv (account, `from`, `to`, country, description, connectTime, chargedTimeMS, " +
+            String query = "INSERT INTO csv (account,  'from', 'to', country, description, connectTime, chargedTimeMS, " +
                     "chargedTimeS, chargedAmountRSD, serviceName, chargedQuantity, serviceUnit, customerID, fileName)" +
                     "VALUES" +
                     "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -2570,7 +2590,8 @@ public class ClientWorker implements Runnable {
         //test
         if (rLine.getString("action").equals("test_REST_API")) {
             StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
-            stalkerRestAPI2.changeMac(1, "00:1A:79:00:39:EE");
+            //stalkerRestAPI2.changeMac(1, "00:1A:79:00:39:EE");
+            stalkerRestAPI2.checkUser(rLine.getString("STB_MAC"));
 
             jObj = new JSONObject();
             send_object(jObj);
@@ -2687,6 +2708,38 @@ public class ClientWorker implements Runnable {
             ServicesFunctions.addServiceIPTV(rLine, operName, db);
             send_object(jObj);
         }
+
+        if (rLine.getString("action").equals("get_paket_IPTV")) {
+            jObj = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT  * FROM IPTV_Paketi";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    int i = 0;
+                    while (rs.next()) {
+                        JSONObject obj = new JSONObject();
+                        obj.put("id", rs.getInt("id"));
+                        obj.put("name", rs.getString("name"));
+                        obj.put("external_id", rs.getString("external_id"));
+                        obj.put("cena", rs.getDouble("cena"));
+                        obj.put("opis", rs.getString("opis"));
+                        obj.put("prekoracenje", rs.getInt("prekoracenje"));
+                        jObj.put(String.valueOf(i), obj);
+                        i++;
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
+
+
     }
 
     private String get_paket_naziv(String digitalniTVPaket, int dtv_id) {
@@ -2703,7 +2756,11 @@ public class ClientWorker implements Runnable {
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 rs.next();
-                naziv = rs.getString("naziv");
+                if (digitalniTVPaket.equals("IPTV_Paketi")) {
+                    naziv = rs.getString("name");
+                } else {
+                    naziv = rs.getString("naziv");
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();

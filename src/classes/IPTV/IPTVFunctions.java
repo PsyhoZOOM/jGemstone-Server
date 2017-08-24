@@ -24,4 +24,14 @@ public class IPTVFunctions {
         return false;
 
     }
+
+    public static void add_account(JSONObject rLine, database db) {
+        StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
+        restAPI2.saveUSER(rLine);
+    }
+
+    public static Boolean checkUserBussy(String STB_MAC, database db) {
+        StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
+        return restAPI2.checkUser(STB_MAC);
+    }
 }
