@@ -671,8 +671,8 @@ public class ClientWorker implements Runnable {
                 }
             }
 
-            if (rLine.get("actionService").equals("activate_FIX_service")){
-                if(rLine.getBoolean("newService")){
+            if (rLine.get("actionService").equals("activate_FIX_service")) {
+                if (rLine.getBoolean("newService")) {
                     ServicesFunctions.activateFixServiceNew(rLine, getOperName(), this.db);
                 }
             }
@@ -760,7 +760,6 @@ public class ClientWorker implements Runnable {
 
 
             }
-
 
 
             send_object(jObj);
@@ -857,24 +856,40 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("delete_service_user")) {
             jObj = new JSONObject();
+            JSONObject delObj;
 
-            if (rLine.getString("paketType").equals("DTV")) {
-                ServicesFunctions.deleteServiceDTV(rLine, getOperName(), db);
-            }
-            if (rLine.getString("paketType").equals("NET")) {
-                ServicesFunctions.deleteServiceNET(rLine, getOperName(), db);
-            }
-            if (rLine.getString("paketType").equals("BOX")) {
-                ServicesFunctions.deleteServiceBOX(rLine, getOperName(), db);
-            }
-            if (rLine.getString("paketType").equals("IPTV")) {
-                ServicesFunctions.deleteServiceIPTV(rLine, operName, db);
-            }
-            if (rLine.getString("paketType").equals("FIX")) {
-                ServicesFunctions.deleteServiceFIX(rLine, operName, db);
-            }
+            System.out.println("DUZINA: " + rLine.length());
+            //rline.lenght -2 becouse 1 = action 2 = userid
+            for (int i = 0; i < rLine.length() - 2; i++) {
+                delObj = (JSONObject) rLine.get(String.valueOf(i));
+                System.out.println(delObj);
 
+                System.out.println("DELETE paketType: " + delObj.getString("paketType"));
+                System.out.println("DELETE ID: " + delObj.getInt("id"));
+                if (delObj.getString("paketType").equals("DTV")
+                        || delObj.getString("paketType").equals("LINKED_DTV")) {
+                    ServicesFunctions.deleteServiceDTV(delObj, getOperName(), db);
+                }
+                if (delObj.getString("paketType").equals("NET")
+                        || delObj.getString("paketType").equals("LINKED_NET")) {
+                    ServicesFunctions.deleteServiceNET(delObj, getOperName(), db);
+                }
 
+                if (delObj.getString("paketType").equals("BOX")) {
+                    ServicesFunctions.deleteServiceBOX(delObj, getOperName(), db);
+                }
+
+                if (delObj.getString("paketType").equals("FIX")
+                        || delObj.getString("paketType").equals("LINKED_FIX")) {
+                    ServicesFunctions.deleteServiceFIX(delObj, getOperName(), db);
+                }
+
+                if (delObj.getString("paketType").equals("IPTV")
+                        || delObj.getString("paketType").equals("LINKED_IPTV")) {
+                    ServicesFunctions.deleteServiceIPTV(delObj, getOperName(), db);
+                }
+
+            }
 
 
             send_object(jObj);
@@ -2465,12 +2480,12 @@ public class ClientWorker implements Runnable {
 
 
         //FIXNA OBRACUNI
-        if(rLine.get("action").equals("obracun_fiksne_zaMesec")){
+        if (rLine.get("action").equals("obracun_fiksne_zaMesec")) {
 
         }
 
 
-        if(rLine.getString("action").equals("addFixUslugu")){
+        if (rLine.getString("action").equals("addFixUslugu")) {
             jObj = new JSONObject();
             String message = ServicesFunctions.addServiceFIX(rLine, getOperName(), db);
             jObj.put("Message", message);
@@ -2478,7 +2493,7 @@ public class ClientWorker implements Runnable {
 
         }
 
-        if(rLine.get("action").equals("add_CSV_FIX_Telefonija")){
+        if (rLine.get("action").equals("add_CSV_FIX_Telefonija")) {
             CsvReader csvReader = null;
             PreparedStatement ps;
             String query = "INSERT INTO csv (account,  'from', 'to', country, description, connectTime, chargedTimeMS, " +
@@ -2486,18 +2501,18 @@ public class ClientWorker implements Runnable {
                     "VALUES" +
                     "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             jObj = new JSONObject();
-            for(String key : rLine.keySet()){
+            for (String key : rLine.keySet()) {
                 try {
                     csvReader = new CsvReader(new StringReader((String) rLine.get(key)));
                     csvReader.setDelimiter(',');
                     csvReader.readHeaders();
-                    while (csvReader.readRecord()){
+                    while (csvReader.readRecord()) {
                         //ako je csv fajl  na kraju prekinuti import
                         if (csvReader.get("Account").equals("SUBTOTAL") || csvReader.get("Account").isEmpty() ||
                                 csvReader.get("Service Name").equals("Payments"))
                             break;
                         String filename = key;
-                        String customerID =  key.substring(key.lastIndexOf("-"));
+                        String customerID = key.substring(key.lastIndexOf("-"));
                         customerID = customerID.replace("-customer", "");
                         customerID = customerID.replace(".csv", "");
 
@@ -2506,13 +2521,13 @@ public class ClientWorker implements Runnable {
                         ps.setString(1, csvReader.get("Account"));
                         ps.setString(2, csvReader.get("From"));
                         ps.setString(3, csvReader.get("To"));
-                        if(csvReader.get("Country").isEmpty()){
+                        if (csvReader.get("Country").isEmpty()) {
                             ps.setString(4, "Lokalni poziv");
-                        }else {
+                        } else {
                             ps.setString(4, csvReader.get("Country"));
                         }
                         ps.setString(5, csvReader.get("Description"));
-                        ps.setString(6,csvReader.get("Connect Time"));
+                        ps.setString(6, csvReader.get("Connect Time"));
                         ps.setString(7, csvReader.get("Charged Time, min:sec"));
                         ps.setInt(8, Integer.parseInt(csvReader.get("Charged Time, sec.")));
                         ps.setDouble(9, Double.parseDouble(csvReader.get("Charged Amount, RSD")));
@@ -2542,18 +2557,18 @@ public class ClientWorker implements Runnable {
             send_object(jObj);
         }
 
-        if(rLine.getString("action").equals("get_CSV_Data")){
+        if (rLine.getString("action").equals("get_CSV_Data")) {
             jObj = new JSONObject();
             PreparedStatement ps;
             ResultSet rs;
             String query = "SELECT * FROM csv";
-            int i=0;
+            int i = 0;
             try {
                 ps = db.conn.prepareStatement(query);
                 rs = ps.executeQuery();
-                if(rs.isBeforeFirst()){
+                if (rs.isBeforeFirst()) {
                     JSONObject csvData;
-                    while(rs.next()){
+                    while (rs.next()) {
                         csvData = new JSONObject();
                         csvData.put("id", rs.getInt("id"));
                         csvData.put("account", rs.getString("account"));

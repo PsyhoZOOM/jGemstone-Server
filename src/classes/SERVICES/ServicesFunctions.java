@@ -1044,32 +1044,32 @@ public class ServicesFunctions {
         }
     }
 
-    public static void deleteServiceDTV(JSONObject rLine, String operName, database db) {
+    public static void deleteServiceDTV(JSONObject delObj, String operName, database db) {
         PreparedStatement ps;
         PreparedStatement psDelete;
         ResultSet rs;
-
+        String query;
         String DTVKartica;
 
-        String query = "SELECT * FROM ServicesUser WHERE id=?";
+
+        query = "SELECT * FROM ServicesUser WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
-            ps.setInt(1, rLine.getInt("serviceId"));
+            ps.setInt(1, delObj.getInt("id"));
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 rs.next();
                 DTVKartica = rs.getString("idDTVCard");
-                query = "DELETE FROM DTVKartice WHERE idKartica=? AND userID=?";
+                query = "DELETE FROM DTVKartice WHERE idKartica=?";
                 psDelete = db.conn.prepareStatement(query);
                 psDelete.setInt(1, Integer.valueOf(DTVKartica));
-                psDelete.setInt(2, rLine.getInt("userID"));
                 psDelete.executeUpdate();
+                ps.close();
 
                 query = "DELETE FROM ServicesUser WHERE id=?";
                 psDelete = db.conn.prepareStatement(query);
-                psDelete.setInt(1, rLine.getInt("serviceId"));
+                psDelete.setInt(1, delObj.getInt("id"));
                 psDelete.executeUpdate();
-
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -1078,7 +1078,7 @@ public class ServicesFunctions {
 
     }
 
-    public static void deleteServiceNET(JSONObject rLine, String operName, database db) {
+    public static void deleteServiceNET(JSONObject delObj, String operName, database db) {
         PreparedStatement ps;
         PreparedStatement psDelete;
         ResultSet rs;
@@ -1088,7 +1088,7 @@ public class ServicesFunctions {
         String query = "SELECT * FROM ServicesUser WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
-            ps.setInt(1, rLine.getInt("serviceId"));
+            ps.setInt(1, delObj.getInt("id"));
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 rs.next();
@@ -1110,7 +1110,7 @@ public class ServicesFunctions {
 
                 query = "DELETE FROM ServicesUser WHERE id=?";
                 psDelete = db.conn.prepareStatement(query);
-                psDelete.setInt(1, rLine.getInt("serviceId"));
+                psDelete.setInt(1, delObj.getInt("id"));
                 psDelete.executeUpdate();
 
             }
@@ -1119,54 +1119,92 @@ public class ServicesFunctions {
         }
     }
 
-    public static void deleteServiceIPTV(JSONObject rLine, String operName, database db) {
+    public static void deleteServiceIPTV(JSONObject delObj, String operName, database db) {
         PreparedStatement ps;
-        String query = "DELETE FROM ServicesUser WHERE id=?";
+        ResultSet rs;
+        String query;
+        String mac = null;
+        int userID = 0;
+
+        query = "SELECT * FROM ServicesUser WHERE id=?";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, delObj.getInt("id"));
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                mac = rs.getString("MAC_IPTV");
+                userID = rs.getInt("userID");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        query = "DELETE FROM ServicesUser WHERE id=?";
         StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
 
         try {
             ps = db.conn.prepareStatement(query);
-            ps.setInt(1, rLine.getInt("serviceId"));
+            ps.setInt(1, delObj.getInt("id"));
             ps.executeUpdate();
             ps.close();
 
             //brisanje IPTV tarife RESTAPIjem
-            stalkerRestAPI2.deleteAccount(rLine.getString("STB_MAC"));
+            stalkerRestAPI2.deleteAccount(mac);
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
     }
 
-    public static void deleteServiceFIX(JSONObject rLine, String operName, database db) {
-        PreparedStatement ps;
-        String query = "DELETE FROM ServicesUser WHERE id=?";
-
-        try {
-            ps = db.conn.prepareStatement(query);
-            ps.setInt(1, rLine.getInt("serviceId"));
-            ps.executeUpdate();
-            ps.close();
-            FIXFunctions.deleteService(rLine.getString("brojTelefona"), db);
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void deleteServiceBOX(JSONObject rLine, String operName, database db) {
-        JSONObject rLineDelete;
+    public static void deleteServiceFIX(JSONObject delObj, String operName, database db) {
         PreparedStatement ps;
         ResultSet rs;
-        String query = "DELETE FROM ServicesUser WHERE box_id=?";
+        String query;
+        String brojTelefona = new String();
+        query = "SELECT * FROM ServicesUser WHERE id=?";
+
         try {
             ps = db.conn.prepareStatement(query);
-            ps.setInt(1, rLine.getInt("serviceId"));
-            ps.executeUpdate();
-            query = "DELETE FROM ServicesUser WHERE id=?";
+            ps.setInt(1, delObj.getInt("id"));
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                brojTelefona = rs.getString("FIKSNA_TEL");
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        query = "DELETE FROM ServicesUser WHERE id=?";
+
+        try {
             ps = db.conn.prepareStatement(query);
-            ps.setInt(1, rLine.getInt("serviceId"));
+            ps.setInt(1, delObj.getInt("id"));
             ps.executeUpdate();
+            ps.close();
+            FIXFunctions.deleteService(brojTelefona, db);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void deleteServiceBOX(JSONObject delObj, String operName, database db) {
+        PreparedStatement ps;
+        String query;
+
+        query = "DELETE FROM ServicesUser WHERE id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, delObj.getInt("id"));
+            ps.executeUpdate();
+            ps.close();
         } catch (SQLException e1) {
             e1.printStackTrace();
         }

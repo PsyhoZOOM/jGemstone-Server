@@ -93,6 +93,14 @@ public class FIXFunctions {
 
     public static void deleteService(String brojTelefona, database db) {
         PreparedStatement ps;
-        String query = "DELETE FROM FIX_brojevi";
+        String query = "DELETE FROM FIX_brojevi WHERE brojTel=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setString(1, brojTelefona);
+            ps.executeUpdate();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

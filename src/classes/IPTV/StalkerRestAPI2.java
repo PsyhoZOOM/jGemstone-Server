@@ -195,6 +195,7 @@ public class StalkerRestAPI2 {
         System.out.println("DELETE ACCOUNT: " + aa);
     }
 
+
     public void changeMac(int acc, String stb_mac) {
         webResource = apiClient.resource(url);
         clientResponse = webResource
