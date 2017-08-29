@@ -185,8 +185,12 @@ public class StalkerRestAPI2 {
     }
 
     public void deleteAccount(String stb_mac) {
+        //ako je mac null onda izlaz iz funkcije
+        if (stb_mac == null) return;
+
+        System.out.println("MAC za brisanje: " + stb_mac);
         webResource = apiClient.resource(url);
-        clientResponse = webResource.path("stb").path(stb_mac)
+        clientResponse = webResource.path("accounts").path(stb_mac)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Basic " + AuthStringENC)
                 .delete(ClientResponse.class);

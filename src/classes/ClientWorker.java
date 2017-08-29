@@ -2496,7 +2496,7 @@ public class ClientWorker implements Runnable {
         if (rLine.get("action").equals("add_CSV_FIX_Telefonija")) {
             CsvReader csvReader = null;
             PreparedStatement ps;
-            String query = "INSERT INTO csv (account,  'from', 'to', country, description, connectTime, chargedTimeMS, " +
+            String query = "INSERT INTO csv (account,  `from`, `to`, country, description, connectTime, chargedTimeMS, " +
                     "chargedTimeS, chargedAmountRSD, serviceName, chargedQuantity, serviceUnit, customerID, fileName)" +
                     "VALUES" +
                     "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -2511,6 +2511,8 @@ public class ClientWorker implements Runnable {
                         if (csvReader.get("Account").equals("SUBTOTAL") || csvReader.get("Account").isEmpty() ||
                                 csvReader.get("Service Name").equals("Payments"))
                             break;
+                        if (Double.parseDouble(csvReader.get("Charged Amount, RSD")) < 0)
+                            continue;
                         String filename = key;
                         String customerID = key.substring(key.lastIndexOf("-"));
                         customerID = customerID.replace("-customer", "");
@@ -2752,6 +2754,42 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("check_fix_obracun")) {
+            jObj = new JSONObject();
+            boolean exist = false;
+            PreparedStatement ps;
+            ResultSet rs;
+
+            String query = "SELECT * FROM userDebts WHERE zaMesec=? AND paketType LIKE '%FIX'";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("zaMesec"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    exist = true;
+                }
+                ps.close();
+            } catch (SQLException e) {
+                jObj.put("Error", e.getMessage());
+                e.printStackTrace();
+            }
+
+            jObj.put("exist", exist);
+
+            send_object(jObj);
+        }
+
+        if (rLine.getString("action").equals("obracunaj_za_mesec")) {
+            jObj = new JSONObject();
+
+            jObj = FIXFunctions.obracunajZaMesec(db, rLine.getString("zaMesec"), getOperName());
+
+            send_object(jObj);
+
+
         }
 
 

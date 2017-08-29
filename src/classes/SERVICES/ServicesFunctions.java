@@ -1134,7 +1134,7 @@ public class ServicesFunctions {
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 rs.next();
-                mac = rs.getString("MAC_IPTV");
+                mac = rs.getString("IPTV_MAC");
                 userID = rs.getInt("userID");
             }
         } catch (SQLException e) {
@@ -1142,17 +1142,18 @@ public class ServicesFunctions {
         }
 
 
-        query = "DELETE FROM ServicesUser WHERE id=?";
+        //brisanje IPTV tarife RESTAPIjem
         StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+        stalkerRestAPI2.deleteAccount(mac);
 
+        //brisanje u baziu
+        query = "DELETE FROM ServicesUser WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, delObj.getInt("id"));
             ps.executeUpdate();
             ps.close();
 
-            //brisanje IPTV tarife RESTAPIjem
-            stalkerRestAPI2.deleteAccount(mac);
         } catch (SQLException e) {
             e.printStackTrace();
         }
