@@ -153,14 +153,12 @@ public class StalkerRestAPI2 {
 
     public JSONObject setEndDate(JSONObject rLine, String endDate) {
         webResource = apiClient.resource(url);
-        clientResponse = webResource.path("stb").path("1")
+        clientResponse = webResource.path("stb").path(rLine.getString("STB_MAC"))
                 .queryParam("end_date", endDate)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Basic " + AuthStringENC)
                 .put(ClientResponse.class, "end_date=" + endDate);
         String aa = clientResponse.getEntity(String.class);
-        System.out.println("ACC INFO:" + aa);
-        System.out.println(webResource.toString());
 
         JSONObject accInfo = new JSONObject();
 
@@ -196,7 +194,6 @@ public class StalkerRestAPI2 {
                 .delete(ClientResponse.class);
 
         String aa = clientResponse.getEntity(String.class);
-        System.out.println("DELETE ACCOUNT: " + aa);
     }
 
 
@@ -223,7 +220,6 @@ public class StalkerRestAPI2 {
                 .accept(MediaType.APPLICATION_JSON)
                 .get(ClientResponse.class);
         String resp = clientResponse.getEntity(String.class);
-        System.out.println(resp);
         JSONObject jsonObject = new JSONObject(resp);
 
         if (jsonObject.get("results") == JSONObject.NULL) {
@@ -233,5 +229,22 @@ public class StalkerRestAPI2 {
 
         System.out.println(userExists);
         return userExists;
+    }
+
+    public void activateStatus(boolean status, String STB_MAC) {
+        webResource = apiClient.resource(url);
+        int statusInt = 0;
+        if (status)
+            statusInt = 1;
+
+        clientResponse = webResource.path("accounts")
+                .path(STB_MAC)
+                .header("Authorization", "Basic " + AuthStringENC)
+                .accept(MediaType.APPLICATION_JSON)
+                .put(ClientResponse.class, "status=" + statusInt);
+        System.out.println(webResource.toString());
+
+        String aa = clientResponse.getEntity(String.class);
+        System.out.println("AKTIVATED: " + aa);
     }
 }

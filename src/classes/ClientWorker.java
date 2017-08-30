@@ -969,7 +969,11 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("get_zaduzenja_user")) {
             jObj = new JSONObject();
-            query = "SELECT * FROM userDebts where userID=? ORDER BY zaMesec ASC";
+            if (rLine.getBoolean("sveUplate")) {
+                query = "SELECT * FROM userDebts where userID=? ORDER BY zaMesec ASC";
+            } else {
+                query = "SELECT * FROM userDebts WHERE userId=? AND cena > uplaceno ORDER BY zaMesec ASC";
+            }
 
             try {
                 ps = db.conn.prepareStatement(query);
