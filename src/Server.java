@@ -4,12 +4,10 @@ import classes.database;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.net.ServerSocketFactory;
 import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.sql.PreparedStatement;
@@ -25,7 +23,6 @@ public class Server {
     public static void main(String[] args) {
 
         SSLServerSocket serverSock = null;
-        SSLSocket socket = null;
         Boolean DEBUG = false;
         String query;
         PreparedStatement ps;
@@ -70,22 +67,6 @@ public class Server {
         } catch (KeyManagementException e) {
             e.printStackTrace();
         }
-        /*
-        //OLDY NON CRYPT
-        ServerSocket serverSocket = null;
-        ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
-        try {
-            //nonSecure
-            serverSocket = new ServerSocket(portNumber);
-
-            //TODO Create secure connection
-            // serverSocket = ssf.createServerSocket(portNumber);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //end of non crpted
-        */
 
 
         db = new database();

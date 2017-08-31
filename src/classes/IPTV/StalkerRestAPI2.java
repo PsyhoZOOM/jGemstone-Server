@@ -151,9 +151,9 @@ public class StalkerRestAPI2 {
 
     }
 
-    public JSONObject setEndDate(JSONObject rLine, String endDate) {
+    public JSONObject setEndDate(String STB_MAC, String endDate) {
         webResource = apiClient.resource(url);
-        clientResponse = webResource.path("stb").path(rLine.getString("STB_MAC"))
+        clientResponse = webResource.path("stb").path(STB_MAC)
                 .queryParam("end_date", endDate)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Basic " + AuthStringENC)
@@ -162,23 +162,26 @@ public class StalkerRestAPI2 {
 
         JSONObject accInfo = new JSONObject();
 
-        getAccInfo(rLine.getString("STB_MAC"), endDate);
+        getAccInfo(STB_MAC);
         return accInfo;
 
 
     }
 
-    public JSONObject getAccInfo(String stb_mac, String endDate) {
+    public JSONObject getAccInfo(String stb_mac) {
         webResource = apiClient.resource(url);
         clientResponse = webResource.path("accounts").path(stb_mac)
                 .accept("application/json")
                 .header("Authorization", "Basic " + AuthStringENC)
                 .get(ClientResponse.class);
         String aa = clientResponse.getEntity(String.class);
-        System.out.println("ACC INFO:" + aa);
-        System.out.println(webResource.toString());
 
-        JSONObject accInfo = new JSONObject();
+        JSONObject accInfo = new JSONObject(aa);
+        JSONArray accInfoArr = accInfo.getJSONArray("results");
+        accInfo = new JSONObject(accInfoArr);
+
+
+
         return accInfo;
     }
 

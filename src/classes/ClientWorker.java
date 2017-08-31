@@ -651,37 +651,36 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.get("action").equals("activate_service")) {
+            PreparedStatement ps;
+            ResultSet rs;
+            String query;
 
             jObj = new JSONObject();
 
-            if (rLine.get("actionService").equals("activate_BOX_service")) {
-                if (rLine.getBoolean("newService")) {
-                    ServicesFunctions.activateBoxServiceNew(rLine, getOperName(), this.db);
+            int service_id = rLine.getInt("service_id");
+            query = "SELECT * FROM ServicesUser WHERE id=?";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, service_id);
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    if (rs.getString("paketType").equals("BOX")) {
+                        ServicesFunctions.activateBoxService(getOperName(), rs, db);
+                    } else {
+                        ServicesFunctions.activateService(getOperName(), rs, db);
+                    }
                 }
+
+                ps.close();
+                rs.close();
+
+
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
 
-            if (rLine.get("actionService").equals("activate_DTV_service")) {
-                if (rLine.getBoolean("newService")) {
-                    ServicesFunctions.activateDTVServiceNew(rLine, getOperName(), this.db);
-                }
-            }
-            if (rLine.get("actionService").equals("activate_NET_service")) {
-                if (rLine.getBoolean("newService")) {
-                    ServicesFunctions.activateNetServiceNew(rLine, getOperName(), this.db);
-                }
-            }
-
-            if (rLine.get("actionService").equals("activate_FIX_service")) {
-                if (rLine.getBoolean("newService")) {
-                    ServicesFunctions.activateFixServiceNew(rLine, getOperName(), this.db);
-                }
-            }
-
-            if (rLine.get("actionService").equals("activate_IPTV_service")) {
-                if (rLine.getBoolean("newService")) {
-                    ServicesFunctions.activateIPTVServiceNew(rLine, getOperName(), this.db);
-                }
-            }
 
             jObj.put("Message", "SERVICE_AKTIVATED");
 
@@ -972,7 +971,7 @@ public class ClientWorker implements Runnable {
             if (rLine.getBoolean("sveUplate")) {
                 query = "SELECT * FROM userDebts where userID=? ORDER BY zaMesec ASC";
             } else {
-                query = "SELECT * FROM userDebts WHERE userId=? AND cena > uplaceno ORDER BY zaMesec ASC";
+                query = "SELECT * FROM userDebts WHERE userId=? AND dug > uplaceno ORDER BY zaMesec ASC";
             }
 
             try {
@@ -1020,15 +1019,6 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("uplata_servisa")) {
             jObj = new JSONObject();
 
-            if (rLine.getString("paketType").equals("BOX")) {
-                ServicesFunctions.produziBOX(rLine, getOperName(), db);
-            }
-            if (rLine.getString("paketType").equals("DTV")) {
-                ServicesFunctions.produziDTV(rLine, getOperName(), db);
-            }
-            if (rLine.getString("paketType").equals("NET")) {
-                ServicesFunctions.produziNET(rLine, getOperName(), db);
-            }
 
 
             query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?  WHERE id=?";
@@ -1045,6 +1035,9 @@ public class ClientWorker implements Runnable {
                 jObj.put("Error", e.getMessage());
                 e.printStackTrace();
             }
+
+
+            //ServicesFunctions.produziService(rLine, getOperName(), db);
 
 
             send_object(jObj);
@@ -2886,6 +2879,7 @@ public class ClientWorker implements Runnable {
             ps.setInt(17, userID);
             ps.executeUpdate();
             jObj.put("Message", String.format("USER: %s UPDATED", userID));
+            ps.close();
 
         } catch (SQLException e) {
             jObj.put("Message", "ERROR_USER_NOT_UPDATED");
@@ -2923,6 +2917,7 @@ public class ClientWorker implements Runnable {
                 passWord = null;
                 aktivan = false;
             }
+            ps.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
