@@ -48,8 +48,8 @@ public class monthlyScheduler {
 		//obracun je za prosli mesec
 
 		LocalDate date = LocalDate.now();
-		date.minusMonths(1);
-		try {
+        date = date.minusMonths(1);
+        try {
 			ps = db.conn.prepareStatement(query);
 			rs = ps.executeQuery();
 			if (rs.isBeforeFirst()) {
@@ -86,7 +86,8 @@ public class monthlyScheduler {
 				}
 			}
 			rs.close();
-			psUpdateDebts.close();
+            if (psUpdateDebts != null)
+                psUpdateDebts.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

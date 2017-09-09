@@ -866,7 +866,6 @@ public class ServicesFunctions {
 				produzenje = rs.getInt("produzenje");
 				UserName = rs.getString("UserName");
 				idCard = rs.getInt("idDTVCard");
-				IPTV_MAC = rs.getString("IPTV_MAC");
 
 				if (newService) {
 					endDate = endDate.plusMonths(produzenje);
