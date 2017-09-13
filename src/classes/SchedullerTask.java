@@ -127,8 +127,9 @@ public class SchedullerTask implements Runnable {
             } else {
                 if (clientWorkerArrayList.get(i).client_db_update == false) {
                     SimpleDateFormat datum_oper = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    query = "INSERT onlineOperaters SET username=?, remote_address=?, date=?, " +
-                            "online=?, uniqueID=?, arrayID=?";
+                    query = "INSERT INTO onlineOperaters (username, remote_address, date, online, uniqueID, arrayID) " +
+                            "VALUES " +
+                            "(?,?,?,?,?,?)";
                     try {
                         ps = db.conn.prepareStatement(query);
                         ps.setString(1, clientWorkerArrayList.get(i).getOperName());

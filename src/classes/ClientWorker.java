@@ -152,7 +152,7 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("login")) {
             LOGGER.info("LOGIN CRED", rLine);
-            client_authenticated = check_Login(rLine.get("username").toString(), rLine.get("password").toString());
+            client_authenticated = check_Login(rLine.getString("username"), rLine.getString("password"));
             this.operName = rLine.get("username").toString();
             if (client_authenticated) {
                 jObj = new JSONObject();
@@ -987,7 +987,6 @@ public class ClientWorker implements Runnable {
                         userDebt = new JSONObject();
                         userDebt.put("id", rs.getInt("id"));
                         userDebt.put("id_ServiceUser", rs.getInt("id_ServiceUser"));
-                        userDebt.put("id_service", rs.getInt("id_service"));
                         userDebt.put("nazivPaketa", rs.getString("nazivPaketa"));
                         userDebt.put("datumZaduzenja", rs.getDate("datumZaduzenja"));
                         userDebt.put("userID", rs.getInt("userID"));

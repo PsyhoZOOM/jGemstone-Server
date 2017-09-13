@@ -672,6 +672,9 @@ public class ServicesFunctions {
                 if (rs.getString("paketType").equals("NET")) {
                     datumIsteka = getDatumIstekaNET(rs.getInt("id"), db);
                 }
+                if (rs.getString("paketType").equals("IPTV")) {
+                    datumIsteka = getDatumIstekaIPTV(rs.getInt("id"), db);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -680,6 +683,31 @@ public class ServicesFunctions {
         return datumIsteka;
 
 
+    }
+
+    private static String getDatumIstekaIPTV(int id, database db) {
+        PreparedStatement ps;
+        ResultSet rs;
+        String query = "SELECT IPTV_MAC FROM ServicesUser WHERE id=?";
+        String IPTV_MAC = null;
+        String datum_isteka = null;
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, id);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                IPTV_MAC = rs.getString("IPTV_MAC");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+        datum_isteka = stalkerRestAPI2.get_end_date(IPTV_MAC);
+
+        return datum_isteka;
     }
 
     private static String getDatumIstekaNET(int id, database db) {
@@ -709,9 +737,9 @@ public class ServicesFunctions {
             e.printStackTrace();
         }
         Calendar cal = Calendar.getInstance();
-        LocalDateTime date = null;
+        LocalDate date = null;
             if (datumIsteka != null)
-                date = LocalDateTime.parse(datumIsteka, dtfRadCheck);
+                date = LocalDate.parse(datumIsteka, dtfRadCheck);
 
         datumIsteka = date.format(dtfNormalDate);
         return datumIsteka;
@@ -765,6 +793,9 @@ public class ServicesFunctions {
                     if (rs.getString("paketType").equals("LINKED_DTV")) {
                         datumIsteka = getDatumIstekaDTV(rs.getInt("id"), db);
                     }
+                    if (rs.getString("paketType").equals("LINKED_IPTV")) {
+                        datumIsteka = getDatumIstekaIPTV(rs.getInt("id"), db);
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -778,30 +809,29 @@ public class ServicesFunctions {
     public static String addService(JSONObject rLine, String operName, database db) {
         PreparedStatement ps;
         String cal = LocalDateTime.now().format(dtfNormalDate);
-        LocalDateTime calZaMesec = null;
+        LocalDate calZaMesec = null;
 
 
-        calZaMesec = LocalDateTime.parse(rLine.getString("zaMesec"), dtfMesecZaduzenja);
+        calZaMesec = LocalDate.parse(rLine.getString("zaMesec") + "-01");
 
 
-        String query = "INSERT INTO userDebts (id_ServiceUser, id_service, nazivPaketa, datumZaduzenja, userID, popust, " +
+        String query = "INSERT INTO userDebts (id_ServiceUser,  nazivPaketa, datumZaduzenja, userID, popust, " +
                 "paketType, cena, uplaceno, datumUplate, dug,  zaduzenOd, zaMesec) VALUES" +
-                "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "(?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, rLine.getInt("id_ServiceUser"));
-            ps.setInt(2, rLine.getInt("id_service"));
-            ps.setString(3, rLine.getString("nazivPaketa"));
-            ps.setString(4, cal);
-            ps.setInt(5, rLine.getInt("userID"));
-            ps.setDouble(6, rLine.getDouble("popust"));
-            ps.setString(7, rLine.getString("paketType"));
-            ps.setDouble(8, rLine.getDouble("cena"));
-            ps.setDouble(9, 0.00);
-            ps.setString(10, "1000-01-01 00:00:00");
-            ps.setDouble(11, valueToPercent.getValue(rLine.getDouble("cena"), rLine.getDouble("popust")));
-            ps.setString(12, operName);
-            ps.setString(13, calZaMesec.format(dtfMesecZaduzenja));
+            ps.setString(2, rLine.getString("nazivPaketa"));
+            ps.setString(3, cal);
+            ps.setInt(4, rLine.getInt("userID"));
+            ps.setDouble(5, rLine.getDouble("popust"));
+            ps.setString(6, rLine.getString("paketType"));
+            ps.setDouble(7, rLine.getDouble("cena"));
+            ps.setDouble(8, 0.00);
+            ps.setString(9, "1000-01-01 00:00:00");
+            ps.setDouble(10, valueToPercent.getValue(rLine.getDouble("cena"), rLine.getDouble("popust")));
+            ps.setString(11, operName);
+            ps.setString(12, calZaMesec.format(dtfMesecZaduzenja));
             ps.executeUpdate();
 
         } catch (SQLException e) {
@@ -854,6 +884,71 @@ public class ServicesFunctions {
             e.printStackTrace();
         }
 
+        query = "INSERT INTO userDebts " +
+                "(id_ServiceUser, nazivPaketa, datumZaduzenja, userID, paketType, cena, dug, zaduzenOd, zaMesec) " +
+                "VALUES " +
+                "(?,?,?,?,?,?,?,?,?)";
+
+        int daysInMonth = 0;
+        int daysToEndMonth = 0;
+        Double cenaService = null;
+        try {
+            cenaService = rs.getDouble("cena");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        Double zaUplatu = 0.00;
+        Double cenaZaDan = 0.00;
+        LocalDateTime date = LocalDateTime.now();
+
+
+        //status on STALKER STATus
+        StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+        try {
+            stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (rs.getBoolean("newService")) {
+                daysInMonth = date.getMonth().length(true);
+                daysToEndMonth = daysInMonth - date.getDayOfMonth();
+                cenaZaDan = cenaService / daysInMonth;
+                if (rs.getBoolean("newService")) {
+                    zaUplatu = cenaZaDan * daysInMonth;
+                } else {
+                    zaUplatu = cenaService;
+                }
+            }
+
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rs.getInt("id"));
+            ps.setString(2, rs.getString("nazivPaketa"));
+            ps.setString(3, LocalDate.now().toString());
+            ps.setInt(4, rs.getInt("userID"));
+            ps.setString(5, rs.getString("paketType"));
+            ps.setDouble(6, cenaService);
+            ps.setDouble(7, zaUplatu);
+            ps.setString(8, operName);
+            ps.setString(9, LocalDate.now().format(dtfMesecZaduzenja));
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        query = "UPDATE ServicesUser set aktivan=1, date_activated=? WHERE id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setString(1, LocalDateTime.now().toString());
+            ps.setInt(2, rs.getInt("id"));
+            ps.executeUpdate();
+            ps.close();
+            rs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
 
     }
 
@@ -869,10 +964,14 @@ public class ServicesFunctions {
                 Double cenaZaDan = 0.00;
 
 
-                daysInMonth = date.getMonth().length(true);
-                daysToEndMonth = daysInMonth - date.getDayOfMonth();
-                cenaZaDan = cenaService / daysInMonth;
-                zaUplatu = cenaZaDan * daysToEndMonth;
+                if (rs.getBoolean("newService")) {
+                    daysInMonth = date.getMonth().length(true);
+                    daysToEndMonth = daysInMonth - date.getDayOfMonth();
+                    cenaZaDan = cenaService / daysInMonth;
+                    zaUplatu = cenaZaDan * daysToEndMonth;
+                } else {
+                    zaUplatu = cenaService;
+                }
 
 
                 PreparedStatement ps;
@@ -898,6 +997,17 @@ public class ServicesFunctions {
                 produziService(rs, operName, db);
 
             }
+
+            StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+            stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
+
+            String query = "UPDATE ServicesUser SET aktivan=1, date_activated=? WHERE id=?";
+            PreparedStatement ps = db.conn.prepareStatement(query);
+            ps.setString(1, LocalDateTime.now().toString());
+            ps.setInt(2, rs.getInt("id"));
+            ps.executeUpdate();
+            ps.close();
+            rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -909,6 +1019,17 @@ public class ServicesFunctions {
         try {
             type = rs.getString("paketType");
             newService = rs.getBoolean("newService");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            String query = "UPDATE ServicesUser SET aktivan=1, date_activated=? WHERE id=?";
+            PreparedStatement ps = db.conn.prepareStatement(query);
+            ps.setString(1, LocalDateTime.now().toString());
+            ps.setInt(2, rs.getInt("id"));
+            ps.executeUpdate();
+            ps.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }

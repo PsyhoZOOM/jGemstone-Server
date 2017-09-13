@@ -250,4 +250,23 @@ public class StalkerRestAPI2 {
         String aa = clientResponse.getEntity(String.class);
         System.out.println("AKTIVATED: " + aa);
     }
+
+    public String get_end_date(String STB_MAC) {
+        String end_date = "0000-00-00";
+        webResource = apiClient.resource(url);
+        clientResponse = webResource.path("accounts")
+                .path(STB_MAC)
+                .header("Authorization", "Basic " + AuthStringENC)
+                .accept(MediaType.APPLICATION_JSON)
+                .get(ClientResponse.class);
+        String aa = clientResponse.getEntity(String.class);
+
+        JSONObject jsonObject = new JSONObject(aa);
+        jsonObject = jsonObject.getJSONArray("results").getJSONObject(0);
+
+        if (jsonObject.has("end_date"))
+            end_date = jsonObject.getString("end_date");
+
+        return end_date;
+    }
 }

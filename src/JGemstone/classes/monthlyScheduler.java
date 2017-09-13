@@ -52,20 +52,19 @@ public class monthlyScheduler {
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 while (rs.next()) {
-                    query = "INSERT INTO userDebts (id_ServiceUser, id_service, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena, dug, zaMesec)" +
+                    query = "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena, dug, zaMesec)" +
                             "VALUES " +
-                            "(?,?,?,?,?,?,?,?,?,?)";
+                            "(?,?,?,?,?,?,?,?,?)";
                     psUpdateDebts = db.conn.prepareStatement(query);
                     psUpdateDebts.setInt(1, rs.getInt("id"));
-                    psUpdateDebts.setInt(2, rs.getInt("id_service"));
-                    psUpdateDebts.setString(3, rs.getString("nazivPaketa"));
-                    psUpdateDebts.setDate(4, java.sql.Date.valueOf(format_first_day_in_month.format(new Date())));
-                    psUpdateDebts.setInt(5, rs.getInt("userID"));
-                    psUpdateDebts.setDouble(6, rs.getDouble("popust"));
-                    psUpdateDebts.setString(7, rs.getString("paketType"));
-                    psUpdateDebts.setDouble(8, rs.getDouble("cena"));
-                    psUpdateDebts.setDouble(9, valueToPercent.getValue(rs.getDouble("cena"), rs.getDouble("popust")));
-                    psUpdateDebts.setString(10, format_month.format(cal.getTime()));
+                    psUpdateDebts.setString(2, rs.getString("nazivPaketa"));
+                    psUpdateDebts.setDate(3, java.sql.Date.valueOf(format_first_day_in_month.format(new Date())));
+                    psUpdateDebts.setInt(4, rs.getInt("userID"));
+                    psUpdateDebts.setDouble(5, rs.getDouble("popust"));
+                    psUpdateDebts.setString(6, rs.getString("paketType"));
+                    psUpdateDebts.setDouble(7, rs.getDouble("cena"));
+                    psUpdateDebts.setDouble(8, valueToPercent.getValue(rs.getDouble("cena"), rs.getDouble("popust")));
+                    psUpdateDebts.setString(9, format_month.format(cal.getTime()));
                     if (rs.getInt("newService") != 1) {
                         //ako servis je vec zaduzen onda preskociti zaduzenje od strane servera :)
                         if (!check_skip_userDebt(rs.getInt("id"), rs.getInt("userID"), format_month.format(cal.getTime())))
