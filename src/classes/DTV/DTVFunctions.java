@@ -8,6 +8,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 
 /**
@@ -41,14 +43,15 @@ public class DTVFunctions {
         PreparedStatement ps;
         ResultSet rs;
 
-        String query = "INSERT INTO DTVKartice (idKartica, userID, paketID, endDate ) VALUES " +
-                "(?,?,?,?)";
+        String query = "INSERT INTO DTVKartice (idKartica, userID, paketID, endDate, createDate ) VALUES " +
+                "(?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, rLine.getInt("DTVKartica"));
             ps.setInt(2, rLine.getInt("userID"));
             ps.setInt(3, rLine.getInt("DTVPaket"));
-            ps.setString(4, "1970-01-01");
+            ps.setString(4, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            ps.setString(5, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
             ps.executeUpdate();
 
         } catch (SQLException e) {

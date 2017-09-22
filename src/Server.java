@@ -1,4 +1,5 @@
 import classes.ClientWorker;
+import classes.EMMServer;
 import classes.SchedullerTask;
 import classes.database;
 import org.apache.logging.log4j.LogManager;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 
@@ -38,6 +40,7 @@ public class Server {
 
         System.out.println(System.getProperty("user.dir"));
 
+        //SSL SOCKET INIT
         try {
             KeyStore serverKeys = KeyStore.getInstance("JKS");
             serverKeys.load(new FileInputStream("ssl/plainserver.jks"), "jgemstone".toCharArray());
@@ -69,24 +72,57 @@ public class Server {
         }
 
 
+        //ONLINE OPERS OFFLINE
         db = new database();
         query = "UPDATE onlineOperaters SET online=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, 0);
             ps.executeUpdate();
+            ps.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
+        //SCHEDULER MONTHLY ..
         SchedullerTask st;
         st = new SchedullerTask(1);
         st.db = db;
 
         st.DEBUG = DEBUG;
         Thread scheduller = new Thread(st);
-
         scheduller.start();
+
+
+        //EMM SEND UDP
+        query = "SELECT settings, value FROM settings";
+        ResultSet rs;
+        String EMMhost = "127.0.0.1";
+        int EMMport = 10000;
+        int EMMTimeout = 1000;
+        try {
+            ps = db.conn.prepareStatement(query);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                while (rs.next()) {
+                    if (rs.getString("settings").equals("DTV_UDP_TIMEOUT"))
+                        EMMTimeout = Integer.valueOf(rs.getString("value"));
+                    if (rs.getString("settings").equals("DTV_EMM_HOST"))
+                        EMMhost = rs.getString("value");
+                    if (rs.getString("settings").equals("DTV_EMM_PORT"))
+                        EMMport = Integer.valueOf(rs.getString("value"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        EMMServer emmServer = new EMMServer(EMMTimeout, db, EMMhost, EMMport);
+        Thread emmThread = new Thread(emmServer);
+        emmThread.start();
+
+
+
 
         while (true) {
             ClientWorker cw;

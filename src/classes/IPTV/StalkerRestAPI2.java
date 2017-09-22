@@ -114,6 +114,9 @@ public class StalkerRestAPI2 {
         request += "&tariff_plan=" + rLine.getString("tariff_plan");
         request += "&password=" + rLine.getString("password");
         request += "&stb_mac=" + rLine.getString("STB_MAC");
+        String.format(request += "&comment=" + String.format("Korisnik %s, account broj: %d , login: %s, password: %s",
+                rLine.getString("full_name"), rLine.getInt("userID"), rLine.getString("login"),
+                rLine.getString("password")));
         request += "&status=0";
         clientResponse = webResource
                 .path("accounts")
@@ -153,7 +156,7 @@ public class StalkerRestAPI2 {
 
     public JSONObject setEndDate(String STB_MAC, String endDate) {
         webResource = apiClient.resource(url);
-        clientResponse = webResource.path("stb").path(STB_MAC)
+        clientResponse = webResource.path("accounts").path(STB_MAC)
                 .queryParam("end_date", endDate)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Basic " + AuthStringENC)
@@ -169,12 +172,15 @@ public class StalkerRestAPI2 {
     }
 
     public JSONObject getAccInfo(String stb_mac) {
+        System.out.println(stb_mac);
         webResource = apiClient.resource(url);
-        clientResponse = webResource.path("accounts").path(stb_mac)
+        clientResponse = webResource.path("stb").path(stb_mac)
                 .accept("application/json")
                 .header("Authorization", "Basic " + AuthStringENC)
                 .get(ClientResponse.class);
+        System.out.println(clientResponse.toString());
         String aa = clientResponse.getEntity(String.class);
+        System.out.println(aa.toString());
 
         JSONObject accInfo = new JSONObject(aa);
         JSONArray accInfoArr = accInfo.getJSONArray("results");
@@ -196,7 +202,9 @@ public class StalkerRestAPI2 {
                 .header("Authorization", "Basic " + AuthStringENC)
                 .delete(ClientResponse.class);
 
+        System.out.println(clientResponse.toString());
         String aa = clientResponse.getEntity(String.class);
+        System.out.println("RESPONSE: " + aa);
     }
 
 

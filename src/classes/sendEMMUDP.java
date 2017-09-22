@@ -141,7 +141,7 @@ public class sendEMMUDP {
             int SixteenByte = 0;
             for (int i = 0; i < packetSend.length; i++) {
                 SixteenByte += packetSend[i] & 0xff;
-                System.out.println(packetSend[i]);
+                //System.out.println(packetSend[i]);
 
             }
 
@@ -149,10 +149,12 @@ public class sendEMMUDP {
             packetSend[15] = (byte) (packC(SixteenByte)[1] & 0xff);
 
 
+            System.out.println("Paket: " + packetSend + " Adress: " + soAddress + " Port: " + Port + "\n\n");
             packet = new DatagramPacket(packetSend, packetSend.length, soAddress, Port);
             socket = new DatagramSocket();
 
             socket.send(packet);
+            socket.close();
         } catch (UnknownHostException ex) {
             Logger.getLogger(sendEMMUDP.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {

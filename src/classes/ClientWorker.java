@@ -213,17 +213,15 @@ public class ClientWorker implements Runnable {
                         jObj.put("JMBG", rs.getString("JMBG"));
                         jObj.put("komentar", rs.getString("komentar"));
                         jObj.put("postBr", rs.getString("postbr"));
-                        jObj.put("jBroj", rs.getString("jMesto") + rs.getString("jAdresa") + rs.getInt("id"));
+                        jObj.put("jBroj", rs.getString("jBroj"));
                         jObj.put("jAdresa", rs.getString("jAdresa"));
                         jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
                         jObj.put("jMesto", rs.getString("jMesto"));
-
-
+                        jUsers.put(String.valueOf(i), jObj);
+                        i++;
                     } catch (SQLException e) {
                         LOGGER.error(e.getMessage());
                     }
-                    jUsers.put(String.valueOf(i), jObj);
-                    i++;
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -262,7 +260,7 @@ public class ClientWorker implements Runnable {
                     jObj.put("jMesto", rs.getString("jMesto"));
                     jObj.put("jAdresa", rs.getString("jAdresa"));
                     jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
-                    jObj.put("jBroj", rs.getString("jMesto") + rs.getString("jAdresa") + rs.getInt("id"));
+                    jObj.put("jBroj", rs.getString("jBroj"));
 
                 } else {
                     jObj.put("Message", "NO_SUCH_USER");
@@ -1019,7 +1017,6 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
 
 
-
             query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?  WHERE id=?";
 
             try {
@@ -1081,7 +1078,7 @@ public class ClientWorker implements Runnable {
                         month++;
                     ps.setString(12, formatMonthDate.format(calRate.getTime()));
                     ps.executeUpdate();
-
+                    ps.close();
 
                     LOGGER.info(ps.toString());
                 } catch (SQLException e) {
@@ -1091,6 +1088,7 @@ public class ClientWorker implements Runnable {
 
             }
 
+
             send_object(jObj);
 
         }
@@ -1098,8 +1096,28 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("zaduzi_uslugu")) {
             jObj = new JSONObject();
             JSONObject Message = new JSONObject();
-            if (!ServicesFunctions.check_service_exist(rLine.getInt("id_ServiceUser"), rLine.getInt("userID"), rLine.getString("zaMesec"), db)) {
+            if (!ServicesFunctions.check_service_exist(rLine.getInt("id_ServiceUser"),
+                    rLine.getInt("userID"), rLine.getString("zaMesec"), db)) {
                 Message.put("serviceExist", ServicesFunctions.addService(rLine, getOperName(), db));
+                PreparedStatement ps;
+                ResultSet rs;
+                String query;
+                query = "SELECT * FROM ServicesUser WHERE id_service =?";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setInt(1, rLine.getInt("id_ServiceUser"));
+                    rs = ps.executeQuery();
+                    if (rs.isBeforeFirst()) {
+                        rs.next();
+                        ServicesFunctions.produziService(rs, getOperName(), db);
+                    }
+                    ps.close();
+                    rs.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+
                 jObj.put("Message", "Usluga za mesec " + rLine.getString("zaMesec") + " zaduzena");
             } else {
                 jObj.put("Error", "Usluga za mesec " + rLine.getString("zaMesec") + " postoji!");
@@ -1551,7 +1569,7 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.getString("action").equals("getMesto")) {
-            query = "SELECT * FROM mesta WHERE broj=?";
+            query = "SELECT * FROM mesta WHERE id=?";
             jObj = new JSONObject();
 
             try {
@@ -1630,13 +1648,13 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.getString("action").equals("getAdresa")) {
-            query = "SELECT * FROM adrese WHERE broj=?";
+            query = "SELECT * FROM adrese WHERE id=?";
 
             jObj = new JSONObject();
 
             try {
                 ps = db.conn.prepareStatement(query);
-                ps.setString(1, rLine.getString("broj"));
+                ps.setInt(1, rLine.getInt("idMesta"));
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
                     rs.next();
@@ -2820,7 +2838,6 @@ public class ClientWorker implements Runnable {
 
     private void delete_user(JSONObject mes) {
         int userId = mes.getInt("userId");
-        String username = mes.getString("userName");
         query = "DELETE FROM users WHERE id=?";
 
         try {
@@ -2868,8 +2885,8 @@ public class ClientWorker implements Runnable {
             ps.setString(7, jObju.getString("telMobilni"));
             ps.setString(8, jObju.getString("brLk"));
             ps.setString(9, jObju.getString("JMBG"));
-            ps.setString(10, jObju.getString("adresaUsluge"));
-            ps.setString(11, jObju.getString("mestoUsluge"));
+            ps.setString(10, jObju.getString("adresaRacuna"));
+            ps.setString(11, jObju.getString("mestoRacuna"));
             ps.setString(12, jObju.getString("jAdresaBroj"));
             ps.setString(13, jObju.getString("jAdresa"));
             ps.setString(14, jObju.getString("jMesto"));

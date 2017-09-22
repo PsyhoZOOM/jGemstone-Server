@@ -43,7 +43,7 @@ public class database {
             System.out.println("Connecting to database...");
             conn = DriverManager.getConnection(DB_URL, UserName, Password);
             connRad = DriverManager.getConnection(DB_URL_RADIUS, UserName, Password);
-            connIPTV = DriverManager.getConnection(DB_URL_IPTV, UserName, Password);
+            //connIPTV = DriverManager.getConnection(DB_URL_IPTV, UserName, Password);
             //connCSV = DriverManager.getConnection(DV_URL_CSV, UserName, Password);
             stmt = conn.createStatement();
         } catch (ClassNotFoundException e) {
