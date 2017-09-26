@@ -4,8 +4,6 @@ import net.yuvideo.jgemstone.server.classes.ClientWorker;
 import net.yuvideo.jgemstone.server.classes.EMMServer;
 import net.yuvideo.jgemstone.server.classes.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.database;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.*;
 import java.io.FileInputStream;
@@ -16,13 +14,17 @@ import java.security.cert.CertificateException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+
 
 /**
  * Created by zoom on 8/8/16.
  */
 public class Server {
 
-	Logger LOGGER = LogManager.getLogger("MAIN");
+	//LogManager LOGGER = LogManager.getLogManager();
+	Logger LOGGER = Logger.getLogger("MAIN");
 
 	public static void main(String[] args) {
 
@@ -40,7 +42,6 @@ public class Server {
 
 		database db;
 
-		System.out.println(System.getProperty("user.dir"));
 
 		//SSL SOCKET INIT
 		try {

@@ -1,9 +1,8 @@
 package net.yuvideo.jgemstone.server.classes;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
+import java.util.logging.Logger;
 
 
 /**
@@ -29,7 +28,7 @@ public class database {
     private Statement stmtIPTV;
     private Statement stmtCSV;
     private ResultSet rs;
-    private Logger LOGGER = LogManager.getLogger("DATABASE");
+    private Logger LOGGER = Logger.getLogger("DATABASE");
 
     public database() {
         //this.query = query;

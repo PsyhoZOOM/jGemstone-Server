@@ -1,4 +1,4 @@
-package classes;
+package net.yuvideo.jgemstone.server.classes;
 
 /**
  * Created by zoom on 4/13/17.
