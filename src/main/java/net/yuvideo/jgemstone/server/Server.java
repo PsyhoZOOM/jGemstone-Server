@@ -14,7 +14,6 @@ import java.security.cert.CertificateException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 
