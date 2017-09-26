@@ -2,8 +2,6 @@ package net.yuvideo.jgemstone.server.classes;
 
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -13,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Created by zoom on 9/9/16.
@@ -36,7 +35,7 @@ public class monthlyScheduler {
     private user_debts userDebt;
     private ArrayList<user_debts> userDebts;
 
-    private Logger LOGGER = LogManager.getLogger("MONTHLY_SCHEDULER");
+    private final Logger LOGGER = Logger.getLogger("MONTHLY_SCHEDULER");
 
     private String query;
 

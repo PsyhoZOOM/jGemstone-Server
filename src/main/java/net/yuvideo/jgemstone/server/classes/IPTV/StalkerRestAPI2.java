@@ -6,7 +6,6 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import sun.misc.BASE64Encoder;
 
 import javax.ws.rs.core.MediaType;
 import java.sql.PreparedStatement;
@@ -14,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 
 /**
  * Created by PsyhoZOOM@gmail.com on 7/21/17.
@@ -62,7 +62,8 @@ public class StalkerRestAPI2 {
         }
 
         AuthString = username + ":" + pass;
-        AuthStringENC = new BASE64Encoder().encode(AuthString.getBytes());
+        // AuthStringENC = new BASE64Encoder().encode(AuthString.getBytes());
+	AuthStringENC = Base64.getEncoder().encodeToString(AuthString.getBytes());
         apiClient = Client.create();
 
 

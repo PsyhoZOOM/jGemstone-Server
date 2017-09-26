@@ -1,9 +1,6 @@
 package net.yuvideo.jgemstone.server.classes;
 
 import net.yuvideo.jgemstone.server.classes.monthlyScheduler;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -12,6 +9,8 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -34,7 +33,7 @@ public class SchedullerTask implements Runnable {
     private PreparedStatement ps;
     private String query;
     private monthlyScheduler monthlyScheduler;
-    private Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER = Logger.getLogger("SCHEDULER_TASK");
     private String info;
 
 
@@ -109,7 +108,7 @@ public class SchedullerTask implements Runnable {
                     clientWorkerArrayList.get(i).hashCode()
             );
             if (DEBUG) {
-                LOGGER.log(Level.TRACE, info);
+                LOGGER.info(info);
             }
             if (clientWorker.get_socket().isClosed()) {
                 query = "UPDATE onlineOperaters SET online=0 WHERE uniqueID=?";
