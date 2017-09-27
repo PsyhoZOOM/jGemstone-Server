@@ -528,7 +528,7 @@ public class ClientWorker implements Runnable {
 					while (rs.next()) {
 						service = new JSONObject();
 						service.put("id", rs.getInt("id"));
-						service.put("brojUgovora", rs.getInt("brojUgovora"));
+						service.put("brojUgovora", rs.getString("brojUgovora"));
 						service.put("cena", rs.getDouble("cena"));
 						service.put("popust", rs.getDouble("popust"));
 						service.put("operName", rs.getString("operName"));
@@ -675,6 +675,7 @@ public class ClientWorker implements Runnable {
 			String datumIsteka = ServicesFunctions.getDatumIsteka(rLine, db);
 
 			jObj.put("datumIsteka", datumIsteka);
+			System.out.println(jObj);
 			send_object(jObj);
 
 		}
@@ -1003,7 +1004,20 @@ public class ClientWorker implements Runnable {
 				e.printStackTrace();
 			}
 
-			//ServicesFunctions.produziService(rLine, getOperName(), db);
+			query = "SELECT * FROM ServicesUser WHERE id=?";
+			ResultSet rs = null;
+			try {
+				ps = db.conn.prepareStatement(query);
+				ps.setInt(1, rLine.getInt("id_ServiceUser"));
+				rs = ps.executeQuery();
+				if(rs.isBeforeFirst()){
+					rs.next();
+				}
+					} catch (SQLException ex) {
+				Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
+			}
+
+			ServicesFunctions.produziService(rs, getOperName(), db);
 			send_object(jObj);
 
 		}

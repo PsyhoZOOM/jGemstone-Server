@@ -17,6 +17,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Calendar;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by zoom on 2/27/17.
@@ -769,6 +771,8 @@ public class ServicesFunctions {
                 psEndDate.setInt(1, Integer.parseInt(rs.getString("idDTVCard")));
                 psEndDate.setInt(2, rs.getInt("userID"));
                 rsEndDate = psEndDate.executeQuery();
+		    System.out.println(rs.getString("idDTVCard"));
+		    System.out.println(rs.getInt("userID"));
                 if (rsEndDate.isBeforeFirst()) {
                     rsEndDate.next();
                     datumIsteka = rsEndDate.getString("endDate");
@@ -777,6 +781,7 @@ public class ServicesFunctions {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+	    System.out.println("ISTICE"+datumIsteka);
         return datumIsteka;
 
     }
@@ -833,9 +838,9 @@ public class ServicesFunctions {
             ps.setString(6, rLine.getString("paketType"));
             ps.setDouble(7, rLine.getDouble("cena"));
             ps.setDouble(8, 0.00);
-            ps.setDouble(10, valueToPercent.getValue(rLine.getDouble("cena"), rLine.getDouble("popust")));
-            ps.setString(11, operName);
-            ps.setString(12, calZaMesec.format(dtfMesecZaduzenja));
+            ps.setDouble(9, valueToPercent.getValue(rLine.getDouble("cena"), rLine.getDouble("popust")));
+            ps.setString(10, operName);
+            ps.setString(11, calZaMesec.format(dtfMesecZaduzenja));
             ps.executeUpdate();
 
         } catch (SQLException e) {
@@ -1025,6 +1030,12 @@ public class ServicesFunctions {
 
     public static void produziService(ResultSet rs, String operName, database db) {
         String type = null;
+	    try {
+		    type = rs.getString("paketType");
+	    } catch (SQLException ex) {
+		    Logger.getLogger(ServicesFunctions.class.getName()).log(Level.SEVERE, null, ex);
+	    }
+
         boolean newService = false;
         try {
             type = rs.getString("paketType");
@@ -1034,7 +1045,7 @@ public class ServicesFunctions {
         }
 
         try {
-            String query = "UPDATE ServicesUser SET aktivan=1,  WHERE id=?";
+            String query = "UPDATE ServicesUser SET aktivan=1  WHERE id=?";
             PreparedStatement ps = db.conn.prepareStatement(query);
             ps.setInt(1, rs.getInt("id"));
             ps.executeUpdate();
