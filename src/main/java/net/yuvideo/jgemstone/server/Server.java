@@ -4,7 +4,6 @@ import net.yuvideo.jgemstone.server.classes.ClientWorker;
 import net.yuvideo.jgemstone.server.classes.EMMServer;
 import net.yuvideo.jgemstone.server.classes.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.database;
-
 import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -22,7 +21,6 @@ import java.util.logging.Logger;
  */
 public class Server {
 
-	//LogManager LOGGER = LogManager.getLogManager();
 	Logger LOGGER = Logger.getLogger("MAIN");
 
 	public static void main(String[] args) {
@@ -44,17 +42,12 @@ public class Server {
 
 		//SSL SOCKET INIT
 		try {
-
-
 			KeyStore serverKeys = KeyStore.getInstance("JKS");
 			FileInputStream fin;
-			//fin = new FileInputStream(("src/main/resources/ssl/plainserver.jks").toString());
-			//serverKeys.load(fin, "jgemstone".toCharArray());
 			serverKeys.load(ClassLoader.getSystemResourceAsStream("ssl/plainserver.jks"), "jgemstone".toCharArray());
 			KeyManagerFactory serverKeyManager = KeyManagerFactory.getInstance("SunX509");
 			serverKeyManager.init(serverKeys, "jgemstone".toCharArray());
 			KeyStore clientPub = KeyStore.getInstance("JKS");
-			//clientPub.load(new FileInputStream("src/main/resources/ssl/clientpub.jks"), "jgemstone".toCharArray());
 			clientPub.load(ClassLoader.getSystemResourceAsStream("ssl/clientpub.jks"), "jgemstone".toCharArray());
 			TrustManagerFactory trustManager = TrustManagerFactory.getInstance("SunX509");
 			trustManager.init(clientPub);
@@ -132,10 +125,8 @@ public class Server {
 
 		while (true) {
 			ClientWorker cw;
-
 			try {
 				//Scheduler tasks timout in minutes
-
 				cw = new ClientWorker((SSLSocket) serverSock.accept());
 				cw.DEBUG = DEBUG;
 				Thread th = new Thread(cw);
@@ -146,8 +137,6 @@ public class Server {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-
 		}
-
 	}
 }
