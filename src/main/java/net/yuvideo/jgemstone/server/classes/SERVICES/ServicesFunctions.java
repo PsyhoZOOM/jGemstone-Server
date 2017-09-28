@@ -367,21 +367,22 @@ public class ServicesFunctions {
             int produzenje = resultSet.getInt("produzenje");
 
             if (newService) {
-                produzenje = produzenje - 1;
+                produzenje =  produzenje  - 1;
                 LocalDateTime dateTime = LocalDateTime.now();
                 dateTime = dateTime.plusMonths(produzenje);
                 dateTime = dateTime.with(TemporalAdjusters.firstDayOfNextMonth());
                 dtvEndDate = dateTime.format(dtfNormalDate);
             } else {
+                produzenje = 1;
                 query = "SELECT endDate FROM DTVKartice WHERE idKartica = ?";
                 ps = db.conn.prepareStatement(query);
                 ps.setInt(1, resultSet.getInt("idDTVCard"));
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
                     rs.next();
-                    LocalDateTime dateTime = LocalDateTime.parse(rs.getString("endDate"), dtfNormalDate);
-                    dateTime = dateTime.plusMonths(1);
-                    dateTime = dateTime.with(TemporalAdjusters.firstDayOfNextMonth());
+                    LocalDate dateTime = LocalDate.parse(rs.getString("endDate"), dtfNormalDate);
+                    dateTime = dateTime.plusMonths(produzenje);
+                    dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
                     dtvEndDate = dateTime.format(dtfNormalDate);
                 }
             }
@@ -412,10 +413,10 @@ public class ServicesFunctions {
             //ako je nov servis vreme se racuna od danas
 
             if (newService) {
-                produzenje = produzenje - 1;
+                produzenje = produzenje -1 ;
                 LocalDateTime dateTime = LocalDateTime.now();
                 dateTime = dateTime.plusMonths(produzenje);
-                dateTime = dateTime.with(TemporalAdjusters.firstDayOfNextMonth());
+                dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
                 dateTime = dateTime.withHour(00).withMinute(00).withSecond(00);
                 radReply = dateTime.minusSeconds(1).format(dtfRadReply);
                 radCheck = dateTime.format(dtfRadCheck);
@@ -468,7 +469,7 @@ public class ServicesFunctions {
                 produzenje = produzenje - 1;
                 LocalDateTime dateTime = LocalDateTime.now();
                 dateTime = dateTime.plusMonths(produzenje);
-                dateTime = dateTime.with(TemporalAdjusters.firstDayOfNextMonth());
+                dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
                 endDate = dateTime.format(dtfIPTV);
                 StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
                 stalkerRestAPI2.setEndDate(rs.getString("IPTV_MAC"), endDate);
@@ -477,7 +478,7 @@ public class ServicesFunctions {
                 JSONObject accObj = stalkerRestAPI2.getAccInfo(rs.getString("IPTV_MAC"));
                 LocalDateTime dateTime = LocalDateTime.parse(accObj.getString("end_date"), dtfIPTV);
                 dateTime = dateTime.plusMonths(1);
-                dateTime = dateTime.with(TemporalAdjusters.firstDayOfNextMonth());
+                dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
                 stalkerRestAPI2.setEndDate(rs.getString("IPTV_MAC"), dateTime.format(dtfIPTV));
 
             }
@@ -1000,7 +1001,7 @@ public class ServicesFunctions {
                 ps.setInt(4, rs.getInt("userID"));
                 ps.setString(5, rs.getString("paketType"));
                 ps.setDouble(6, cenaService);
-                ps.setDouble(7, zaUplatu);
+                ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
                 ps.setString(8, operName);
                 ps.setString(9, LocalDate.now().format(dtfMesecZaduzenja));
                 ps.executeUpdate();
@@ -1045,7 +1046,7 @@ public class ServicesFunctions {
         }
 
         try {
-            String query = "UPDATE ServicesUser SET aktivan=1  WHERE id=?";
+            String query = "UPDATE ServicesUser SET aktivan=1, newService=0  WHERE id=?";
             PreparedStatement ps = db.conn.prepareStatement(query);
             ps.setInt(1, rs.getInt("id"));
             ps.executeUpdate();
