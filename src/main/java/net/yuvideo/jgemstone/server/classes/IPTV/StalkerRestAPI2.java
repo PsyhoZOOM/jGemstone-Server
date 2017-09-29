@@ -261,6 +261,7 @@ public class StalkerRestAPI2 {
     }
 
     public String get_end_date(String STB_MAC) {
+        System.out.println("MAC ADRESA: " + STB_MAC);
         String end_date = "0000-00-00";
         webResource = apiClient.resource(url);
         clientResponse = webResource.path("accounts")

@@ -597,7 +597,7 @@ public class ClientWorker implements Runnable {
                         service.put("groupName", rs2.getString("GroupName"));
                         service.put("userName", rs2.getString("UserName"));
                         service.put("idDTVCard", rs2.getString("idDTVCard"));
-                        service.put("MAC_IPTV", rs2.getString("IPTV_MAC"));
+                        service.put("IPTV_MAC", rs2.getString("IPTV_MAC"));
                         service.put("STB_MAC", rs2.getString("IPTV_MAC"));
                         service.put("FIKSNA_TEL", rs2.getString("FIKSNA_TEL"));
                         service.put("popust", rs2.getDouble("popust"));
@@ -675,6 +675,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             String datumIsteka = ServicesFunctions.getDatumIsteka(rLine, db);
 
+            if(datumIsteka == null) datumIsteka = "KORISNIK NEMA SERVIS";
             jObj.put("datumIsteka", datumIsteka);
             System.out.println(jObj);
             send_object(jObj);

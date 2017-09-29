@@ -28,7 +28,7 @@ public class addBoxService {
 
 
         query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, " +
-                "cena, obracun, brojUgovora, aktivan, produzenje, newService, idDTVCard, username, GroupName, MAC_IPTV, FIKSNA_TEL, linkedService, BOX_service, paketType)" +
+                "cena, obracun, brojUgovora, aktivan, produzenje, newService, idDTVCard, username, GroupName, IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType)" +
                 "VALUES " +
                 "(?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?)";
 

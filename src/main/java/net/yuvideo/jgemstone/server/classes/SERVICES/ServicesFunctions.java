@@ -164,8 +164,8 @@ public class ServicesFunctions {
 
     public static void addServiceIPTVLinked(JSONObject rLIne, String opername, int box_service_id, database db) {
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser (id_service, box_id, nazivPaketa, date_added, userID, opername," +
-                "IPTV_MAC, linkedService, paketType) VALUES (?,?,?,?,?,?,?,?,?)";
+        String query = "INSERT INTO ServicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, opername," +
+                "IPTV_MAC, linkedService, paketType) VALUES (?,?,?,?,?,?,?,?,?,?)";
 
         try {
             ps = db.conn.prepareStatement(query);
@@ -174,10 +174,11 @@ public class ServicesFunctions {
             ps.setString(3, rLIne.getString("tariff_plan"));
             ps.setString(4, dtf.format(LocalDateTime.now()));
             ps.setInt(5, rLIne.getInt("userID"));
-            ps.setString(6, opername);
-            ps.setString(7, rLIne.getString("STB_MAC"));
-            ps.setBoolean(8, true);
-            ps.setString(9, "LINKED_IPTV");
+            ps.setInt(6, rLIne.getInt("produzenje"));
+            ps.setString(7, opername);
+            ps.setString(8, rLIne.getString("STB_MAC"));
+            ps.setBoolean(9, true);
+            ps.setString(10, "LINKED_IPTV");
             ps.executeUpdate();
             ps.close();
         } catch (SQLException e) {
@@ -339,7 +340,7 @@ public class ServicesFunctions {
             ps.setBoolean(8, rLine.getBoolean("obracun"));
             ps.setString(9, rLine.getString("brojUgovora"));
             ps.setBoolean(10, false);
-            ps.setInt(11, rLine.getInt("prekoracenje"));
+            ps.setInt(11, rLine.getInt("produzenje"));
             ps.setBoolean(12, true);
             ps.setString(13, rLine.getString("external_id"));
             ps.setString(14, rLine.getString("STB_MAC"));
