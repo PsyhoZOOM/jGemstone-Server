@@ -2010,7 +2010,7 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("deleteOper")) {
             jObj = new JSONObject();
 
-            query = "DELETE FROM operateri WHER id=?";
+            query = "DELETE FROM operateri WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
