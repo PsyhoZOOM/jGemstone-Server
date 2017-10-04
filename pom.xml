@@ -3,8 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.yuvideo</groupId>
     <artifactId>jGemstone-Server</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>SNAPSHOT-0.1${v}</version>
     <packaging>jar</packaging>
+     <build>
+            <finalName>${artifactId}</finalName>
+     </build>
     <dependencies>
         <dependency>
             <groupId>net.sourceforge.javacsv</groupId>
