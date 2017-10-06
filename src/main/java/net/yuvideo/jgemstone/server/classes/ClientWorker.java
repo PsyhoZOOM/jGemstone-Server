@@ -973,6 +973,7 @@ public class ClientWorker implements Runnable {
                         userDebt.put("operater", rs.getString("operater"));
                         userDebt.put("zaduzenOd", rs.getString("zaduzenOd"));
                         userDebt.put("zaMesec", rs.getString("zaMesec"));
+                        userDebt.put("skipProduzenje", rs.getBoolean("skipProduzenje"));
                         jObj.put(String.valueOf(i), userDebt);
                         i++;
                     }
@@ -991,7 +992,7 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("uplata_servisa")) {
             jObj = new JSONObject();
 
-            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?  WHERE id=?";
+            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=true  WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -1001,6 +1002,7 @@ public class ClientWorker implements Runnable {
                 ps.setInt(4, rLine.getInt("id"));
                 ps.executeUpdate();
                 jObj.put("Message", "SERVICE_PAYMENTS_DONE");
+                ps.close();
             } catch (SQLException e) {
                 jObj.put("Error", e.getMessage());
                 e.printStackTrace();
@@ -1015,11 +1017,13 @@ public class ClientWorker implements Runnable {
                 if (rs.isBeforeFirst()) {
                     rs.next();
                 }
+                ps.close();
             } catch (SQLException ex) {
                 Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-            ServicesFunctions.produziService(rs, getOperName(), db);
+            if (!rLine.getBoolean("skipProduzenje"))
+                ServicesFunctions.produziService(rs, getOperName(), db);
             send_object(jObj);
 
         }
