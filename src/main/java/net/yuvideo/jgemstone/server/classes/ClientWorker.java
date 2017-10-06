@@ -675,7 +675,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             String datumIsteka = ServicesFunctions.getDatumIsteka(rLine, db);
 
-            if(datumIsteka == null) datumIsteka = "KORISNIK NEMA SERVIS";
+            if (datumIsteka == null) datumIsteka = "KORISNIK NEMA SERVIS";
             jObj.put("datumIsteka", datumIsteka);
             System.out.println(jObj);
             send_object(jObj);
@@ -973,7 +973,6 @@ public class ClientWorker implements Runnable {
                         userDebt.put("operater", rs.getString("operater"));
                         userDebt.put("zaduzenOd", rs.getString("zaduzenOd"));
                         userDebt.put("zaMesec", rs.getString("zaMesec"));
-                        userDebt.put("skipProduzenje", rs.getBoolean("skipProduzenje"));
                         jObj.put(String.valueOf(i), userDebt);
                         i++;
                     }
@@ -992,7 +991,10 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("uplata_servisa")) {
             jObj = new JSONObject();
 
-            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=true  WHERE id=?";
+            PreparedStatement ps = null;
+            ResultSet rs;
+
+            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=? WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -1008,22 +1010,34 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
 
-            query = "SELECT * FROM ServicesUser WHERE id=?";
-            ResultSet rs = null;
+            if (rLine.getString("paketType").equals("BOX")) {
+                query = "SELECT * FROM ServicesUser WHERE box_id=?";
+            } else {
+                query = "SELECT * FROM ServicesUser WHERE id=?";
+            }
+            rs = null;
             try {
                 ps = db.conn.prepareStatement(query);
                 ps.setInt(1, rLine.getInt("id_ServiceUser"));
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
-                    rs.next();
+                    while (rs.next()) {
+                        if (!rs.getBoolean("skipProduzenje"))
+                            ServicesFunctions.produziService(rs, getOperName(), db);
+                    }
+
                 }
-                ps.close();
             } catch (SQLException ex) {
                 Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-            if (!rLine.getBoolean("skipProduzenje"))
-                ServicesFunctions.produziService(rs, getOperName(), db);
+
+            try {
+                ps.close();
+                rs.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             send_object(jObj);
 
         }
@@ -1267,9 +1281,9 @@ public class ClientWorker implements Runnable {
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("brojUgovora"));
                 rs = ps.executeQuery();
-                if(rs.isBeforeFirst()){
+                if (rs.isBeforeFirst()) {
                     rs.next();
-                    jObj.put("ERROR", String.format("BROJ UGOVORA JE ZAUZET",rs.getString("brojUgovora")));
+                    jObj.put("ERROR", String.format("BROJ UGOVORA JE ZAUZET", rs.getString("brojUgovora")));
                     send_object(jObj);
                     return;
                 }
@@ -1302,7 +1316,7 @@ public class ClientWorker implements Runnable {
 
         }
 
-        if(rLine.getString("action").equals("check_brUgovora_busy")){
+        if (rLine.getString("action").equals("check_brUgovora_busy")) {
             jObj = new JSONObject();
             String query = "SELECT * FROM ugovori_korisnik WHERE brojUgovora=?";
             PreparedStatement ps;
@@ -1310,13 +1324,13 @@ public class ClientWorker implements Runnable {
 
             try {
                 ps = db.conn.prepareStatement(query);
-                ps.setString(1,rLine.getString("brojUgovora"));
+                ps.setString(1, rLine.getString("brojUgovora"));
                 rs = ps.executeQuery();
 
-                if(rs.isBeforeFirst()){
+                if (rs.isBeforeFirst()) {
                     rs.next();
                     jObj.put("ERROR", String.format("BROJ UGOVORA %s je zauzet", rs.getString("brojUgovora")));
-                    send_object( jObj);
+                    send_object(jObj);
                     return;
                 }
             } catch (SQLException e) {

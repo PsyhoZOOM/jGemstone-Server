@@ -1032,22 +1032,25 @@ public class ServicesFunctions {
 
     public static void produziService(ResultSet rs, String operName, database db) {
         String type = null;
-	    try {
+        boolean newService = false;
+        boolean skipProduzenje = false;
+        String query;
+        try {
 		    type = rs.getString("paketType");
+            newService = rs.getBoolean("newService");
+            skipProduzenje = rs.getBoolean("skipProduzenje");
+
 	    } catch (SQLException ex) {
 		    Logger.getLogger(ServicesFunctions.class.getName()).log(Level.SEVERE, null, ex);
 	    }
 
-        boolean newService = false;
-        try {
-            type = rs.getString("paketType");
-            newService = rs.getBoolean("newService");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
 
         try {
-            String query = "UPDATE ServicesUser SET aktivan=1, newService=0  WHERE id=?";
+            if (newService) {
+                query = "UPDATE ServicesUser SET aktivan=1, newService=false WHERE id=?";
+            } else {
+                query = "UPDATE ServicesUser SET aktivan=1, newService=false, skipProduzenje=true WHERE id=?";
+            }
             PreparedStatement ps = db.conn.prepareStatement(query);
             ps.setInt(1, rs.getInt("id"));
             ps.executeUpdate();
