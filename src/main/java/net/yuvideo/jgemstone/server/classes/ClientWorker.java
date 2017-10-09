@@ -150,6 +150,7 @@ public class ClientWorker implements Runnable {
                 jObj = new JSONObject();
                 jObj.put("Message", "LOGIN_OK");
                 send_object(jObj);
+                return;
             }
         }
 
@@ -219,6 +220,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jUsers);
+            return;
         }
 
         if (rLine.get("action").equals("get_user_data")) {
@@ -261,6 +263,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.get("action").equals("get_groups")) {
@@ -295,6 +298,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jGrupe);
+            return;
         }
 
         if (rLine.get("action").equals("get_group_data")) {
@@ -320,6 +324,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.get("action").equals("save_group_data")) {
@@ -342,6 +347,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             jObj.put("message", "SAVED");
             send_object(jObj);
+            return;
 
         }
 
@@ -361,6 +367,7 @@ public class ClientWorker implements Runnable {
             jObj.put("message", String.format("GRUPA IZBRISANA"));
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("save_group")) {
@@ -383,6 +390,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             jObj.put("message", String.format("GROUP %s SAVED", rLine.getString("groupName")));
             send_object(jObj);
+            return;
         }
 
         if (rLine.get("action").equals("update_user")) {
@@ -425,6 +433,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -461,6 +470,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             jObj.put("Message", "USER_FIRMA_SAVED");
             send_object(jObj);
+            return;
 
         }
 
@@ -513,6 +523,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("get_user_services")) {
@@ -567,6 +578,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
 
         }
 
@@ -633,6 +645,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj2);
+            return;
 
         }
 
@@ -669,6 +682,8 @@ public class ClientWorker implements Runnable {
             jObj.put("Message", "SERVICE_AKTIVATED");
 
             send_object(jObj);
+            return;
+
         }
 
         if (rLine.getString("action").equals("get_datum_isteka_servisa")) {
@@ -679,6 +694,7 @@ public class ClientWorker implements Runnable {
             jObj.put("datumIsteka", datumIsteka);
             System.out.println(jObj);
             send_object(jObj);
+            return;
 
         }
 
@@ -743,6 +759,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -799,7 +816,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("add_service_to_user_DTV")) {
@@ -816,7 +833,7 @@ public class ClientWorker implements Runnable {
                 jObj.put("Error", serviceAdded);
             }
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("add_service_to_user_NET")) {
@@ -829,7 +846,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("delete_service_user")) {
@@ -870,6 +887,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("new_uplata")) {
@@ -892,6 +910,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("DELETE_UPLATA")) {
@@ -910,6 +929,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("get_uplate_user")) {
@@ -939,6 +959,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("get_zaduzenja_user")) {
@@ -985,7 +1006,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("uplata_servisa")) {
@@ -1039,7 +1060,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("zaduzi_servis_manual")) {
@@ -1091,7 +1112,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("zaduzi_uslugu")) {
@@ -1124,7 +1145,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("add_new_ugovor")) {
@@ -1146,7 +1167,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             jObj.put("Message", "UGOVOR_ADDED");
             send_object(jObj);
-
+            return;
         }
         if (rLine.getString("action").equals("get_ugovori")) {
             query = "SELECT * FROM ugovori_types";
@@ -1173,7 +1194,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(ugovoryArr);
-
+            return;
         }
 
         if (rLine.getString("action").equals("get_single_ugovor")) {
@@ -1198,7 +1219,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("delete_ugovor")) {
@@ -1214,7 +1235,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             jObj.put("Message", "UGOVOR_DELETED");
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("update_ugovor_temp")) {
@@ -1233,6 +1254,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("get_ugovori_user")) {
@@ -1267,6 +1289,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("save_user_ugovor")) {
@@ -1313,7 +1336,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("check_brUgovora_busy")) {
@@ -1339,7 +1362,7 @@ public class ClientWorker implements Runnable {
 
             jObj.put("MESSAGE", "OK");
             send_object(jObj);
-
+            return;
 
         }
 
@@ -1359,7 +1382,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("get_ugovor_user")) {
@@ -1387,7 +1410,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("saveOprema")) {
@@ -1409,7 +1432,7 @@ public class ClientWorker implements Runnable {
             jObj.put("Message", "USER_OPREMA_SAVED");
 
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("get_fakture")) {
@@ -1487,7 +1510,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(FaktureObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("delete_fakturu")) {
@@ -1503,6 +1526,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             jObj.put("Message", "FACUTRE_DELETED");
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("snimiFakturu")) {
@@ -1532,13 +1556,14 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
             jObj.put("Message", "FACTURE_ADDED");
             send_object(jObj);
-
+            return;
         }
 
         if (rLine.getString("action").equals("PING")) {
             jObj = new JSONObject();
             jObj.put("Message", "PONG");
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("getInternetGroups")) {
@@ -1563,10 +1588,15 @@ public class ClientWorker implements Runnable {
                         i++;
                     }
                     send_object(grupe);
+
+                    return;
+
+
                 } else {
                     jObj = new JSONObject();
                     jObj.put("Message", "NO_GROUPS");
                     send_object(jObj);
+                    return;
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -1594,6 +1624,7 @@ public class ClientWorker implements Runnable {
                     i++;
                 }
                 send_object(mesta);
+                return;
 
             } catch (SQLException e) {
                 jObj = new JSONObject();
@@ -1601,6 +1632,7 @@ public class ClientWorker implements Runnable {
                 send_object(jObj);
                 e.printStackTrace();
             }
+            return;
         }
 
         if (rLine.getString("action").equals("getMesto")) {
@@ -1626,6 +1658,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -1645,6 +1678,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("getAdrese")) {
@@ -1673,6 +1707,7 @@ public class ClientWorker implements Runnable {
                     i++;
                 }
                 send_object(adrese);
+                return;
 
             } catch (SQLException e) {
                 jObj = new JSONObject();
@@ -1680,6 +1715,7 @@ public class ClientWorker implements Runnable {
                 send_object(jObj);
                 e.printStackTrace();
             }
+            return;
         }
 
         if (rLine.getString("action").equals("getAdresa")) {
@@ -1709,6 +1745,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -1732,6 +1769,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -1751,6 +1789,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
 
         }
 
@@ -1774,6 +1813,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("GET_OPREMA_NAZIV")) {
@@ -1801,6 +1841,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -1830,6 +1871,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("GET_MODEL_OPREME")) {
@@ -1860,6 +1902,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("ADD_OPREMA")) {
@@ -1878,6 +1921,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("DEL_OPREMA")) {
@@ -1896,6 +1940,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -1923,6 +1968,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
         if (rLine.getString("action").equals("DELETE_USER_OPREMA")) {
             jObj = new JSONObject();
@@ -1941,6 +1987,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -1976,6 +2023,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("getOperaters")) {
@@ -2008,6 +2056,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2033,6 +2082,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("updateOperater")) {
@@ -2068,6 +2118,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2087,6 +2138,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2119,6 +2171,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("getOperPermissions")) {
@@ -2151,6 +2204,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("get_internet_paketi")) {
@@ -2182,6 +2236,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("snimi_internet_paket")) {
@@ -2235,6 +2290,7 @@ public class ClientWorker implements Runnable {
 
             send_object(jObj);
 
+            return;
         }
 
         if (rLine.get("action").equals("update_internet_paket")) {
@@ -2273,6 +2329,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2305,6 +2362,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.get("action").equals("add_dtv_paket")) {
@@ -2328,6 +2386,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2352,6 +2411,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2405,6 +2465,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2434,6 +2495,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         //FIKSNA TLEFONIJA PAKETI
@@ -2455,6 +2517,7 @@ public class ClientWorker implements Runnable {
                 jObj.put("Error", e.getMessage());
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.get("action").equals("del_fixTel_paket")) {
@@ -2473,6 +2536,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.get("action").equals("edit_fixTel_paket")) {
@@ -2494,6 +2558,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         //FIXNA OBRACUNI
@@ -2506,6 +2571,7 @@ public class ClientWorker implements Runnable {
             String message = ServicesFunctions.addServiceFIX(rLine, getOperName(), db);
             jObj.put("Message", message);
             send_object(jObj);
+            return;
 
         }
 
@@ -2574,6 +2640,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("get_CSV_Data")) {
@@ -2614,6 +2681,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         //END FIKSNA TELEFONIJA PAKETI
@@ -2626,6 +2694,7 @@ public class ClientWorker implements Runnable {
 
             jObj = new JSONObject();
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("snimiNovIPTVPaket")) {
@@ -2652,6 +2721,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("snimiEditIPTVPaket")) {
@@ -2682,6 +2752,7 @@ public class ClientWorker implements Runnable {
             jObj.put("Message", "PAKET_EDITED");
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2690,6 +2761,7 @@ public class ClientWorker implements Runnable {
             StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
 
             send_object(stAPI2.getPakets_ALL());
+            return;
 
         }
 
@@ -2721,6 +2793,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("getIPTVUsers")) {
@@ -2735,6 +2808,7 @@ public class ClientWorker implements Runnable {
             jObj = stAPI2.saveUSER(rLine);
             ServicesFunctions.addServiceIPTV(rLine, operName, db);
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("get_paket_IPTV")) {
@@ -2764,6 +2838,7 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("check_fix_obracun")) {
@@ -2790,6 +2865,7 @@ public class ClientWorker implements Runnable {
             jObj.put("exist", exist);
 
             send_object(jObj);
+            return;
         }
 
         if (rLine.getString("action").equals("obracunaj_za_mesec")) {
@@ -2798,6 +2874,7 @@ public class ClientWorker implements Runnable {
             jObj = FIXFunctions.obracunajZaMesec(db, rLine.getString("zaMesec"), getOperName());
 
             send_object(jObj);
+            return;
 
         }
 
@@ -2855,6 +2932,7 @@ public class ClientWorker implements Runnable {
         jObj = new JSONObject();
         jObj.put("message", "USER_DELETED");
         send_object(jObj);
+        return;
     }
 
     private void update_user(JSONObject jObju) {
@@ -2897,6 +2975,7 @@ public class ClientWorker implements Runnable {
         // db.query = query;
         // db.executeUpdate();
         send_object(jObj);
+        return;
     }
 
     private Boolean check_Login(String username, String password) {
