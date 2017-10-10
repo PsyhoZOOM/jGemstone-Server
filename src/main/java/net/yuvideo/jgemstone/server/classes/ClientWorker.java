@@ -994,6 +994,7 @@ public class ClientWorker implements Runnable {
                         userDebt.put("operater", rs.getString("operater"));
                         userDebt.put("zaduzenOd", rs.getString("zaduzenOd"));
                         userDebt.put("zaMesec", rs.getString("zaMesec"));
+                        userDebt.put("skipProduzenje", rs.getBoolean("skipProduzenje"));
                         jObj.put(String.valueOf(i), userDebt);
                         i++;
                     }
@@ -1015,7 +1016,7 @@ public class ClientWorker implements Runnable {
             PreparedStatement ps = null;
             ResultSet rs;
 
-            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=? WHERE id=?";
+            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=1 WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -1043,7 +1044,7 @@ public class ClientWorker implements Runnable {
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
                     while (rs.next()) {
-                        if (!rs.getBoolean("skipProduzenje"))
+                        if (!rLine.getBoolean("skipProduzenje"))
                             ServicesFunctions.produziService(rs, getOperName(), db);
                     }
 
