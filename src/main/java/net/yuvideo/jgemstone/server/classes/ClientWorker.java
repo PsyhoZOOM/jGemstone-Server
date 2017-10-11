@@ -167,6 +167,13 @@ public class ClientWorker implements Runnable {
             }
         }
 
+        if (rLine.get("action").equals("checkPing")) {
+            jObj = new JSONObject();
+            jObj.put("PONG", "PONG");
+            send_object(jObj);
+            return;
+        }
+
         if (rLine.get("action").equals("get_users")) {
             query = "SELECT * FROM users WHERE  ime LIKE ? or id LIKE ? or jBroj LIKE ?  ";
             String userSearch;
@@ -259,6 +266,7 @@ public class ClientWorker implements Runnable {
                 } else {
                     jObj.put("Message", "NO_SUCH_USER");
                 }
+                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -294,10 +302,12 @@ public class ClientWorker implements Runnable {
                     jGrupe.put(String.valueOf(b), jObj);
                     b++;
                 }
+                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
             send_object(jGrupe);
+
             return;
         }
 
@@ -319,6 +329,7 @@ public class ClientWorker implements Runnable {
                     jObj.put("cena", rs.getString("cena"));
                     jObj.put("prepaid", rs.getInt("prepaid"));
                 }
+                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -337,8 +348,9 @@ public class ClientWorker implements Runnable {
                 ps.setInt(3, rLine.getInt("prepaid"));
                 ps.setString(4, rLine.getString("opis"));
                 ps.setInt(5, rLine.getInt("groupId"));
-
                 ps.executeQuery();
+
+                ps.close();
 
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -359,6 +371,7 @@ public class ClientWorker implements Runnable {
                 ps = db.conn.prepareStatement(query);
                 ps.setInt(1, rLine.getInt("groupID"));
                 ps.executeQuery();
+                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -380,8 +393,9 @@ public class ClientWorker implements Runnable {
                 ps.setDouble(2, rLine.getDouble("cena"));
                 ps.setInt(3, rLine.getInt("prepaid"));
                 ps.setString(4, rLine.getString("opis"));
-
                 ps.executeQuery();
+
+                ps.close();
 
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -428,6 +442,8 @@ public class ClientWorker implements Runnable {
                 } else {
                     jObj.put("Message", "NO_DATA");
                 }
+                rs.close();
+                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -463,6 +479,7 @@ public class ClientWorker implements Runnable {
                 db.ps.setInt(7, rLine.getInt("userID"));
                 db.ps.setInt(8, rLine.getInt("brojFakture"));
                 db.ps.executeUpdate();
+                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -516,6 +533,8 @@ public class ClientWorker implements Runnable {
                 rs.next();
                 jObj.put("Message", "user_saved");
                 jObj.put("userID", rs.getInt(1));
+                rs.close();
+                ps.close();
             } catch (SQLException e) {
                 jObj.put("Message", "ERROR");
                 jObj.put("ERROR_MESSAGE", e.getMessage());
@@ -574,6 +593,7 @@ public class ClientWorker implements Runnable {
                         i++;
                     }
                 }
+                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -3002,6 +3022,7 @@ public class ClientWorker implements Runnable {
                 aktivan = false;
             }
             ps.close();
+            rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
