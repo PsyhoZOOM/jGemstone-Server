@@ -105,8 +105,8 @@ public class sendEMMUDP {
             end_y = date_e.getYear();
 
 
-            System.out.println(String.format("%d%d%d%d%d%d%d%d%d",
-                    card, paket, start_d, start_m, start_y, end_d, end_m, end_y, chip));
+            //System.out.println(String.format("%d%d%d%d%d%d%d%d%d",
+            //        card, paket, start_d, start_m, start_y, end_d, end_m, end_y, chip));
 
 
             byte[] cardS = packN(card);

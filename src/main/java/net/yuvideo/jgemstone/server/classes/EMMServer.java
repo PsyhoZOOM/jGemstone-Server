@@ -38,7 +38,6 @@ public class EMMServer implements Runnable {
             e.printStackTrace();
         }
 
-
         sendEmmUDP = new sendEMMUDP(this.host, this.port);
         while (true) {
             try {
@@ -51,7 +50,6 @@ public class EMMServer implements Runnable {
                                 LocalDate.parse(rs.getDate("endDate").toString(), df),
                                 rs.getInt("paketID"),
                                 5
-
                         );
                     }
                 }

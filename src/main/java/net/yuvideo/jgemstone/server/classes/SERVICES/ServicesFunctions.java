@@ -368,10 +368,9 @@ public class ServicesFunctions {
             int produzenje = resultSet.getInt("produzenje");
 
             if (newService) {
-                produzenje =  produzenje  - 1;
                 LocalDateTime dateTime = LocalDateTime.now();
                 dateTime = dateTime.plusMonths(produzenje);
-                dateTime = dateTime.with(TemporalAdjusters.firstDayOfNextMonth());
+                dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
                 dtvEndDate = dateTime.format(dtfNormalDate);
             } else {
                 produzenje = 1;
@@ -414,7 +413,6 @@ public class ServicesFunctions {
             //ako je nov servis vreme se racuna od danas
 
             if (newService) {
-                produzenje = produzenje -1 ;
                 LocalDateTime dateTime = LocalDateTime.now();
                 dateTime = dateTime.plusMonths(produzenje);
                 dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
@@ -424,8 +422,9 @@ public class ServicesFunctions {
 
 
             } else {
-                query = "SELECT value from radcheck WHERE username=? AND attribute = Expiration";
+                query = "SELECT value from radcheck WHERE username=? AND attribute = 'Expiration'";
                 ps = db.connRad.prepareStatement(query);
+                ps.setString(1, rs.getString("UserName"));
                 resultSet = ps.executeQuery();
                 if (resultSet.isBeforeFirst()) {
                     resultSet.next();
@@ -467,7 +466,6 @@ public class ServicesFunctions {
             int produzenje = rs.getInt("produzenje");
 
             if (newService) {
-                produzenje = produzenje - 1;
                 LocalDateTime dateTime = LocalDateTime.now();
                 dateTime = dateTime.plusMonths(produzenje);
                 dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
@@ -1033,12 +1031,10 @@ public class ServicesFunctions {
     public static void produziService(ResultSet rs, String operName, database db) {
         String type = null;
         boolean newService = false;
-        boolean skipProduzenje = false;
         String query;
         try {
 		    type = rs.getString("paketType");
             newService = rs.getBoolean("newService");
-            skipProduzenje = rs.getBoolean("skipProduzenje");
 
 	    } catch (SQLException ex) {
 		    Logger.getLogger(ServicesFunctions.class.getName()).log(Level.SEVERE, null, ex);
@@ -1049,7 +1045,7 @@ public class ServicesFunctions {
             if (newService) {
                 query = "UPDATE ServicesUser SET aktivan=1, newService=false WHERE id=?";
             } else {
-                query = "UPDATE ServicesUser SET aktivan=1, newService=false, skipProduzenje=true WHERE id=?";
+                query = "UPDATE ServicesUser SET aktivan=1, newService=false WHERE id=?";
             }
             PreparedStatement ps = db.conn.prepareStatement(query);
             ps.setInt(1, rs.getInt("id"));
@@ -1058,6 +1054,7 @@ public class ServicesFunctions {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
 
         switch (type) {
             case "NET":

@@ -1,7 +1,5 @@
 package net.yuvideo.jgemstone.server.classes;
 
-import net.yuvideo.jgemstone.server.classes.monthlyScheduler;
-
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,7 +7,6 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -48,7 +45,7 @@ public class SchedullerTask implements Runnable {
 
         while (true) {
             check_scheduler_tasks();
-            show_clients();
+            //show_clients();
 
             try {
                 Thread.sleep(timeout * MINUTES);

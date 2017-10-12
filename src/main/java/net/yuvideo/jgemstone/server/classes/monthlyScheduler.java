@@ -1,8 +1,5 @@
 package net.yuvideo.jgemstone.server.classes;
 
-import net.yuvideo.jgemstone.server.classes.database;
-import net.yuvideo.jgemstone.server.classes.valueToPercent;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -64,7 +61,7 @@ public class monthlyScheduler {
                     psUpdateDebts.setDouble(7, rs.getDouble("cena"));
                     psUpdateDebts.setDouble(8, valueToPercent.getValue(rs.getDouble("cena"), rs.getDouble("popust")));
                     psUpdateDebts.setString(9, format_month.format(cal.getTime()));
-                    if (rs.getInt("newService") != 1) {
+                    if (!rs.getBoolean("newService")) {
                         //ako servis je vec zaduzen onda preskociti zaduzenje od strane servera :)
                         if (!check_skip_userDebt(rs.getInt("id"), rs.getInt("userID"), format_month.format(cal.getTime())))
                             psUpdateDebts.executeUpdate();
@@ -72,9 +69,8 @@ public class monthlyScheduler {
                         setOldService(rs.getInt("id"));
                     }
                 }
-            } else {
-                return;
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -104,7 +100,8 @@ public class monthlyScheduler {
             psCheck.setInt(1, id_service);
             psCheck.setInt(2, userID);
             psCheck.setString(3, zaMesec);
-            check = rs.isBeforeFirst();
+            rsCheck = psCheck.executeQuery();
+            check = rsCheck.isBeforeFirst();
         } catch (SQLException e) {
             e.printStackTrace();
         }
