@@ -1,7 +1,7 @@
 package net.yuvideo.jgemstone.server.classes.INTERNET;
 
 import net.yuvideo.jgemstone.server.classes.database;
-import classes.md5_digiest;
+import net.yuvideo.jgemstone.server.classes.md5_digiest;
 import org.json.JSONObject;
 
 import java.sql.PreparedStatement;

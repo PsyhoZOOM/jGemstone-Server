@@ -1,4 +1,4 @@
-package classes;
+package net.yuvideo.jgemstone.server.classes;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

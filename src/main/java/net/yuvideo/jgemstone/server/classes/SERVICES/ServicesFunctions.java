@@ -14,6 +14,7 @@ import java.sql.Types;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Calendar;
@@ -252,6 +253,7 @@ public class ServicesFunctions {
             return Message;
         }
 
+
         NETFunctions.addUser(rLine, db);
 
         PreparedStatement ps;
@@ -428,10 +430,11 @@ public class ServicesFunctions {
                 resultSet = ps.executeQuery();
                 if (resultSet.isBeforeFirst()) {
                     resultSet.next();
-                    LocalDateTime dateTime = LocalDateTime.parse(rs.getString("value"), dtfRadCheck);
-                    dateTime = dateTime.plusMonths(1);
-                    dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
-                    radReply = dateTime.minusMinutes(1).format(dtfRadReply);
+
+                    LocalDateTime dateTime = LocalDateTime.of(LocalDate.parse(resultSet.getString("value"), dtfRadCheck), LocalTime.parse("00:00"));
+
+                    dateTime = dateTime.plusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
+                    radReply = dateTime.minusSeconds(1).format(dtfRadReply);
                     radCheck = dateTime.format(dtfRadCheck);
                 }
                 resultSet.close();
@@ -474,8 +477,9 @@ public class ServicesFunctions {
                 stalkerRestAPI2.setEndDate(rs.getString("IPTV_MAC"), endDate);
             } else {
                 StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
-                JSONObject accObj = stalkerRestAPI2.getAccInfo(rs.getString("IPTV_MAC"));
-                LocalDateTime dateTime = LocalDateTime.parse(accObj.getString("end_date"), dtfIPTV);
+                //JSONObject accObj = stalkerRestAPI2.getAccInfo(rs.getString("IPTV_MAC"));
+                endDate = stalkerRestAPI2.get_end_date(rs.getString("IPTV_MAC"));
+                LocalDateTime dateTime = LocalDateTime.parse(endDate, dtfIPTV);
                 dateTime = dateTime.plusMonths(1);
                 dateTime = dateTime.with(TemporalAdjusters.firstDayOfMonth());
                 stalkerRestAPI2.setEndDate(rs.getString("IPTV_MAC"), dateTime.format(dtfIPTV));
@@ -1078,6 +1082,53 @@ public class ServicesFunctions {
 
         }
 
+    }
+
+
+    public static void setEndDate(int userID, int serviceID, String endDate, boolean serviceEnabled, database db) {
+        PreparedStatement ps;
+        String query;
+
+        query = "INSERT INTO usersEndDate (userID, serviceID, endDate, enabled) VALUES  (?,?,?,?)";
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, userID);
+            ps.setInt(2, serviceID);
+            ps.setString(3, endDate);
+            ps.setBoolean(4, serviceEnabled);
+            ps.executeUpdate();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static String getEndDate(int userID, int serviceID, database db) {
+        PreparedStatement ps;
+        ResultSet rs;
+        String query;
+        String endDate = "GRESKA - KORISNIK NEMA SERVIS/USLUGA NIJE AKTIVIRANA";
+
+        query = "SELECT endDate FROM usersEndDate WHERE userID=? AND serviceID=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, userID);
+            ps.setInt(2, serviceID);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                endDate = rs.getString("endDate");
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return endDate;
     }
 }
 

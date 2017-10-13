@@ -92,7 +92,6 @@ public class ClientWorker implements Runnable {
 
 //unencripted
                 String A = Bfr.readLine();
-                System.out.println("READLINE: " + A);
 
                 if (A == null) {
                     client.close();
