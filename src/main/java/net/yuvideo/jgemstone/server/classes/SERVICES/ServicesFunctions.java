@@ -359,7 +359,7 @@ public class ServicesFunctions {
     }
 
 
-    public static void produziDTV(ResultSet resultSet, String operName, database db, boolean newService) {
+    public static void produziDTV(ResultSet resultSet, String operName, database db, boolean newService, String endDate) {
 
         PreparedStatement ps;
         ResultSet rs;
@@ -403,7 +403,7 @@ public class ServicesFunctions {
 
     }
 
-    public static void produziNET(ResultSet rs, String operName, database db, boolean newService) {
+    public static void produziNET(ResultSet rs, String operName, database db, boolean newService, String endDate) {
         PreparedStatement ps;
         ResultSet resultSet;
         String radReply = null;
@@ -462,8 +462,7 @@ public class ServicesFunctions {
 
     }
 
-    public static void produziIPTV(ResultSet rs, String opreName, database db, boolean newService) {
-        String endDate;
+    public static void produziIPTV(ResultSet rs, String opreName, database db, boolean newService, String endDate) {
 
         try {
             int produzenje = rs.getInt("produzenje");
@@ -1036,6 +1035,7 @@ public class ServicesFunctions {
         String type = null;
         boolean newService = false;
         String query;
+        String endDate = "2000-01-01";
         try {
 		    type = rs.getString("paketType");
             newService = rs.getBoolean("newService");
@@ -1044,11 +1044,37 @@ public class ServicesFunctions {
 		    Logger.getLogger(ServicesFunctions.class.getName()).log(Level.SEVERE, null, ex);
 	    }
 
-
         try {
             if (newService) {
+                //ako je nov servis end date je u proslosti
+                query = "INSERT INTO usersEndDate (userID, serviceID, endDate) VALUES (?,?,?,?)";
+                PreparedStatement ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rs.getInt("userID"));
+                ps.setInt(2, rs.getInt("id_service"));
+                ps.setString(3, "2000-01-01");
+                ps.executeUpdate();
+                ps.close();
+
+                //updatejtujemo ServiceUser ako je servis prvi put aktiviran onda ga oznacujemo da je aktivan
                 query = "UPDATE ServicesUser SET aktivan=1, newService=false WHERE id=?";
+
             } else {
+                //u slucaju da servis nije nov onda uzmima endDate iz userEndDate table kako bi produzili datum
+                // isteka servisa
+
+                query = "SELECT * from usersEndDate WHERE userID=? AND serviceID=?";
+                PreparedStatement ps = db.conn.prepareStatement(query);
+                ResultSet resultSet;
+                ps.setInt(1, rs.getInt("userID"));
+                ps.setInt(2, rs.getInt("id_service"));
+                resultSet = ps.executeQuery();
+                if (resultSet.isBeforeFirst()) {
+                    resultSet.next();
+                    endDate = resultSet.getString("endDate");
+                }
+                resultSet.close();
+                ps.close();
+                //za svaki slucaj isto kao i gore
                 query = "UPDATE ServicesUser SET aktivan=1, newService=false WHERE id=?";
             }
             PreparedStatement ps = db.conn.prepareStatement(query);
@@ -1062,22 +1088,22 @@ public class ServicesFunctions {
 
         switch (type) {
             case "NET":
-                produziNET(rs, operName, db, newService);
+                produziNET(rs, operName, db, newService, endDate);
                 break;
             case "LINKED_NET":
-                produziNET(rs, operName, db, newService);
+                produziNET(rs, operName, db, newService, endDate);
                 break;
             case "IPTV":
-                produziIPTV(rs, operName, db, newService);
+                produziIPTV(rs, operName, db, newService, endDate);
                 break;
             case "LINKED_IPTV":
-                produziIPTV(rs, operName, db, newService);
+                produziIPTV(rs, operName, db, newService, endDate);
                 break;
             case "DTV":
-                produziDTV(rs, operName, db, newService);
+                produziDTV(rs, operName, db, newService, endDate);
                 break;
             case "LINKED_DTV":
-                produziDTV(rs, operName, db, newService);
+                produziDTV(rs, operName, db, newService, endDate);
                 break;
 
         }
