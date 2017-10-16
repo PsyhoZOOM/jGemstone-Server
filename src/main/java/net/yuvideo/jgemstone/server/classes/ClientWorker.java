@@ -587,6 +587,7 @@ public class ClientWorker implements Runnable {
                         service.put("linkedService", rs.getBoolean("linkedService"));
                         service.put("newService", rs.getBoolean("newService"));
                         service.put("DTVPaketID", rs.getInt("DTVPaket"));
+                        service.put("endDate", rs.getString("endDate"));
 
                         jObj.put(String.valueOf(i), service);
                         i++;
@@ -635,6 +636,7 @@ public class ClientWorker implements Runnable {
                         service.put("cena", rs2.getDouble("cena"));
                         service.put("linkedService", rs2.getBoolean("linkedService"));
                         service.put("aktivan", rs2.getBoolean("aktivan"));
+                        service.put("endDate", rs2.getString("endDate"));
                         if (rs2.getString("GroupName") != null) {
                             service.put("paketType", "NET");
                         }
@@ -1035,7 +1037,7 @@ public class ClientWorker implements Runnable {
             PreparedStatement ps = null;
             ResultSet rs;
 
-            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=1 WHERE id=?";
+            query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=true WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -1063,8 +1065,7 @@ public class ClientWorker implements Runnable {
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
                     while (rs.next()) {
-                        if (!rLine.getBoolean("skipProduzenje"))
-                            ServicesFunctions.produziService(rs, getOperName(), db);
+                        ServicesFunctions.produziService(rs.getInt("id"), getOperName(), rLine.getBoolean("skipProduzenje"), db);
                     }
 
                 }
@@ -1151,7 +1152,7 @@ public class ClientWorker implements Runnable {
                     rs = ps.executeQuery();
                     if (rs.isBeforeFirst()) {
                         rs.next();
-                        ServicesFunctions.produziService(rs, getOperName(), db);
+                        ServicesFunctions.produziService(rs.getInt("id"), getOperName(), rLine.getBoolean("skipProduzenje"), db);
                     }
                     ps.close();
                     rs.close();

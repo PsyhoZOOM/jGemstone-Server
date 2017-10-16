@@ -1,9 +1,9 @@
 package net.yuvideo.jgemstone.server.classes.IPTV;
 
-import net.yuvideo.jgemstone.server.classes.database;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -166,7 +166,6 @@ public class StalkerRestAPI2 {
 
         JSONObject accInfo = new JSONObject();
 
-        getAccInfo(STB_MAC);
         return accInfo;
 
 
