@@ -216,6 +216,7 @@ public class ClientWorker implements Runnable {
                         jObj.put("jAdresa", rs.getString("jAdresa"));
                         jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
                         jObj.put("jMesto", rs.getString("jMesto"));
+                        jObj.put("dug", df.format(get_userDebt(rs.getInt("id"))));
                         jUsers.put(String.valueOf(i), jObj);
                         i++;
                     } catch (SQLException e) {
@@ -1099,28 +1100,27 @@ public class ClientWorker implements Runnable {
 
             for (int i = 0; i < rate; i++) {
 
-                query = "INSERT INTO userDebts (id_ServiceUser, id_service, nazivPaketa, datumZaduzenja, userID, popust,"
+                query = "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust,"
                         + " paketType, cena, uplaceno, dug, zaduzenOd, zaMesec)"
                         + " VALUES"
-                        + " (?,?,?,?,?,?,?,?,?,?,?,?)";
+                        + " (?,?,?,?,?,?,?,?,?,?,?)";
                 try {
                     ps = db.conn.prepareStatement(query);
                     ps.setNull(1, Types.INTEGER);
-                    ps.setNull(2, Types.INTEGER);
-                    ps.setString(3, rLine.getString("nazivPaketa"));
-                    ps.setString(4, normalDate.format(cal.getTime()));
-                    ps.setInt(5, rLine.getInt("userID"));
-                    ps.setDouble(6, 0.00);
-                    ps.setString(7, rLine.getString("paketType"));
-                    ps.setDouble(8, rLine.getDouble("cena"));
-                    ps.setDouble(9, 0.00);
-                    ps.setDouble(10, Double.parseDouble(df.format(rLine.getDouble("cena") / rate)));
-                    ps.setString(11, getOperName());
+                    ps.setString(2, rLine.getString("nazivPaketa"));
+                    ps.setString(3, normalDate.format(cal.getTime()));
+                    ps.setInt(4, rLine.getInt("userID"));
+                    ps.setDouble(5, 0.00);
+                    ps.setString(6, rLine.getString("paketType"));
+                    ps.setDouble(7, rLine.getDouble("cena"));
+                    ps.setDouble(8, 0.00);
+                    ps.setDouble(9, Double.parseDouble(df.format(rLine.getDouble("cena") / rate)));
+                    ps.setString(10, getOperName());
                     calRate.add(Calendar.MONTH, month);
                     if (month == 0) {
                         month++;
                     }
-                    ps.setString(12, formatMonthDate.format(calRate.getTime()));
+                    ps.setString(11, formatMonthDate.format(calRate.getTime()));
                     ps.executeUpdate();
                     ps.close();
 
@@ -2896,9 +2896,28 @@ public class ClientWorker implements Runnable {
 
             send_object(jObj);
             return;
-
         }
+    }
 
+
+    private Double get_userDebt(int userID) {
+        PreparedStatement ps;
+        ResultSet rs;
+        String query = "SELECT dug, uplaceno FROM userDebts WHERE userID=? ";
+        double dug = 0.00;
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, userID);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                while (rs.next()) {
+                    dug += (rs.getDouble("dug") - rs.getDouble("uplaceno"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return dug;
     }
 
     private String get_paket_naziv(String digitalniTVPaket, int dtv_id) {
