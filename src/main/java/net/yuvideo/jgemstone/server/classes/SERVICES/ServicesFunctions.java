@@ -33,7 +33,7 @@ public class ServicesFunctions {
     public static void addServiceLinked(JSONObject rLine, String opername, database db) {
         ResultSet rs;
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser " +
+        String query = "INSERT INTO servicesUser " +
                 "(id_service, box_id, nazivPaketa, UserName, idDTVCard, DTVPaket, userID, obracun, produzenje, operName, linkedService, paketType) " +
                 "VALUES " +
                 "(?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -84,7 +84,7 @@ public class ServicesFunctions {
 
     public static void addServiceDTVLinked(JSONObject rLine, String opername, int BOX_Service_ID, database db) {
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser (id_service, box_id, nazivPaketa, date_added,  idDTVCard, DTVPaket,  userID, produzenje, operName, linkedService, paketType, endDate) " +
+        String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added,  idDTVCard, DTVPaket,  userID, produzenje, operName, linkedService, paketType, endDate) " +
                 "VALUES" +
                 "(?,?,?,?,?,?,?,?,?,?,?,?)";
 
@@ -114,7 +114,7 @@ public class ServicesFunctions {
 
     public static void addServiceNETLinked(JSONObject rLine, String opername, int BOX_Service_ID, database db) {
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, operName, UserName, GroupName, linkedService, paketType, endDate ) " +
+        String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, operName, UserName, GroupName, linkedService, paketType, endDate ) " +
                 "VALUES " +
                 "(?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
@@ -141,7 +141,7 @@ public class ServicesFunctions {
 
     public static void addServiceFIXLinked(JSONObject rLine, String opername, int box_service_id, database db) {
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser (id_service, box_id, nazivPaketa, date_added, userID, operName," +
+        String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, operName," +
                 " FIKSNA_TEL, FIKSNA_TEL_PAKET_ID, linkedService, paketType)" +
                 "VALUES " +
                 "(?,?,?,?,?,?,?,?,?,?)";
@@ -167,7 +167,7 @@ public class ServicesFunctions {
 
     public static void addServiceIPTVLinked(JSONObject rLIne, String opername, int box_service_id, database db) {
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, opername," +
+        String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, opername," +
                 "IPTV_MAC, linkedService, paketType, endDate) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
         try {
@@ -198,7 +198,7 @@ public class ServicesFunctions {
                                        String brojUgovora, int produzenje, String idDTVCard, int DTVPaket, database db) {
         PreparedStatement ps;
         String ServiceAdded;
-        String query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena," +
+        String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena," +
                 " obracun, brojUgovora, produzenje, newService, idDTVCard, DTVPaket, linkedService, paketType, endDate)" +
 
                 "VALUES " +
@@ -261,7 +261,7 @@ public class ServicesFunctions {
         NETFunctions.addUser(rLine, db);
 
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, " +
+        String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, " +
                 "obracun, brojUgovora, aktivan, produzenje, newService, UserName, GroupName, paketType, endDate) VALUES " +
                 "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
 
@@ -297,7 +297,7 @@ public class ServicesFunctions {
         String Message;
 
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, " +
+        String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, " +
                 "obracun, brojUgovora, aktivan, produzenje, newService, FIKSNA_TEL, paketType) " +
                 "VALUES " +
                 "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -331,7 +331,7 @@ public class ServicesFunctions {
     public static String addServiceIPTV(JSONObject rLine, String opername, database db) {
         String Message = null;
         PreparedStatement ps;
-        String query = "INSERT INTO ServicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena," +
+        String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena," +
                 "obracun, brojUgovora, aktivan, produzenje, newService, IPTV_EXT_ID, IPTV_MAC, paketType, endDate)" +
                 "VALUES " +
                 "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -373,7 +373,7 @@ public class ServicesFunctions {
         String query;
         String DTVKartica;
 
-        query = "SELECT * FROM ServicesUser WHERE id=?";
+        query = "SELECT * FROM servicesUser WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, delObj.getInt("id"));
@@ -387,7 +387,7 @@ public class ServicesFunctions {
                 psDelete.executeUpdate();
                 ps.close();
 
-                query = "DELETE FROM ServicesUser WHERE id=?";
+                query = "DELETE FROM servicesUser WHERE id=?";
                 psDelete = db.conn.prepareStatement(query);
                 psDelete.setInt(1, delObj.getInt("id"));
                 psDelete.executeUpdate();
@@ -404,7 +404,7 @@ public class ServicesFunctions {
 
         String userName;
 
-        String query = "SELECT * FROM ServicesUser WHERE id=?";
+        String query = "SELECT * FROM servicesUser WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, delObj.getInt("id"));
@@ -427,7 +427,7 @@ public class ServicesFunctions {
                 psDelete.setString(1, userName);
                 psDelete.executeUpdate();
 
-                query = "DELETE FROM ServicesUser WHERE id=?";
+                query = "DELETE FROM servicesUser WHERE id=?";
                 psDelete = db.conn.prepareStatement(query);
                 psDelete.setInt(1, delObj.getInt("id"));
                 psDelete.executeUpdate();
@@ -444,7 +444,7 @@ public class ServicesFunctions {
         String mac = null;
         int userID = 0;
 
-        query = "SELECT * FROM ServicesUser WHERE id=?";
+        query = "SELECT * FROM servicesUser WHERE id=?";
 
         try {
             ps = db.conn.prepareStatement(query);
@@ -465,7 +465,7 @@ public class ServicesFunctions {
         stalkerRestAPI2.deleteAccount(mac);
 
         //brisanje u baziu
-        query = "DELETE FROM ServicesUser WHERE id=?";
+        query = "DELETE FROM servicesUser WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, delObj.getInt("id"));
@@ -483,7 +483,7 @@ public class ServicesFunctions {
         ResultSet rs;
         String query;
         String brojTelefona = new String();
-        query = "SELECT * FROM ServicesUser WHERE id=?";
+        query = "SELECT * FROM servicesUser WHERE id=?";
 
         try {
             ps = db.conn.prepareStatement(query);
@@ -500,7 +500,7 @@ public class ServicesFunctions {
         }
 
 
-        query = "DELETE FROM ServicesUser WHERE id=?";
+        query = "DELETE FROM servicesUser WHERE id=?";
 
         try {
             ps = db.conn.prepareStatement(query);
@@ -518,7 +518,7 @@ public class ServicesFunctions {
         PreparedStatement ps;
         String query;
 
-        query = "DELETE FROM ServicesUser WHERE id=?";
+        query = "DELETE FROM servicesUser WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, delObj.getInt("id"));
@@ -533,7 +533,7 @@ public class ServicesFunctions {
     public static String getDatumIsteka(JSONObject rLine, database db) {
         PreparedStatement ps;
         ResultSet rs;
-        String query = "SELECT endDate FROM ServicesUser WHERE id=?";
+        String query = "SELECT endDate FROM servicesUser WHERE id=?";
         String datumIsteka = null;
         try {
             ps = db.conn.prepareStatement(query);
@@ -612,7 +612,7 @@ public class ServicesFunctions {
         ResultSet resultSet;
         String query;
 
-        query = "SELECT * FROM ServicesUser WHERE box_id=?";
+        query = "SELECT * FROM servicesUser WHERE box_id=?";
 
         try {
             ps = db.conn.prepareStatement(query);
@@ -682,7 +682,7 @@ public class ServicesFunctions {
             e.printStackTrace();
         }
 
-        query = "UPDATE ServicesUser set aktivan=1, newService=false, date_activated=? WHERE id=?";
+        query = "UPDATE servicesUser set aktivan=1, newService=false, date_activated=? WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, LocalDateTime.now().toString());
@@ -749,7 +749,7 @@ public class ServicesFunctions {
                 stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
             }
 
-            String query = "UPDATE ServicesUser SET aktivan=1, newService=false, date_activated=? WHERE id=?";
+            String query = "UPDATE servicesUser SET aktivan=1, newService=false, date_activated=? WHERE id=?";
             PreparedStatement ps = db.conn.prepareStatement(query);
             ps.setString(1, LocalDateTime.now().toString());
             ps.setInt(2, rs.getInt("id"));
@@ -774,7 +774,7 @@ public class ServicesFunctions {
         String type = "NONE";
         String query;
 
-        query = "SELECT * FROM ServicesUser WHERE id=?";
+        query = "SELECT * FROM servicesUser WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, serviceID);
@@ -834,9 +834,9 @@ public class ServicesFunctions {
 
 
         if (newService) {
-            query = "UPDATE ServicesUser SET endDate=?,  newService=false WHERE id=?";
+            query = "UPDATE servicesUser SET endDate=?,  newService=false WHERE id=?";
         } else {
-            query = "UPDATE ServicesUser SET endDate=?, newService=false WHERE id=?";
+            query = "UPDATE servicesUser SET endDate=?, newService=false WHERE id=?";
         }
         try {
             ps = db.conn.prepareStatement(query);

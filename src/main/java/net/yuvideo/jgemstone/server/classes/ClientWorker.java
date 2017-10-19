@@ -547,7 +547,7 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("get_user_services")) {
             jObj = new JSONObject();
-            query = "SELECT *  FROM ServicesUser WHERE userID=? AND linkedService=false";
+            query = "SELECT *  FROM servicesUser WHERE userID=? AND linkedService=false";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -607,7 +607,7 @@ public class ClientWorker implements Runnable {
 
             JSONObject jObj2 = new JSONObject();
             PreparedStatement ps2;
-            query = "SELECT * FROM ServicesUser WHERE box_id=? AND linkedService=? AND userID=?";
+            query = "SELECT * FROM servicesUser WHERE box_id=? AND linkedService=? AND userID=?";
             try {
                 ps2 = db.conn.prepareStatement(query);
                 ps2.setInt(1, rLine.getInt("box_ID"));
@@ -679,7 +679,7 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
 
             int service_id = rLine.getInt("service_id");
-            query = "SELECT * FROM ServicesUser WHERE id=?";
+            query = "SELECT * FROM servicesUser WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -1055,9 +1055,9 @@ public class ClientWorker implements Runnable {
             }
 
             if (rLine.getString("paketType").equals("BOX")) {
-                query = "SELECT * FROM ServicesUser WHERE box_id=?";
+                query = "SELECT * FROM servicesUser WHERE box_id=?";
             } else {
-                query = "SELECT * FROM ServicesUser WHERE id=?";
+                query = "SELECT * FROM servicesUser WHERE id=?";
             }
             rs = null;
             try {
@@ -1145,7 +1145,7 @@ public class ClientWorker implements Runnable {
                 PreparedStatement ps;
                 ResultSet rs;
                 String query;
-                query = "SELECT * FROM ServicesUser WHERE id_service =?";
+                query = "SELECT * FROM servicesUser WHERE id_service =?";
                 try {
                     ps = db.conn.prepareStatement(query);
                     ps.setInt(1, rLine.getInt("id_ServiceUser"));
@@ -2598,7 +2598,7 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("add_CSV_FIX_Telefonija")) {
             CsvReader csvReader = null;
-            PreparedStatement ps;
+            PreparedStatement ps = null;
             String query = "INSERT INTO csv (account,  `from`, `to`, country, description, connectTime, chargedTimeMS, "
                     + "chargedTimeS, chargedAmountRSD, serviceName, chargedQuantity, serviceUnit, customerID, fileName)"
                     + "VALUES"
@@ -2609,6 +2609,7 @@ public class ClientWorker implements Runnable {
                     csvReader = new CsvReader(new StringReader((String) rLine.get(key)));
                     csvReader.setDelimiter(',');
                     csvReader.readHeaders();
+                    ps = db.conn.prepareStatement(query);
                     while (csvReader.readRecord()) {
                         //ako je csv fajl  na kraju prekinuti import
                         if (csvReader.get("Account").equals("SUBTOTAL") || csvReader.get("Account").isEmpty()
@@ -2623,7 +2624,6 @@ public class ClientWorker implements Runnable {
                         customerID = customerID.replace("-customer", "");
                         customerID = customerID.replace(".csv", "");
 
-                        ps = db.conn.prepareStatement(query);
                         ps.setString(1, csvReader.get("Account"));
                         ps.setString(2, csvReader.get("From"));
                         ps.setString(3, csvReader.get("To"));
@@ -2644,9 +2644,10 @@ public class ClientWorker implements Runnable {
                         ps.setString(14, filename);
 
                         ps.executeUpdate();
-                        ps.close();
-                        jObj.put("Mesage", "CSV_IMPORT_SUCCESS");
+
                     }
+                    ps.close();
+                    jObj.put("Mesage", "CSV_IMPORT_SUCCESS");
                 } catch (FileNotFoundException e) {
                     jObj.put("ERROR", e.getMessage());
                     e.printStackTrace();

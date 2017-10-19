@@ -105,7 +105,7 @@ public class FIXFunctions {
         JSONObject obj = new JSONObject();
         PreparedStatement ps;
         ResultSet rs;
-        String query = "SELECT * FROM ServicesUser WHERE FIKSNA_TEL IS NOT NULL AND obracun=1";
+        String query = "SELECT * FROM servicesUser WHERE FIKSNA_TEL IS NOT NULL AND obracun=1";
 
         try {
             ps = db.conn.prepareStatement(query);

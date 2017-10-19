@@ -37,7 +37,7 @@ public class monthlyScheduler {
     private String query;
 
     public void monthlyScheduler() {
-        query = "SELECT *  FROM ServicesUser WHERE obracun=1 AND aktivan=1 AND linkedService=0  ";
+        query = "SELECT *  FROM servicesUser WHERE obracun=1 AND aktivan=1 AND linkedService=0  ";
         //koji je mesec zaduzenja. posto je sada novi mesec kada se zaduzuje korisnik onda idemo mesec dana u nazad.
         //obracun je za prosli mesec
 
@@ -79,7 +79,7 @@ public class monthlyScheduler {
     }
 
     private void setOldService(int id) {
-        query = "UPDATE ServicesUser set newService=0 WHERE id=?";
+        query = "UPDATE servicesUser set newService=0 WHERE id=?";
         try {
             PreparedStatement ps2 = db.conn.prepareStatement(query);
             ps2.setInt(1, id);
