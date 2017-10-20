@@ -168,8 +168,6 @@ public class StalkerRestAPI2 {
         JSONObject accInfo = new JSONObject();
 
         return accInfo;
-
-
     }
 
     public JSONObject getAccInfo(String stb_mac) {
@@ -209,14 +207,15 @@ public class StalkerRestAPI2 {
     }
 
 
-    public void changeMac(int acc, String stb_mac) {
+    public void changeMac(String acc, String stb_mac) {
+        System.out.println("ACC STB_MAC:" + acc + " " + stb_mac);
         webResource = apiClient.resource(url);
         clientResponse = webResource
                 .path("accounts")
-                .path("4")
+                .path("00:11:33:44:55:11")
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Basic " + AuthStringENC)
-                .put(ClientResponse.class);
+                .put(ClientResponse.class, "stb_mac=11:22:33:44:55:66");
 
         String aa = clientResponse.getEntity(String.class);
         System.out.println("CHANGE MAC: " + aa);

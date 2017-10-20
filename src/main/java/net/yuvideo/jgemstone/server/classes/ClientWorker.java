@@ -2712,7 +2712,8 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("test_REST_API")) {
             StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
             //stalkerRestAPI2.changeMac(1, "00:1A:79:00:39:EE");
-            stalkerRestAPI2.checkUser(rLine.getString("STB_MAC"));
+            //stalkerRestAPI2.checkUser(rLine.getString("STB_MAC"));
+            stalkerRestAPI2.changeMac("5", "00:11:33:44:55:11");
 
             jObj = new JSONObject();
             send_object(jObj);
