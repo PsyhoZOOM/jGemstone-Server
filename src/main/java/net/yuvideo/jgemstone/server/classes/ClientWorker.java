@@ -1137,6 +1137,7 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.getString("action").equals("zaduzi_uslugu")) {
+            //zaduzivanje usluga unapred
             jObj = new JSONObject();
             JSONObject Message = new JSONObject();
             if (!ServicesFunctions.check_service_exist(rLine.getInt("id_ServiceUser"),
@@ -1152,7 +1153,8 @@ public class ClientWorker implements Runnable {
                     rs = ps.executeQuery();
                     if (rs.isBeforeFirst()) {
                         rs.next();
-                        ServicesFunctions.produziService(rs.getInt("id"), getOperName(), rLine.getBoolean("skipProduzenje"), db);
+                        /// skipProduzenje proveriti
+                        ServicesFunctions.produziService(rs.getInt("id"), getOperName(), false, db);
                     }
                     ps.close();
                     rs.close();
