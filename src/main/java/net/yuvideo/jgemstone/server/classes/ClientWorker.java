@@ -217,6 +217,7 @@ public class ClientWorker implements Runnable {
                         jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
                         jObj.put("jMesto", rs.getString("jMesto"));
                         jObj.put("dug", df.format(get_userDebt(rs.getInt("id"))));
+                        jObj.put("firma", rs.getBoolean("firma"));
                         jUsers.put(String.valueOf(i), jObj);
                         i++;
                     } catch (SQLException e) {
@@ -411,85 +412,111 @@ public class ClientWorker implements Runnable {
             update_user(rLine);
         }
 
-        if (rLine.getString("action").equals("get_firma")) {
-            query = "SELECT * FROM firme WHERE userId=?";
-
+        if (rLine.get("action").equals("setUserFirma")) {
             jObj = new JSONObject();
+            boolean userHasFirma = false;
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT * from firme WHERE userID=?";
 
             try {
-                db.ps = db.conn.prepareStatement(query);
-                db.ps.setInt(1, rLine.getInt("userId"));
-                LOGGER.info(db.ps.toString());
-                rs = db.ps.executeQuery();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("userID"));
+                rs = ps.executeQuery();
 
-            try {
-                if (rs.isBeforeFirst()) {
-                    try {
-                        rs.next();
-                        jObj.put("nazivFirme", rs.getString("nazivFirme"));
-                        jObj.put("kontaktOsoba", rs.getString("kontaktOsoba"));
-                        jObj.put("kodBanke", rs.getString("kodBanke"));
-                        jObj.put("pib", rs.getString("pib"));
-                        jObj.put("maticniBrFirme", rs.getString("maticniBrFirme"));
-                        jObj.put("brTekuciRacun", rs.getString("brTekuciRacun"));
-                        jObj.put("brojFakture", rs.getString("brojFakture"));
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    jObj.put("Message", "NO_DATA");
-                }
+                if (rs.isBeforeFirst()) userHasFirma = true;
+
                 rs.close();
                 ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
 
-            send_object(jObj);
-            return;
+            if (userHasFirma) {
+                query = "UPDATE firme SET " +
+                        "nazivFirme=?, " +
+                        "kodBanke=?, " +
+                        "kontaktOsoba=?, " +
+                        "PIB=?, " +
+                        "maticniBroj=?, " +
+                        "tekuciRacun=? " +
+                        "WHERE userID=?";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setString(1, rLine.getString("nazivFirme"));
+                    ps.setString(2, rLine.getString("kodBanke"));
+                    ps.setString(3, rLine.getString("kontaktOsoba"));
+                    ps.setString(4, rLine.getString("pib"));
+                    ps.setString(5, rLine.getString("maticniBroj"));
+                    ps.setString(6, rLine.getString("tekuciRacun"));
+                    ps.setInt(7, rLine.getInt("userID"));
+                    ps.executeUpdate();
+                    ps.close();
+                    setUserFirma(rLine.getInt("userID"), true);
+                    jObj.put("MESSAGE", "FIRMA_EDIT_SAVE");
 
+                } catch (SQLException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+
+                }
+
+            } else {
+                query = "INSERT INTO firme " +
+                        "(userID, nazivFirme, kontaktOsoba, kodBanke, PIB, maticniBroj, " +
+                        "tekuciRacun) " +
+                        "VALUES " +
+                        "(?,?,?,?,?,?,?)";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setInt(1, rLine.getInt("userID"));
+                    ps.setString(2, rLine.getString("nazivFirme"));
+                    ps.setString(3, rLine.getString("kontaktOsoba"));
+                    ps.setString(4, rLine.getString("kodBanke"));
+                    ps.setString(5, rLine.getString("pib"));
+                    ps.setString(6, rLine.getString("maticniBroj"));
+                    ps.setString(7, rLine.getString("tekuciRacun"));
+                    ps.executeUpdate();
+                    ps.close();
+                    setUserFirma(rLine.getInt("userID"), true);
+                    jObj.put("MESSAGE", "FIRMA_SAVED");
+
+                } catch (SQLException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+            send_object(jObj);
         }
 
-        if (rLine.get("action").equals("save_firma")) {
-            query = "DELETE FROM firme WHERE userId=?";
-
+        if (rLine.getString("action").equals("getUserFirma")) {
+            JSONObject jObj = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT * FROM firme WHERE userID=?";
             try {
-                db.ps = db.conn.prepareStatement(query);
-                db.ps.setInt(1, rLine.getInt("userID"));
-                db.ps.executeUpdate();
-
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("userID"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    jObj.put("id", rs.getInt("id"));
+                    jObj.put("userID", rs.getInt("userID"));
+                    jObj.put("nazivFirme", rs.getString("nazivFirme"));
+                    jObj.put("kontaktOsoba", rs.getString("kontaktOsoba"));
+                    jObj.put("kodBanke", rs.getString("kodBanke"));
+                    jObj.put("pib", rs.getString("PIB"));
+                    jObj.put("maticniBroj", rs.getString("maticniBroj"));
+                    jObj.put("tekuciRacun", rs.getString("tekuciRacun"));
+                }
             } catch (SQLException e) {
+                jObj.put("ERROR", e.getMessage());
                 e.printStackTrace();
             }
 
-            query = "INSERT INTO firme (nazivFirme, kontaktOsoba, kodBanke, pib, maticniBrFirme,"
-                    + "brTekuciRacun, userId, brojFakture) VALUE (?, ?, ?, ?, ?, ?, ?, ?)";
-
-            try {
-                db.ps = db.conn.prepareStatement(query);
-                db.ps.setString(1, rLine.getString("nazivFirme"));
-                db.ps.setString(2, rLine.getString("kontaktOsoba"));
-                db.ps.setString(3, rLine.getString("kodBanke"));
-                db.ps.setString(4, rLine.getString("pib"));
-                db.ps.setString(5, rLine.getString("maticniBrFirme"));
-                db.ps.setString(6, rLine.getString("brTekuciRacun"));
-                db.ps.setInt(7, rLine.getInt("userID"));
-                db.ps.setInt(8, rLine.getInt("brojFakture"));
-                db.ps.executeUpdate();
-                ps.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            jObj = new JSONObject();
-            jObj.put("Message", "USER_FIRMA_SAVED");
             send_object(jObj);
-            return;
-
         }
+
 
         if (rLine.getString("action").equals("delete_user")) {
             delete_user(rLine);
@@ -2900,6 +2927,19 @@ public class ClientWorker implements Runnable {
 
             send_object(jObj);
             return;
+        }
+    }
+
+    private void setUserFirma(int userID, boolean hasFirma) {
+        PreparedStatement ps;
+        String query = "UPDATE users SET firma=? WHERE id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setBoolean(1, hasFirma);
+            ps.setInt(2, userID);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
