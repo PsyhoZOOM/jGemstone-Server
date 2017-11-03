@@ -68,12 +68,21 @@ public class monthlyScheduler {
                     } else {
                         setOldService(rs.getInt("id"));
                     }
+                    zaduziFakturu(rs.getInt("userID"));
                 }
             }
-
+            rs.close();
+            ps.close();
+            psUpdateDebts.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+
+    }
+
+
+    private void zaduziFakturu(int userID) {
 
 
     }

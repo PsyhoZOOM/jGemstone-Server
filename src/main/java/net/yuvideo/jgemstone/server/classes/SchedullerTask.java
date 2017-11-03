@@ -88,6 +88,8 @@ public class SchedullerTask implements Runnable {
                 }
 
             }
+            rs.close();
+            ps.close();
 
         } catch (SQLException e) {
             e.printStackTrace();
