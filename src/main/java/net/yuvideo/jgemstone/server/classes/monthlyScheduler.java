@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -61,6 +62,7 @@ public class monthlyScheduler {
                     psUpdateDebts.setDouble(7, rs.getDouble("cena"));
                     psUpdateDebts.setDouble(8, valueToPercent.getValue(rs.getDouble("cena"), rs.getDouble("popust")));
                     psUpdateDebts.setString(9, format_month.format(cal.getTime()));
+                    psUpdateDebts.setDouble(10, rs.getDouble("pdv"));
                     if (!rs.getBoolean("newService")) {
                         //ako servis je vec zaduzen onda preskociti zaduzenje od strane servera :)
                         if (!check_skip_userDebt(rs.getInt("id"), rs.getInt("userID"), format_month.format(cal.getTime())))
@@ -68,10 +70,12 @@ public class monthlyScheduler {
                     } else {
                         setOldService(rs.getInt("id"));
                     }
-                    zaduziFakturu(rs.getInt("userID"));
+                    LocalDate date = LocalDate.of(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+                    zaduziFakturu(rs.getInt("userID"), date, "SYSTEM", rs);
                 }
             }
             rs.close();
+            psUpdateDebts.close();
             ps.close();
             psUpdateDebts.close();
         } catch (SQLException e) {
@@ -82,8 +86,11 @@ public class monthlyScheduler {
     }
 
 
-    private void zaduziFakturu(int userID) {
-
+    private void zaduziFakturu(int userID, LocalDate godina, String operater, ResultSet rs) {
+        FaktureFunct faktureFunct = new FaktureFunct(userID, godina, operater, db);
+        if (faktureFunct.hasFirma) {
+            faktureFunct.createFakturu(rs, db);
+        }
 
     }
 
