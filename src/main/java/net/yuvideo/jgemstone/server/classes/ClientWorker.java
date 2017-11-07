@@ -509,6 +509,8 @@ public class ClientWorker implements Runnable {
                     jObj.put("maticniBroj", rs.getString("maticniBroj"));
                     jObj.put("tekuciRacun", rs.getString("tekuciRacun"));
                 }
+                ps.close();
+                rs.close();
             } catch (SQLException e) {
                 jObj.put("ERROR", e.getMessage());
                 e.printStackTrace();
@@ -831,6 +833,7 @@ public class ClientWorker implements Runnable {
                         paketBox.put("id", rs.getInt("id"));
                         paketBox.put("naziv", rs.getString("naziv"));
                         paketBox.put("cena", rs.getDouble("cena"));
+                        paketBox.put("pdv", rs.getDouble("pdv"));
                         paketBox.put("paketType", "BOX");
                         if (rs.getString("DTV_naziv") != null) {
                             paketBox.put("DTV_id", rs.getInt("DTV_id"));
@@ -854,7 +857,6 @@ public class ClientWorker implements Runnable {
                             paketBox.put("IPTV_naziv", get_paket_naziv("IPTV_Paketi", rs.getInt("IPTV_id")));
                             paketBox.put("tariff_plan", get_paket_naziv("IPTV_Paketi", rs.getInt("IPTV_id")));
                         }
-                        paketBox.put("cena", rs.getDouble("cena"));
                         jObj.put(String.valueOf(i), paketBox);
                         i++;
                     }
@@ -2274,6 +2276,7 @@ public class ClientWorker implements Runnable {
                         paketi.put("naziv", rs.getString("naziv"));
                         paketi.put("brzina", rs.getString("brzina"));
                         paketi.put("cena", rs.getDouble("cena"));
+                        paketi.put("pdv", rs.getDouble("pdv"));
                         paketi.put("opis", rs.getString("opis"));
                         paketi.put("idleTimeout", rs.getString("idleTimeout"));
                         jObj.put(String.valueOf(i), paketi);
@@ -2318,8 +2321,8 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
 
-            query = "INSERT INTO internetPaketi (naziv, brzina, cena, opis,  idleTimeout) VALUES "
-                    + "(?, ?, ?, ?, ?)";
+            query = "INSERT INTO internetPaketi (naziv, brzina, cena, opis,  idleTimeout, pdv) VALUES "
+                    + "(?, ?, ?, ?, ?, ?)";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -2328,13 +2331,14 @@ public class ClientWorker implements Runnable {
                 ps.setDouble(3, rLine.getDouble("cena"));
                 ps.setString(4, rLine.getString("opis"));
                 ps.setString(5, rLine.getString("idleTimeout"));
+                ps.setDouble(6, rLine.getDouble("pdv"));
 
                 ps.executeUpdate();
 
                 jObj.put("Message", "INTERNET_PAKET_SAVED");
 
             } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
+                jObj.put("ERROR", e.getMessage());
                 e.printStackTrace();
             }
 
@@ -2360,7 +2364,7 @@ public class ClientWorker implements Runnable {
                 ps.setString(3, rLine.getString("naziv"));
                 ps.executeUpdate();
 
-                query = "UPDATE internetPaketi SET brzina=?, cena=?, opis=?, idleTimeout=? WHERE id=?";
+                query = "UPDATE internetPaketi SET brzina=?, cena=?, opis=?, idleTimeout=?, pdv=? WHERE id=?";
 
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("brzina"));
@@ -2368,13 +2372,14 @@ public class ClientWorker implements Runnable {
                 ps.setString(3, rLine.getString("opis"));
                 ps.setInt(4, rLine.getInt("idleTimeout"));
                 ps.setInt(5, rLine.getInt("idPaket"));
+                ps.setDouble(6, rLine.getDouble("pdv"));
                 ps.executeUpdate();
 
 
                 jObj.put("Message", "INTERNET_PAKET_UPDATED");
 
             } catch (SQLException e) {
-                jObj.put("Error", e.getMessage());
+                jObj.put("ERROR", e.getMessage());
                 e.printStackTrace();
             }
 
@@ -2399,6 +2404,7 @@ public class ClientWorker implements Runnable {
                         dtv.put("id", rs.getInt("id"));
                         dtv.put("naziv", rs.getString("naziv"));
                         dtv.put("cena", rs.getDouble("cena"));
+                        dtv.put("pdv", rs.getDouble("pdv"));
                         dtv.put("idPaket", rs.getInt("idPaket"));
                         dtv.put("opis", rs.getString("opis"));
                         jObj.put(String.valueOf(i), dtv);
@@ -2417,8 +2423,8 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("add_dtv_paket")) {
             jObj = new JSONObject();
-            query = "INSERT INTO digitalniTVPaketi (naziv, cena, idPaket, opis) VALUES "
-                    + "(?, ?, ?, ? )";
+            query = "INSERT INTO digitalniTVPaketi (naziv, cena, idPaket, opis, pdv) VALUES "
+                    + "(?, ?, ?, ?, ?)";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -2426,12 +2432,12 @@ public class ClientWorker implements Runnable {
                 ps.setDouble(2, rLine.getDouble("cena"));
                 ps.setInt(3, rLine.getInt("idPaket"));
                 ps.setString(4, rLine.getString("opis"));
-
+                ps.setDouble(5, rLine.getDouble("pdv"));
                 ps.executeUpdate();
                 jObj.put("Message", "DTV_PAKET_SAVED");
             } catch (SQLException e) {
                 jObj.put("Message", "ERROR");
-                jObj.put("Error", e.getMessage());
+                jObj.put("ERROR", e.getMessage());
                 e.printStackTrace();
             }
 
@@ -2442,7 +2448,7 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("edit_dtv_paket")) {
             jObj = new JSONObject();
-            query = "UPDATE digitalniTVPaketi SET cena=?, idPaket=?, opis=?, WHERE id=?";
+            query = "UPDATE digitalniTVPaketi SET cena=?, idPaket=?, opis=?, pdv=? WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -2450,13 +2456,14 @@ public class ClientWorker implements Runnable {
                 ps.setInt(2, rLine.getInt("idPaket"));
                 ps.setString(3, rLine.getString("opis"));
                 ps.setInt(4, rLine.getInt("id"));
+                ps.setDouble(5, rLine.getDouble("pdv"));
 
                 ps.executeUpdate();
 
                 jObj.put("Message", "PACKET_EDIT_SAVED");
             } catch (SQLException e) {
                 jObj.put("Message", "ERROR");
-                jObj.put("Error", e.getMessage());
+                jObj.put("ERROR", e.getMessage());
                 e.printStackTrace();
             }
 
@@ -2467,9 +2474,9 @@ public class ClientWorker implements Runnable {
 
         if (rLine.get("action").equals("save_Box_Paket")) {
             jObj = new JSONObject();
-            query = "INSERT INTO paketBox (naziv, DTV_id, DTV_naziv, NET_id, NET_naziv, TEL_id, TEL_naziv, IPTV_id, IPTV_naziv, cena)"
+            query = "INSERT INTO paketBox (naziv, DTV_id, DTV_naziv, NET_id, NET_naziv, TEL_id, TEL_naziv, IPTV_id, IPTV_naziv, cena, pdv)"
                     + "VALUES"
-                    + "(?,?,?,?,?,?,?,?,?,?)";
+                    + "(?,?,?,?,?,?,?,?,?,?,?)";
             try {
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("naziv"));
@@ -2506,6 +2513,7 @@ public class ClientWorker implements Runnable {
                 }
 
                 ps.setDouble(10, rLine.getDouble("cena"));
+                ps.setDouble(11, rLine.getDouble("pdv"));
                 ps.executeUpdate();
                 jObj.put("Message", "BOX_SAVED");
 
@@ -2533,7 +2541,7 @@ public class ClientWorker implements Runnable {
                         paket.put("id", rs.getInt("id"));
                         paket.put("naziv", rs.getString("naziv"));
                         paket.put("pretplata", rs.getDouble("pretplata"));
-                        paket.put("PDV", rs.getDouble("PDV"));
+                        paket.put("pdv", rs.getDouble("pdv"));
                         paket.put("besplatniMinutiFiksna", rs.getInt("besplatniMinutiFiksna"));
                         jObj.put(String.valueOf(i), paket);
                         i++;
@@ -2556,15 +2564,15 @@ public class ClientWorker implements Runnable {
                         + "(naziv, pretplata, PDV, besplatniMinutiFiksna) VALUES (?,?,?,?)");
                 ps.setString(1, rLine.getString("naziv"));
                 ps.setDouble(2, rLine.getDouble("pretplata"));
-                ps.setDouble(3, rLine.getDouble("PDV"));
+                ps.setDouble(3, rLine.getDouble("pdv"));
                 ps.setInt(4, rLine.getInt("besplatniMinutiFiksna"));
                 ps.executeUpdate();
                 ps.close();
                 jObj.put("Message", String.format("Paket %s snimljen", rLine.getString("naziv")));
 
             } catch (SQLException e) {
+                jObj.put("ERROR", e.getMessage());
                 e.printStackTrace();
-                jObj.put("Error", e.getMessage());
             }
             send_object(jObj);
             return;
@@ -2597,7 +2605,7 @@ public class ClientWorker implements Runnable {
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("naziv"));
                 ps.setDouble(2, rLine.getDouble("pretplata"));
-                ps.setDouble(3, rLine.getDouble("PDV"));
+                ps.setDouble(3, rLine.getDouble("pdv"));
                 ps.setInt(4, rLine.getInt("besplatniMinutiFiksna"));
                 ps.setInt(5, rLine.getInt("id"));
                 ps.executeUpdate();
@@ -2836,6 +2844,7 @@ public class ClientWorker implements Runnable {
                         paketObj.put("external_id", rs.getString("external_id"));
                         paketObj.put("id", rs.getInt("id"));
                         paketObj.put("IPTV_id", rs.getInt("iptv_id"));
+                        paketObj.put("pdv", rs.getDouble("pdv"));
                         jObj.put(String.valueOf(i), paketObj);
                         i++;
                     }
@@ -2880,6 +2889,7 @@ public class ClientWorker implements Runnable {
                         obj.put("name", rs.getString("name"));
                         obj.put("external_id", rs.getString("external_id"));
                         obj.put("cena", rs.getDouble("cena"));
+                        obj.put("pdv", rs.getDouble("pdv"));
                         obj.put("opis", rs.getString("opis"));
                         jObj.put(String.valueOf(i), obj);
                         i++;
