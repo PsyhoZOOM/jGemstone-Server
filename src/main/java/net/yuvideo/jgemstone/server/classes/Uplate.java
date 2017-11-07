@@ -1,4 +1,4 @@
-package JGemstone.classes;
+package net.yuvideo.jgemstone.server.classes;
 
 import java.io.Serializable;
 
