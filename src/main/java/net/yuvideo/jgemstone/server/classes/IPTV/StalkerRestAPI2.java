@@ -147,7 +147,7 @@ public class StalkerRestAPI2 {
                         rLine.getString("password")));
 
         builder = target.request(MediaType.APPLICATION_JSON);
-        response = builder.put(Entity.json(jobj));
+        response = builder.put(Entity.json(jobj.toString()));
 
         if (response.getStatus() != 200) {
             jsonObject.put("ERROR", response.getStatusInfo());
