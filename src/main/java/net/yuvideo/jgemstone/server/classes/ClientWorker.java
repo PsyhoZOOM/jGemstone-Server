@@ -2750,8 +2750,20 @@ public class ClientWorker implements Runnable {
             StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
             //stalkerRestAPI2.changeMac(1, "00:1A:79:00:39:EE");
             //stalkerRestAPI2.checkUser(rLine.getString("STB_MAC"));
-            stalkerRestAPI2.changeMac("5", "00:11:33:44:55:11");
+            //stalkerRestAPI2.changeMac("5", "00:11:33:44:55:11");
+            //jObj = stalkerRestAPI2.getUsersData(1);
+            JSONObject UserObj = new JSONObject();
+            UserObj.put("login", "TEST_IZ_APIJA");
+            UserObj.put("full_name", "API_NAME_TEST");
+            UserObj.put("userID", 299);
+            UserObj.put("tariff_plan", "Apsolutno SVE");
+            UserObj.put("password", "passwordNekiAPI");
+            UserObj.put("STB_MAC", "00:00:00:02:02:02");
+            UserObj.put("status", 0);
 
+            jObj = stalkerRestAPI2.saveUSER(UserObj);
+
+            System.out.println("STLKER_API_RESPONSE: " + jObj.toString());
             jObj = new JSONObject();
             send_object(jObj);
             return;

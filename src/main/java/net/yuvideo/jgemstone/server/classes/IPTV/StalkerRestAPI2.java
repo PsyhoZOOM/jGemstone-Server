@@ -1,13 +1,14 @@
 package net.yuvideo.jgemstone.server.classes.IPTV;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 import net.yuvideo.jgemstone.server.classes.database;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.ws.rs.client.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,8 +21,12 @@ import java.util.Base64;
  */
 public class StalkerRestAPI2 {
     Client apiClient;
-    WebResource webResource;
-    ClientResponse clientResponse;
+    ClientConfig clientConfig;
+    Response response;
+    WebTarget target;
+    Invocation.Builder builder;
+    HttpAuthenticationFeature hhtpAuthFeature;
+
     private database db;
     private String username;
     private String pass;
@@ -64,218 +69,244 @@ public class StalkerRestAPI2 {
         AuthString = username + ":" + pass;
         // AuthStringENC = new BASE64Encoder().encode(AuthString.getBytes());
 	AuthStringENC = Base64.getEncoder().encodeToString(AuthString.getBytes());
-        apiClient = Client.create();
+
+        //  apiClient = Client.create();
+
+        hhtpAuthFeature = HttpAuthenticationFeature.basic(username, pass);
+        clientConfig = new ClientConfig();
+        clientConfig.register(hhtpAuthFeature);
+        apiClient = ClientBuilder.newClient(clientConfig);
+        target = apiClient.target(url);
+
+
+
 
 
     }
 
     public JSONObject getPakets_ALL() {
-        webResource = apiClient.resource(url);
-        clientResponse = webResource
-                .path("tariffs")
-                .header("Authorization", "Basic " + AuthStringENC)
-                .accept(MediaType.APPLICATION_JSON)
-                .get(ClientResponse.class);
-        String tariffs = clientResponse.getEntity(String.class);
+        JSONObject jsonObject = null;
+        JSONArray jsonArray;
 
-        JSONObject tarifobj = new JSONObject(tariffs);
+        target = target.path("tariffs");
+        builder = target.request(MediaType.APPLICATION_JSON);
 
-        JSONArray tarrifArr = tarifobj.getJSONArray("results");
+        response = builder.get();
 
-        JSONObject jObj = new JSONObject();
+        if (response.getStatus() != 200) {
+            jsonObject = new JSONObject();
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            String a = response.readEntity(String.class);
+            jsonArray = new JSONObject(a).getJSONArray("results");
+            jsonObject = new JSONObject();
 
-        for (int i = 0; i < tarrifArr.length(); i++) {
-            jObj.put(String.valueOf(i), tarrifArr.get(i));
+            for (int i = 0; i < jsonArray.length(); i++) {
+                jsonObject.put(String.valueOf(i), jsonArray.get(i));
+            }
         }
 
-        return jObj;
+
+        return jsonObject;
     }
 
-    public JSONObject getUsersData(int accountID) {
-        webResource = apiClient.resource(url + "accounts");
-        clientResponse = webResource.accept("application/json")
-                .header("Authorization", "Basic " + AuthStringENC)
-                .get(ClientResponse.class);
-        String users = clientResponse.getEntity(String.class);
-        System.out.println(users);
-        JSONObject userObj = new JSONObject(users);
+    public JSONObject getUsersData(int accounID) {
+        JSONObject jsonObject = new JSONObject();
+        target = target.path("accounts");
+        builder = target.request(MediaType.APPLICATION_JSON);
+        response = builder.get();
 
-        return userObj;
+        if (response.getStatus() != 200) {
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            JSONArray jsonArr = new JSONObject(response.readEntity(String.class)).getJSONArray("results");
+            for (int i = 0; i < jsonArr.length(); i++) {
+                jsonObject.put(String.valueOf(i), jsonArr.get(i));
+            }
+
+        }
+        return jsonObject;
     }
 
     public JSONObject saveUSER(JSONObject rLine) {
-        webResource = apiClient.resource(url);
-        webResource.path("accounts");
+        JSONObject jsonObject = new JSONObject();
+        target = target.path("accounts");
 
-        String request;
-        request = "&login=" + rLine.getString("login");
-        request += "&full_name=" + rLine.getString("full_name");
-        request += "&account_number=" + rLine.getInt("userID");
-        request += "&end_date=" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toString();
-        request += "&tariff_plan=" + rLine.getString("tariff_plan");
-        request += "&password=" + rLine.getString("password");
-        request += "&stb_mac=" + rLine.getString("STB_MAC");
-        String.format(request += "&comment=" + String.format("Korisnik %s, account broj: %d , login: %s, password: %s",
-                rLine.getString("full_name"), rLine.getInt("userID"), rLine.getString("login"),
-                rLine.getString("password")));
-        request += "&status=0";
-        clientResponse = webResource
-                .path("accounts")
-                .accept(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Basic " + AuthStringENC)
-                .post(ClientResponse.class, request);
+        JSONObject jobj = new JSONObject();
+        jobj
+                .put("login", rLine.getString("login"))
+                .put("full_name", rLine.getString("full_name"))
+                .put("account_number", "userID")
+                .put("end_date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toString())
+                .put("tarrif_plan", rLine.getString("tariff_plan"))
+                .put("password", rLine.getString("password"))
+                .put("stb_mac", rLine.getString("STB_MAC"))
+                .put("status", 0)
+                .put("comment", String.format("Korisnik %s, account broj: %d, login: %s, password: %s",
+                        rLine.getString("full_name"), rLine.getInt("userID"), rLine.getString("login"),
+                        rLine.getString("password")));
 
-        String resp = clientResponse.getEntity(String.class);
+        builder = target.request(MediaType.APPLICATION_JSON);
+        response = builder.put(Entity.json(jobj));
 
-        System.out.println("RESPONSE: " + resp);
-        JSONObject respObj = new JSONObject();
-        respObj.put("Message", resp);
-        return respObj;
-    }
-
-    public boolean checkExternalID(int external_id) {
-        Boolean exist = false;
-        webResource = apiClient.resource(url + "tariffs");
-        clientResponse = webResource.accept("application/json")
-                .header("Authorization", "Basic " + AuthStringENC)
-                .get(ClientResponse.class);
-        String tarrifs = clientResponse.getEntity(String.class);
-        JSONObject tarrifobj = new JSONObject(tarrifs);
-        JSONArray tarrifArr = tarrifobj.getJSONArray("results");
-
-        //check if external_id exist
-        for (int i = 0; i < tarrifArr.length(); i++) {
-            System.out.println(tarrifArr.get(i));
-            JSONObject tf = (JSONObject) tarrifArr.get(i);
-            if (tf.getInt("external_id") == external_id)
-                exist = true;
+        if (response.getStatus() != 200) {
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            jsonObject.put("MESSAGE", response.readEntity(String.class));
+            System.out.println(response.readEntity(String.class));
         }
-
-        return exist;
-
+        return jsonObject;
     }
+
 
     public JSONObject setEndDate(String STB_MAC, String endDate) {
-        webResource = apiClient.resource(url);
-        clientResponse = webResource.path("accounts").path(STB_MAC)
-                .queryParam("end_date", endDate)
-                .accept(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Basic " + AuthStringENC)
-                .put(ClientResponse.class, "end_date=" + endDate);
-        String aa = clientResponse.getEntity(String.class);
-        System.out.println(aa.toString());
+        JSONObject jsonObject = new JSONObject();
+        target = target.path("accounts")
+                .path(STB_MAC);
+        JSONObject jendDate = new JSONObject();
+        jendDate.put("end_date", endDate);
 
-        JSONObject accInfo = new JSONObject();
-
-        return accInfo;
-    }
-
-    public JSONObject getAccInfo(String stb_mac) {
-        System.out.println(stb_mac);
-        webResource = apiClient.resource(url);
-        clientResponse = webResource.path("stb").path(stb_mac)
-                .accept("application/json")
-                .header("Authorization", "Basic " + AuthStringENC)
-                .get(ClientResponse.class);
-        System.out.println(clientResponse.toString());
-        String aa = clientResponse.getEntity(String.class);
-        System.out.println(aa.toString());
-
-        JSONObject accInfo = new JSONObject(aa);
-        JSONArray accInfoArr = accInfo.getJSONArray("results");
-        accInfo = new JSONObject(accInfoArr);
+        response = target.request(MediaType.APPLICATION_JSON).put(Entity.json(jendDate));
 
 
-
-        return accInfo;
-    }
-
-    public void deleteAccount(String stb_mac) {
-        //ako je mac null onda izlaz iz funkcije
-        if (stb_mac == null) return;
-
-        System.out.println("MAC za brisanje: " + stb_mac);
-        webResource = apiClient.resource(url);
-        clientResponse = webResource.path("accounts").path(stb_mac)
-                .accept(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Basic " + AuthStringENC)
-                .delete(ClientResponse.class);
-
-        System.out.println(clientResponse.toString());
-        String aa = clientResponse.getEntity(String.class);
-        System.out.println("RESPONSE: " + aa);
-    }
-
-
-    public void changeMac(String acc, String stb_mac) {
-        System.out.println("ACC STB_MAC:" + acc + " " + stb_mac);
-        webResource = apiClient.resource(url);
-        clientResponse = webResource
-                .path("accounts")
-                .path("00:11:33:44:55:11")
-                .accept(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Basic " + AuthStringENC)
-                .put(ClientResponse.class, "stb_mac=11:22:33:44:55:66");
-
-        String aa = clientResponse.getEntity(String.class);
-        System.out.println("CHANGE MAC: " + aa);
-    }
-
-    public Boolean checkUser(String STB_MAC) {
-        boolean userExists = true;
-        webResource = apiClient.resource(url);
-        clientResponse = webResource.
-                path("accounts")
-                .path(String.valueOf(STB_MAC))
-                .header("Authorization", "Basic " + AuthStringENC)
-                .accept(MediaType.APPLICATION_JSON)
-                .get(ClientResponse.class);
-        String resp = clientResponse.getEntity(String.class);
-        JSONObject jsonObject = new JSONObject(resp);
-
-        if (jsonObject.get("results") == JSONObject.NULL) {
-            System.out.println("NEMA USERS");
-            userExists = false;
+        if (response.getStatus() != 200) {
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            jsonObject = new JSONObject(response.readEntity(String.class));
+            System.out.println(response.readEntity(String.class));
         }
 
-        System.out.println(userExists);
-        return userExists;
+
+        return jsonObject;
     }
 
-    public void activateStatus(boolean status, String STB_MAC) {
-        webResource = apiClient.resource(url);
+
+    public JSONObject getAccInfo(String stb_mac) {
+        JSONObject jsonObject = new JSONObject();
+        target = target.path("accounts");
+        target = target.path(stb_mac);
+
+        builder = target.request(MediaType.APPLICATION_JSON);
+        response = builder.get();
+
+        if (response.getStatus() != 200) {
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            jsonObject = new JSONObject(response.readEntity(String.class));
+        }
+
+        return jsonObject;
+
+    }
+
+    public JSONObject deleteAccount(String stb_mac) {
+        JSONObject jsonObject = new JSONObject();
+        if (stb_mac == null) {
+            jsonObject.put("ERROR", "MISSING_MAC");
+            return jsonObject;
+        }
+
+        target = target.path("accounts")
+                .path(stb_mac);
+        builder = target.request(MediaType.APPLICATION_JSON);
+        response = builder.delete();
+
+        if (response.getStatus() != 200) {
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            jsonObject = new JSONObject(response.readEntity(String.class));
+        }
+
+        return jsonObject;
+    }
+
+    public void changeMac(String acc, String stb_mac) {
+        JSONObject jsonObject = new JSONObject();
+        if (acc == null || stb_mac == null) {
+            jsonObject.put("ERROR", "ACCOUNT_OR_MAC_EMPTY");
+            return;
+        }
+        target = target.path(acc);
+        target = target.path(stb_mac);
+        jsonObject = new JSONObject();
+        jsonObject.put("stb_mac", stb_mac);
+
+        response = target.request(MediaType.APPLICATION_JSON).put(Entity.json(jsonObject));
+
+        if (response.getStatus() != 200) {
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            jsonObject = new JSONObject(response.readEntity(String.class));
+            System.out.println("IPTV_ACCOUNT_DELETE:  " + jsonObject.get("results"));
+        }
+
+
+    }
+
+    public boolean checkUser(String stb_mac) {
+        boolean userExist = true;
+        JSONObject jsonObject = new JSONObject();
+        target = target.path("accounts");
+        target = target.path(stb_mac);
+
+        builder = target.request(MediaType.APPLICATION_JSON);
+        response = builder.get();
+
+        if (response.getStatus() != 200) {
+            userExist = true;
+        } else {
+            jsonObject = new JSONObject(response.readEntity(String.class));
+            System.out.println(jsonObject);
+            userExist = false;
+        }
+
+        return userExist;
+    }
+
+    public void activateStatus(boolean status, String stb_mac) {
+        JSONObject jsonObject = new JSONObject();
         int statusInt = 0;
-        if (status)
+        if (status) {
             statusInt = 1;
+        }
+        target = target.path("accounts");
+        target = target.path(stb_mac);
 
-        clientResponse = webResource.path("accounts")
-                .path(STB_MAC)
-                .header("Authorization", "Basic " + AuthStringENC)
-                .accept(MediaType.APPLICATION_JSON)
-                .put(ClientResponse.class, "status=" + statusInt);
-        System.out.println(webResource.toString());
+        jsonObject.put("status", statusInt);
 
-        String aa = clientResponse.getEntity(String.class);
-        System.out.println("AKTIVATED: " + aa);
+        response = target.request(MediaType.APPLICATION_JSON).put(Entity.json(jsonObject));
+
+        if (response.getStatus() != 200) {
+            jsonObject = new JSONObject();
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            jsonObject = new JSONObject(response.readEntity(String.class));
+
+        }
+
+        System.out.println("AKTIVATE_STATUS: " + jsonObject);
+
     }
 
     public String get_end_date(String STB_MAC) {
-        System.out.println("MAC ADRESA: " + STB_MAC);
+        JSONObject jsonObject = new JSONObject();
         String end_date = "0000-00-00";
-        webResource = apiClient.resource(url);
-        clientResponse = webResource.path("accounts")
-                .path(STB_MAC)
-                .header("Authorization", "Basic " + AuthStringENC)
-                .accept(MediaType.APPLICATION_JSON)
-                .get(ClientResponse.class);
-        String aa = clientResponse.getEntity(String.class);
+        target = target.path("accounts");
+        builder = target.request(MediaType.APPLICATION_JSON);
+        response = builder.get();
 
-        JSONObject jsonObject = new JSONObject(aa);
-        jsonObject = jsonObject.getJSONArray("results").getJSONObject(0);
-
-        if (jsonObject.has("end_date"))
+        if (response.getStatus() != 200) {
+            jsonObject = new JSONObject();
+            jsonObject.put("ERROR", response.getStatusInfo());
+        } else {
+            jsonObject = new JSONObject(response.readEntity(String.class));
             end_date = jsonObject.getString("end_date");
 
+        }
+
         return end_date;
+
     }
+
+
 }
