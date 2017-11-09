@@ -18,6 +18,8 @@ import java.text.DecimalFormat;
 import java.text.Format;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.logging.Level;
@@ -2758,12 +2760,19 @@ public class ClientWorker implements Runnable {
             UserObj.put("userID", 299);
             UserObj.put("tariff_plan", "Apsolutno SVE");
             UserObj.put("password", "passwordNekiAPI");
-            UserObj.put("STB_MAC", "00:00:00:02:02:02");
+            UserObj.put("STB_MAC", "00:00:00:02:02:03");
             UserObj.put("status", 0);
+            UserObj.put("end_date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-            jObj = stalkerRestAPI2.saveUSER(UserObj);
+            //jObj = stalkerRestAPI2.saveUSER(UserObj);
+            //jObj = stalkerRestAPI2.setEndDate(UserObj.getString("STB_MAC"), UserObj.getString("end_date"));
+            //jObj = stalkerRestAPI2.deleteAccount(UserObj.getString("STB_MAC"));
+            //jObj = stalkerRestAPI2.changeMac(UserObj.getInt("userID"), "00:00:00:02:02:03");
+            //boolean chkSUser = stalkerRestAPI2.checkUser(UserObj.getString("STB_MAC"));
 
-            System.out.println("STLKER_API_RESPONSE: " + jObj.toString());
+            //stalkerRestAPI2.activateStatus(true, UserObj.getString("STB_MAC"));
+            String a = stalkerRestAPI2.get_end_date(UserObj.getString("STB_MAC"));
+            System.out.println("STLKER_API_RESPONSE: " + a);
             jObj = new JSONObject();
             send_object(jObj);
             return;

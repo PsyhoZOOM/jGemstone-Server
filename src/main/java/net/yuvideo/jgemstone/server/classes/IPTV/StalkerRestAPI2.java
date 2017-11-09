@@ -1,6 +1,7 @@
 package net.yuvideo.jgemstone.server.classes.IPTV;
 
 import net.yuvideo.jgemstone.server.classes.database;
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
@@ -15,6 +16,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.Map;
 
 /**
  * Created by PsyhoZOOM@gmail.com on 7/21/17.
@@ -75,6 +77,7 @@ public class StalkerRestAPI2 {
         hhtpAuthFeature = HttpAuthenticationFeature.basic(username, pass);
         clientConfig = new ClientConfig();
         clientConfig.register(hhtpAuthFeature);
+        clientConfig.register(JacksonJsonProvider.class);
         apiClient = ClientBuilder.newClient(clientConfig);
         target = apiClient.target(url);
 
@@ -136,7 +139,7 @@ public class StalkerRestAPI2 {
         jobj
                 .put("login", rLine.getString("login"))
                 .put("full_name", rLine.getString("full_name"))
-                .put("account_number", "userID")
+                .put("account_number", rLine.getInt("userID"))
                 .put("end_date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toString())
                 .put("tarrif_plan", rLine.getString("tariff_plan"))
                 .put("password", rLine.getString("password"))
@@ -146,14 +149,23 @@ public class StalkerRestAPI2 {
                         rLine.getString("full_name"), rLine.getInt("userID"), rLine.getString("login"),
                         rLine.getString("password")));
 
-        builder = target.request(MediaType.APPLICATION_JSON);
-        response = builder.put(Entity.json(jobj.toString()));
+        String postStr = null;
+
+        Map<String, Object> stringObjectMap = jobj.toMap();
+
+        for (String key : stringObjectMap.keySet()) {
+            postStr += key + "=" + stringObjectMap.get(key) + "&";
+        }
+
+        response = target.request(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(postStr, MediaType.APPLICATION_JSON), Response.class);
+
 
         if (response.getStatus() != 200) {
             jsonObject.put("ERROR", response.getStatusInfo());
         } else {
             jsonObject.put("MESSAGE", response.readEntity(String.class));
-            System.out.println(response.readEntity(String.class));
+            System.out.println(jsonObject.get("MESSAGE"));
         }
         return jsonObject;
     }
@@ -166,14 +178,13 @@ public class StalkerRestAPI2 {
         JSONObject jendDate = new JSONObject();
         jendDate.put("end_date", endDate);
 
-        response = target.request(MediaType.APPLICATION_JSON).put(Entity.json(jendDate));
+        response = target.request(MediaType.APPLICATION_JSON).put(Entity.json("end_date=" + endDate));
 
 
         if (response.getStatus() != 200) {
             jsonObject.put("ERROR", response.getStatusInfo());
         } else {
             jsonObject = new JSONObject(response.readEntity(String.class));
-            System.out.println(response.readEntity(String.class));
         }
 
 
@@ -220,26 +231,26 @@ public class StalkerRestAPI2 {
         return jsonObject;
     }
 
-    public void changeMac(String acc, String stb_mac) {
+    public JSONObject changeMac(int acc, String stb_mac) {
         JSONObject jsonObject = new JSONObject();
-        if (acc == null || stb_mac == null) {
+        if (acc <= 0 || stb_mac == null) {
             jsonObject.put("ERROR", "ACCOUNT_OR_MAC_EMPTY");
-            return;
+            return jsonObject;
         }
-        target = target.path(acc);
-        target = target.path(stb_mac);
-        jsonObject = new JSONObject();
-        jsonObject.put("stb_mac", stb_mac);
+        target = target.path("accounts");
+        target = target.path(String.valueOf(acc));
 
-        response = target.request(MediaType.APPLICATION_JSON).put(Entity.json(jsonObject));
+
+        response = target.request(MediaType.APPLICATION_JSON).put(Entity.entity("stb_mac=" + stb_mac, MediaType.APPLICATION_JSON));
 
         if (response.getStatus() != 200) {
             jsonObject.put("ERROR", response.getStatusInfo());
         } else {
             jsonObject = new JSONObject(response.readEntity(String.class));
-            System.out.println("IPTV_ACCOUNT_DELETE:  " + jsonObject.get("results"));
+            System.out.println("IPTV_ACCOUNT_CHANGE_MAC:  " + jsonObject.toString());
         }
 
+        return jsonObject;
 
     }
 
@@ -256,8 +267,12 @@ public class StalkerRestAPI2 {
             userExist = true;
         } else {
             jsonObject = new JSONObject(response.readEntity(String.class));
-            System.out.println(jsonObject);
-            userExist = false;
+
+            if (jsonObject.has("error")) {
+                userExist = false;
+            } else {
+                userExist = true;
+            }
         }
 
         return userExist;
@@ -274,7 +289,8 @@ public class StalkerRestAPI2 {
 
         jsonObject.put("status", statusInt);
 
-        response = target.request(MediaType.APPLICATION_JSON).put(Entity.json(jsonObject));
+        response = target.request(MediaType.APPLICATION_JSON)
+                .put(Entity.entity("status=" + statusInt, MediaType.APPLICATION_JSON));
 
         if (response.getStatus() != 200) {
             jsonObject = new JSONObject();
@@ -282,6 +298,7 @@ public class StalkerRestAPI2 {
         } else {
             jsonObject = new JSONObject(response.readEntity(String.class));
 
+            System.out.println(jsonObject);
         }
 
         System.out.println("AKTIVATE_STATUS: " + jsonObject);
@@ -292,6 +309,7 @@ public class StalkerRestAPI2 {
         JSONObject jsonObject = new JSONObject();
         String end_date = "0000-00-00";
         target = target.path("accounts");
+        target = target.path(STB_MAC);
         builder = target.request(MediaType.APPLICATION_JSON);
         response = builder.get();
 
@@ -300,9 +318,18 @@ public class StalkerRestAPI2 {
             jsonObject.put("ERROR", response.getStatusInfo());
         } else {
             jsonObject = new JSONObject(response.readEntity(String.class));
-            end_date = jsonObject.getString("end_date");
+
+            JSONArray jsonarr = jsonObject.getJSONArray("results");
+            for (int i = 0; i < jsonarr.length(); i++) {
+                System.out.println(jsonarr.get(i));
+                jsonObject = jsonarr.getJSONObject(i);
+                if (jsonObject.has("end_date"))
+                    end_date = jsonObject.getString("end_date");
+            }
+
 
         }
+
 
         return end_date;
 
