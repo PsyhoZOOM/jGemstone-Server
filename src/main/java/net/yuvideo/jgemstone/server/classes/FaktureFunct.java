@@ -36,8 +36,8 @@ public class FaktureFunct {
      * ako ima
      * uzeti id fakture i importovati data
      * </p>
-     *  @param userID ; id korisnika
-     * @param zaGodinu ; goidna-broj fakture
+     * @param userID ; id korisnika
+     * @param zaGodinu ; godina-broj fakture
      * @param operater
      * @param db ;     database class
      */
@@ -110,19 +110,24 @@ public class FaktureFunct {
 
     private void insertFaktureData(ResultSet rs) {
         PreparedStatement ps;
-        String query = "UPDATE FAKTURE DATA SET br=?, naziv=?, jedMere=?, kolicina=?, cenaBezPDV=?, pdv=?, idFakture=?, operater=?";
+        String query = "UPDATE FAKTURE DATA SET br=?, naziv=?, jedMere=?, kolicina=?, cenaBezPDV=?, pdv=?," +
+                " idFakture=?, operater=?";
 
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, String.valueOf(brFakture));
             ps.setString(2, rs.getString("nazivPaketa"));
             ps.setString(3, "kom.");
-            //TODO inser faktuira
+            ps.setDouble(4, rs.getDouble("kolicina"));
+            ps.setDouble(5, rs.getDouble("cenaBezPDV"));
+            ps.setDouble(6, rs.getDouble("pdv"));
+            ps.setInt(7, rs.getInt("idFakture"));
+            ps.setString(8, operName);
+            //TODO insert faktura
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-
     }
 
     private int checkFakturaExist() {

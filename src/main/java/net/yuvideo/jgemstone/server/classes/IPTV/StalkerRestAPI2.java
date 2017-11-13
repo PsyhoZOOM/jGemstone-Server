@@ -69,10 +69,8 @@ public class StalkerRestAPI2 {
         }
 
         AuthString = username + ":" + pass;
-        // AuthStringENC = new BASE64Encoder().encode(AuthString.getBytes());
-	AuthStringENC = Base64.getEncoder().encodeToString(AuthString.getBytes());
+        AuthStringENC = Base64.getEncoder().encodeToString(AuthString.getBytes());
 
-        //  apiClient = Client.create();
 
         hhtpAuthFeature = HttpAuthenticationFeature.basic(username, pass);
         clientConfig = new ClientConfig();
@@ -80,11 +78,6 @@ public class StalkerRestAPI2 {
         clientConfig.register(JacksonJsonProvider.class);
         apiClient = ClientBuilder.newClient(clientConfig);
         target = apiClient.target(url);
-
-
-
-
-
     }
 
     public JSONObject getPakets_ALL() {
@@ -109,7 +102,6 @@ public class StalkerRestAPI2 {
             }
         }
 
-
         return jsonObject;
     }
 
@@ -128,6 +120,7 @@ public class StalkerRestAPI2 {
             }
 
         }
+
         return jsonObject;
     }
 
@@ -167,6 +160,7 @@ public class StalkerRestAPI2 {
             jsonObject.put("MESSAGE", response.readEntity(String.class));
             System.out.println(jsonObject.get("MESSAGE"));
         }
+
         return jsonObject;
     }
 
@@ -187,7 +181,6 @@ public class StalkerRestAPI2 {
             jsonObject = new JSONObject(response.readEntity(String.class));
         }
 
-
         return jsonObject;
     }
 
@@ -207,7 +200,6 @@ public class StalkerRestAPI2 {
         }
 
         return jsonObject;
-
     }
 
     public JSONObject deleteAccount(String stb_mac) {
@@ -251,7 +243,6 @@ public class StalkerRestAPI2 {
         }
 
         return jsonObject;
-
     }
 
     public boolean checkUser(String stb_mac) {
@@ -330,9 +321,7 @@ public class StalkerRestAPI2 {
 
         }
 
-
         return end_date;
-
     }
 
 

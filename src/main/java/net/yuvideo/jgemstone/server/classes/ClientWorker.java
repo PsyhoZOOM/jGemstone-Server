@@ -2767,12 +2767,12 @@ public class ClientWorker implements Runnable {
             //jObj = stalkerRestAPI2.saveUSER(UserObj);
             //jObj = stalkerRestAPI2.setEndDate(UserObj.getString("STB_MAC"), UserObj.getString("end_date"));
             //jObj = stalkerRestAPI2.deleteAccount(UserObj.getString("STB_MAC"));
-            //jObj = stalkerRestAPI2.changeMac(UserObj.getInt("userID"), "00:00:00:02:02:03");
+            jObj = stalkerRestAPI2.changeMac(UserObj.getInt("userID"), "00:00:00:02:02:03");
             //boolean chkSUser = stalkerRestAPI2.checkUser(UserObj.getString("STB_MAC"));
 
             //stalkerRestAPI2.activateStatus(true, UserObj.getString("STB_MAC"));
-            String a = stalkerRestAPI2.get_end_date(UserObj.getString("STB_MAC"));
-            System.out.println("STLKER_API_RESPONSE: " + a);
+            //String a = stalkerRestAPI2.get_end_date(UserObj.getString("STB_MAC"));
+            System.out.println("STLKER_API_RESPONSE: " + jObj.toString());
             jObj = new JSONObject();
             send_object(jObj);
             return;
