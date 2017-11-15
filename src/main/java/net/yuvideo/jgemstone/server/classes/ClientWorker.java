@@ -2373,8 +2373,8 @@ public class ClientWorker implements Runnable {
                 ps.setDouble(2, rLine.getDouble("cena"));
                 ps.setString(3, rLine.getString("opis"));
                 ps.setInt(4, rLine.getInt("idleTimeout"));
-                ps.setInt(5, rLine.getInt("idPaket"));
-                ps.setDouble(6, rLine.getDouble("pdv"));
+                ps.setDouble(5, rLine.getDouble("pdv"));
+                ps.setInt(6, rLine.getInt("idPaket"));
                 ps.executeUpdate();
 
 
@@ -2457,8 +2457,8 @@ public class ClientWorker implements Runnable {
                 ps.setDouble(1, rLine.getDouble("cena"));
                 ps.setInt(2, rLine.getInt("idPaket"));
                 ps.setString(3, rLine.getString("opis"));
-                ps.setInt(4, rLine.getInt("id"));
-                ps.setDouble(5, rLine.getDouble("pdv"));
+                ps.setDouble(4, rLine.getDouble("pdv"));
+                ps.setInt(5, rLine.getInt("id"));
 
                 ps.executeUpdate();
 
@@ -2782,9 +2782,10 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
 
             PreparedStatement ps;
-            String query = "INSERT INTO IPTV_Paketi (name, iptv_id, external_id, cena, opis) "
+            String query = "INSERT INTO IPTV_Paketi (name, iptv_id, external_id,"
+		    + " cena, pdv, opis) "
                     + "VALUES"
-                    + " (?,?,?,?,?)";
+                    + " (?,?,?,?,?,?)";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -2792,7 +2793,8 @@ public class ClientWorker implements Runnable {
                 ps.setInt(2, rLine.getInt("iptv_id"));
                 ps.setString(3, rLine.getString("external_id"));
                 ps.setDouble(4, rLine.getDouble("cena"));
-                ps.setString(5, rLine.getString("opis"));
+		ps.setDouble(5, rLine.getDouble("pdv"));
+                ps.setString(6, rLine.getString("opis"));
                 ps.executeUpdate();
                 rs.close();
                 jObj.put("Message", "PAKET_SAVED");
@@ -2810,8 +2812,8 @@ public class ClientWorker implements Runnable {
 
             PreparedStatement ps;
             String query = "UPDATE IPTV_Paketi SET "
-                    + "name = ?, iptv_id=? , external_id=?, cena=?, opis=?"
-                    + "WHERE id=?";
+                    + "name = ?, iptv_id=? , external_id=?, cena=?, pdv=? "
+		    + "opis=? WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -2820,7 +2822,8 @@ public class ClientWorker implements Runnable {
                 ps.setString(3, rLine.getString("external_id"));
                 ps.setDouble(4, rLine.getDouble("cena"));
                 ps.setString(5, rLine.getString("opis"));
-                ps.setInt(6, rLine.getInt("id"));
+		ps.setDouble(6, rLine.getDouble("pdv"));
+                ps.setInt(7, rLine.getInt("id"));
 
                 ps.executeUpdate();
                 rs.close();

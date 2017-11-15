@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Created by PsyhoZOOM@gmail.com on 11/3/17.
@@ -97,8 +98,8 @@ public class FaktureFunct {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, userID);
             ps.setString(2, String.valueOf(brFakture));
-            ps.setString(3, dfYM.format(LocalDate.now()));
-            ps.setString(4, df.format(LocalDate.now()));
+            ps.setString(3, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            ps.setString(4, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM")));
             ps.executeUpdate();
             ps.close();
         } catch (SQLException e) {
@@ -110,23 +111,25 @@ public class FaktureFunct {
 
     private void insertFaktureData(ResultSet rs) {
         PreparedStatement ps;
-        String query = "UPDATE FAKTURE DATA SET br=?, naziv=?, jedMere=?, kolicina=?, cenaBezPDV=?, pdv=?," +
-                " idFakture=?, operater=?";
+	String query = "INSERT INTO faktureData (br, naziv, jedMere, kolicina, "
+		+ "cenaBezPDV, pdv, idFakture, operater) VALUES(?,?,?,?,?,?,?,?)";
 
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, String.valueOf(brFakture));
             ps.setString(2, rs.getString("nazivPaketa"));
             ps.setString(3, "kom.");
-            ps.setDouble(4, rs.getDouble("kolicina"));
+            ps.setDouble(4, 1);
             ps.setDouble(5, rs.getDouble("cenaBezPDV"));
             ps.setDouble(6, rs.getDouble("pdv"));
             ps.setInt(7, rs.getInt("idFakture"));
             ps.setString(8, operName);
-            //TODO insert faktura
+
+	    ps.executeQuery();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+		System.out.println(e.getMessage());
+		e.printStackTrace();
         }
     }
 
@@ -139,7 +142,7 @@ public class FaktureFunct {
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, userID);
-            ps.setString(2, dfYM.format(this.zaGodinu));
+            ps.setString(2, this.zaGodinu.format(DateTimeFormatter.ofPattern("yyyy-MM")));
             rs = ps.executeQuery();
 
             if (rs.isBeforeFirst()) {
@@ -154,7 +157,6 @@ public class FaktureFunct {
         }
         return broj;
     }
-
 
     public void createFakturu(ResultSet rs, database db) {
         if (brFakture > 1) {

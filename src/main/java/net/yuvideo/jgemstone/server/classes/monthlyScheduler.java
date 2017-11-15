@@ -49,9 +49,9 @@ public class monthlyScheduler {
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 while (rs.next()) {
-                    query = "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena, dug, zaMesec)" +
+                    query = "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena, dug, zaMesec, PDV)" +
                             "VALUES " +
-                            "(?,?,?,?,?,?,?,?,?)";
+                            "(?,?,?,?,?,?,?,?,?,?)";
                     psUpdateDebts = db.conn.prepareStatement(query);
                     psUpdateDebts.setInt(1, rs.getInt("id"));
                     psUpdateDebts.setString(2, rs.getString("nazivPaketa"));
