@@ -8,6 +8,7 @@ import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
 import net.yuvideo.jgemstone.server.classes.MISC.firmaData;
+import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import org.json.JSONObject;
 
@@ -245,6 +246,13 @@ public class ClientWorker implements Runnable {
 			send_object(jUsers);
 			return;
 		}
+
+        if (rLine.get("action").equals("get_next_free_ID")) {
+            int freeID = mysqlMIsc.findNextFreeID(db);
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("freeID", freeID);
+            send_object(jsonObject);
+        }
 
 		if (rLine.get("action").equals("get_user_data")) {
 			query = "SELECT * FROM users WHERE id=?";
@@ -595,25 +603,27 @@ public class ClientWorker implements Runnable {
 
 		if (rLine.getString("action").equals("new_user")) {
 
-			query = "INSERT INTO users (ime, datumRodjenja, operater, postBr, mesto, brLk, JMBG, "
-					+ "adresa,  komentar, telFiksni, telMobilni, datumKreiranja)"
-					+ "VALUES (?, ?, ?, ?, ?, ? ,? ,? ,? ,?, ?, ?)";
+            query = "INSERT INTO users (id, ime, datumRodjenja, operater, postBr, mesto, brLk, JMBG, "
+                    + "adresa,  komentar, telFiksni, telMobilni, datumKreiranja, jBroj)"
+                    + "VALUES (?, ?, ?, ?, ?, ?, ? ,? ,? ,? ,?, ?, ?, ?)";
 
 			try {
 				ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 
-				ps.setString(1, rLine.getString("fullName"));
-				ps.setString(2, rLine.getString("datumRodjenja"));
-				ps.setString(3, getOperName());
-				ps.setString(4, rLine.getString("postBr"));
-				ps.setString(5, rLine.getString("mesto"));
-				ps.setString(6, rLine.getString("brLk"));
-				ps.setString(7, rLine.getString("JMBG"));
-				ps.setString(8, rLine.getString("adresa"));
-				ps.setString(9, rLine.getString("komentar"));
-				ps.setString(10, rLine.getString("telFiksni"));
-				ps.setString(11, rLine.getString("telMobilni"));
-				ps.setString(12, mysql_date_format.format(new Date()));
+                ps.setInt(1, rLine.getInt("freeID"));
+                ps.setString(2, rLine.getString("fullName"));
+                ps.setString(3, rLine.getString("datumRodjenja"));
+                ps.setString(4, getOperName());
+                ps.setString(5, rLine.getString("postBr"));
+                ps.setString(6, rLine.getString("mesto"));
+                ps.setString(7, rLine.getString("brLk"));
+                ps.setString(8, rLine.getString("JMBG"));
+                ps.setString(9, rLine.getString("adresa"));
+                ps.setString(10, rLine.getString("komentar"));
+                ps.setString(11, rLine.getString("telFiksni"));
+                ps.setString(12, rLine.getString("telMobilni"));
+                ps.setString(13, mysql_date_format.format(new Date()));
+                ps.setString(14, rLine.getString("jBroj"));
 
 				ps.executeUpdate();
 
@@ -629,8 +639,8 @@ public class ClientWorker implements Runnable {
 				rs = ps.getGeneratedKeys();
 				rs.next();
 				jObj.put("Message", "user_saved");
-				jObj.put("userID", rs.getInt(1));
-				rs.close();
+                jObj.put("userID", rLine.getInt("freeID"));
+                rs.close();
 				ps.close();
 			} catch (SQLException e) {
 				jObj.put("Message", "ERROR");
@@ -3387,6 +3397,37 @@ public class ClientWorker implements Runnable {
 			send_object(jObj);
 			return;
 		}
+
+        if (rLine.getString("action").equals("getOstaleUslugeData")) {
+            JSONObject jObj = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT * FROM ostaleUsluge";
+            try {
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    int i = 0;
+                    while (rs.next()) {
+                        JSONObject obj = new JSONObject();
+                        obj.put("id", rs.getInt("id"));
+                        obj.put("naziv", rs.getString("naziv"));
+                        obj.put("cena", rs.getDouble("cena"));
+                        obj.put("pdv", rs.getDouble("pdv"));
+                        obj.put("opis", rs.getString("opis"));
+                        jObj.put(String.valueOf(i), obj);
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            send_object(jObj);
+        }
+
+
+
+
 	}
 
 	private void setUserFirma(int userID, boolean hasFirma) {
@@ -3520,7 +3561,8 @@ public class ClientWorker implements Runnable {
 		return;
 	}
 
-	private Boolean check_Login(String username, String password) {
+
+    private Boolean check_Login(String username, String password) {
 		String userName = null;
 		String passWord = null;
 		boolean aktivan = false;
