@@ -32,8 +32,8 @@ import java.util.logging.Logger;
  */
 public class ClientWorker implements Runnable {
 
-	private static final DecimalFormat df = new DecimalFormat("#.##");
-	public boolean DEBUG = false;
+    private static final DecimalFormat df = new DecimalFormat("0.00");
+    public boolean DEBUG = false;
 	public boolean client_db_update = false;
 	private static final Logger LOGGER = Logger.getLogger("CLIENT");
 	//private Socket client;
@@ -3412,10 +3412,11 @@ public class ClientWorker implements Runnable {
                         JSONObject obj = new JSONObject();
                         obj.put("id", rs.getInt("id"));
                         obj.put("naziv", rs.getString("naziv"));
-                        obj.put("cena", rs.getDouble("cena"));
-                        obj.put("pdv", rs.getDouble("pdv"));
+                        obj.put("cena", Double.valueOf(df.format(rs.getDouble("cena"))));
+                        obj.put("pdv", Double.valueOf(df.format(rs.getDouble("pdv"))));
                         obj.put("opis", rs.getString("opis"));
                         jObj.put(String.valueOf(i), obj);
+                        i++;
                     }
                 }
             } catch (SQLException e) {
@@ -3423,9 +3424,51 @@ public class ClientWorker implements Runnable {
             }
 
             send_object(jObj);
+            return;
+        }
+        if (rLine.getString("action").equals("updateOstaleUslugu")) {
+            PreparedStatement ps;
+            JSONObject jsonObject = new JSONObject();
+            String query = "UPDATE ostaleUsluge set naziv=?, cena=?, pdv=?, komentar=? WHERE id =?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("naziv"));
+                ps.setDouble(2, rLine.getDouble("cena"));
+                ps.setDouble(3, rLine.getDouble("pdv"));
+                ps.setString(4, rLine.getString("komentar"));
+                ps.setInt(5, rLine.getInt("id"));
+                ps.executeUpdate();
+                ps.close();
+                rs.close();
+                jsonObject.put("INFO", "SNIMLJENO");
+            } catch (SQLException e) {
+                jsonObject.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jsonObject);
         }
 
+        if (rLine.getString("action").equals("snimiOstaleUslugu")) {
+            PreparedStatement ps;
+            JSONObject jsonObject = new JSONObject();
+            String query = "INSERT INTO ostaleUsluge (naziv, cena, pdv, komentar) VALUES (?,?,?,?)";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("naziv"));
+                ps.setDouble(2, rLine.getDouble("cena"));
+                ps.setDouble(3, rLine.getDouble("pdv"));
+                ps.setString(4, rLine.getString("komentar"));
+                ps.executeUpdate();
+                ps.close();
 
+                jsonObject.put("INFO", "SNIMLJENO");
+
+            } catch (SQLException e) {
+                jsonObject.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jsonObject);
+        }
 
 
 	}
