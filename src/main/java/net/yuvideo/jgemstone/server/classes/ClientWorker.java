@@ -594,6 +594,7 @@ public class ClientWorker implements Runnable {
 						service.put("brojUgovora", rs.getString("brojUgovora"));
 						service.put("cena", rs.getDouble("cena"));
 						service.put("popust", rs.getDouble("popust"));
+						service.put("pdv", rs.getDouble("PDV"));
 						service.put("operName", rs.getString("operName"));
 						service.put("date_added", rs.getString("date_added"));
 						service.put("nazivPaketa", rs.getString("nazivPaketa"));
@@ -667,6 +668,7 @@ public class ClientWorker implements Runnable {
 						service.put("FIKSNA_TEL", rs2.getString("FIKSNA_TEL"));
 						service.put("popust", rs2.getDouble("popust"));
 						service.put("cena", rs2.getDouble("cena"));
+						service.put("pdv", rs2.getDouble("PDV"));
 						service.put("linkedService", rs2.getBoolean("linkedService"));
 						service.put("aktivan", rs2.getBoolean("aktivan"));
 						service.put("endDate", rs2.getString("endDate"));
@@ -881,7 +883,7 @@ public class ClientWorker implements Runnable {
 			String serviceAdded = ServicesFunctions.addServiceDTV(rLine.getInt("id"), rLine.getString("nazivPaketa"),
 					rLine.getInt("userID"), getOperName(), rLine.getDouble("servicePopust"),
 					rLine.getDouble("cena"), rLine.getBoolean("obracun"), rLine.getString("brojUgovora"),
-					rLine.getInt("produzenje"), rLine.getString("idUniqueName"), rLine.getInt("packetID"), this.db);
+					rLine.getInt("produzenje"), rLine.getString("idUniqueName"), rLine.getInt("packetID"), rLine.getDouble("pdv"), this.db);
 
 			if (serviceAdded.equals("SERVICE_ADDED")) {
 				jObj.put("Message", "SERVICE_ADDED");
@@ -1043,10 +1045,18 @@ public class ClientWorker implements Runnable {
 						userDebt.put("userID", rs.getInt("userID"));
 						userDebt.put("popust", rs.getDouble("popust"));
 						userDebt.put("paketType", rs.getString("paketType"));
+						double cena = rs.getDouble("cena");
+						double pdv = rs.getDouble("PDV");
+						double popust = rs.getDouble("popust");
+						double dug = cena + valueToPercent.getDiffValue(cena, pdv);
+						dug = dug - valueToPercent.getDiffValue(dug, popust);
+						userDebt.put("dug", dug);
+						
 						userDebt.put("cena", rs.getDouble("cena"));
+						userDebt.put("pdv", rs.getDouble("PDV"));
+						userDebt.put("popust", rs.getDouble("popust"));
 						userDebt.put("uplaceno", rs.getDouble("uplaceno"));
 						userDebt.put("datumUplate", rs.getString("datumUplate"));
-						userDebt.put("dug", rs.getDouble("dug"));
 						userDebt.put("operater", rs.getString("operater"));
 						userDebt.put("zaduzenOd", rs.getString("zaduzenOd"));
 						userDebt.put("zaMesec", rs.getString("zaMesec"));
@@ -1192,6 +1202,7 @@ public class ClientWorker implements Runnable {
 					ps.close();
 					rs.close();
 				} catch (SQLException e) {
+					jObj.put("Error", e.getMessage());
 					e.printStackTrace();
 				}
 
@@ -1492,80 +1503,43 @@ public class ClientWorker implements Runnable {
 		}
 
 		if (rLine.getString("action").equals("get_fakture")) {
-			query = "SELECT * FROM jFakture WHERE userId=? AND brFakture LIKE ? AND godina LIKE ?";
+			JSONObject faktureData;
+			jObj = new JSONObject();
+			query = "SELECT * FROM faktureData WHERE userId=?";
 
 			try {
-				db.ps = db.conn.prepareStatement(query);
-				db.ps.setInt(1, rLine.getInt("userId"));
-				if (rLine.has("brFakture")) {
-					if (rLine.get("brFakture").equals("")) {
-						db.ps.setString(2, "%");
-					} else {
-						db.ps.setInt(2, rLine.getInt("brFakture"));
+				ps = db.conn.prepareStatement(query);
+				ps.setInt(1, rLine.getInt("userID"));
+				rs = ps.executeQuery();
+				if (rs.isBeforeFirst()) {
+					int i = 0;
+					while (rs.next()) {
+						faktureData = new JSONObject();
+						faktureData.put("id", rs.getInt("id"));
+						faktureData.put("br", rs.getString("br"));
+						faktureData.put("naziv", rs.getString("naziv"));
+						faktureData.put("jedMere", rs.getString("jedMere"));
+						faktureData.put("kolicina", rs.getString("kolicina"));
+						faktureData.put("cenaBezPDV", rs.getDouble("cenaBezPDV"));
+						faktureData.put("pdv", rs.getDouble("pdv"));
+						faktureData.put("operater", rs.getString("operater"));
+						faktureData.put("userID", rs.getInt("userID"));
+						faktureData.put("datum", rs.getString("datum"));
+						faktureData.put("godina", rs.getString("godina"));
+						faktureData.put("mesec", rs.getString("mesec"));
+						jObj.put(String.valueOf(i), faktureData);
+						i++;
 					}
-				} else {
-					db.ps.setString(2, "%");
 				}
-				if (rLine.has("godina")) {
-					if (rLine.get("godina").equals("")) {
-						db.ps.setString(3, "%");
-					} else {
-						db.ps.setString(3, rLine.getString("godina"));
-					}
-				} else {
-					db.ps.setString(3, "%");
-				}
-				rs = db.ps.executeQuery();
+				rs.close();
+				ps.close();
 			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-			JSONObject FaktureObj = new JSONObject();
-			Double VrednostBezPDV = 0.00;
-			Double OsnovicaZaPDV = 0.00;
-			int stopaPDV = 0;
-			Double iznosPDV = 0.00;
-			Double VrednostSaPDV = 0.00;
-			int kolicina = 0;
-			double jedCena = 0.00;
-
-			int i = 0;
-			try {
-				while (rs.next()) {
-
-					kolicina = rs.getInt("kolicina");
-					jedCena = rs.getDouble("jedCena");
-					stopaPDV = rs.getInt("stopaPdv");
-
-					VrednostBezPDV = jedCena * kolicina;
-					OsnovicaZaPDV = VrednostBezPDV;
-					iznosPDV = stopaPDV / 100.00 * OsnovicaZaPDV;
-					VrednostSaPDV = OsnovicaZaPDV + iznosPDV;
-
-					jObj = new JSONObject();
-					jObj.put("id", rs.getInt("id"));
-					jObj.put("vrstaNaziv", rs.getString("vrstaNaziv"));
-					jObj.put("jedMere", rs.getString("jedMere"));
-					jObj.put("kolicina", kolicina);
-					jObj.put("jedCena", jedCena);
-					jObj.put("stopaPdv", stopaPDV);
-					jObj.put("brFakture", rs.getInt("brFakture"));
-					jObj.put("godina", rs.getString("godina"));
-					jObj.put("dateCreated", rs.getString("dateCreated"));
-
-					//calculate
-					jObj.put("VrednostBezPDV", VrednostBezPDV);
-					jObj.put("OsnovicaZaPDV", OsnovicaZaPDV);
-					jObj.put("iznosPDV", iznosPDV);
-					jObj.put("VrednostSaPDV", VrednostSaPDV);
-
-					FaktureObj.put(String.valueOf(i), jObj);
-					i++;
-				}
-			} catch (SQLException e) {
+				jObj.put("ERROR", e.getMessage());
 				e.printStackTrace();
 			}
 
-			send_object(FaktureObj);
+			send_object(jObj);
+
 			return;
 		}
 
@@ -2529,7 +2503,7 @@ public class ClientWorker implements Runnable {
 
 		}
 
-		if(rLine.get("action").equals("update_Box_Paket")){
+		if (rLine.get("action").equals("update_Box_Paket")) {
 			jObj = new JSONObject();
 			query = "INSERT INTO paketBox (naziv, DTV_id, DTV_naziv, NET_id, NET_naziv, TEL_id, TEL_naziv, IPTV_id, IPTV_naziv, cena, pdv)"
 					+ "VALUES"
@@ -2906,7 +2880,6 @@ public class ClientWorker implements Runnable {
 		if (rLine.getString("action").equals("getIPTVPakets")) {
 			jObj = new JSONObject();
 			StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
-
 			send_object(stAPI2.getPakets_ALL());
 			return;
 

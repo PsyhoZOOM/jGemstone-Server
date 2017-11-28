@@ -65,8 +65,14 @@ public class monthlyScheduler {
 					psUpdateDebts.setInt(4, rs.getInt("userID"));
 					psUpdateDebts.setDouble(5, rs.getDouble("popust"));
 					psUpdateDebts.setString(6, rs.getString("paketType"));
-					psUpdateDebts.setDouble(7, rs.getDouble("cena"));
-					psUpdateDebts.setDouble(8, valueToPercent.getValue(rs.getDouble("cena"), rs.getDouble("popust")));
+					double cena = rs.getDouble("cena");
+					double pdv = rs.getDouble("pdv");
+					double popust = rs.getDouble("popust");
+					double dug = cena + valueToPercent.getDiffValue(cena, pdv);
+					dug = dug - valueToPercent.getDiffValue(dug, popust);
+					psUpdateDebts.setDouble(7, cena);
+					//cena+pdv-popust=dug
+					psUpdateDebts.setDouble(8, dug);
 					psUpdateDebts.setString(9, format_month.format(cal.getTime()));
 					psUpdateDebts.setDouble(10, rs.getDouble("pdv"));
 					if (!rs.getBoolean("newService")) {
