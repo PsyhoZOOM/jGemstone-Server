@@ -89,32 +89,27 @@ public class monthlyScheduler {
 			}
 			rs.close();
 			psUpdateDebts.close();
-			ps.close();
-			psUpdateDebts.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		zaduziFakturu(userID, date, "SYSTEM");
+				zaduziFakturu(date, "SYSTEM");
 
 	}
 
-	private void zaduziFakturu(int userID, LocalDate godina, String operater) {
-		System.out.println("zaduzivnje useara:"+userID);
+	private void zaduziFakturu(LocalDate godina, String operater) {
 		try {
 			PreparedStatement ps;
 			ResultSet rs = null;
-			String query = "SELECT * FROM userDebts WHERE userID=? and zaMesec=?";
+			String query = "SELECT * FROM userDebts WHERE zaMesec=?";
 
 			ps = db.conn.prepareStatement(query);
-			ps.setInt(1, userID);
-			ps.setString(2, godina.format(DateTimeFormatter.ofPattern("yyyy-MM")));
+			ps.setString(1, godina.format(DateTimeFormatter.ofPattern("yyyy-MM")));
 			rs = ps.executeQuery();
-			System.out.println("user godia: "+userID+" "+godina.format(DateTimeFormatter.ofPattern("yyyy-MM")));
 			if (rs.isBeforeFirst()) {
 				while (rs.next()) {
-					FaktureFunct faktureFunct = new FaktureFunct(userID, godina, operater, db);
+					FaktureFunct faktureFunct = new FaktureFunct(rs.getInt("userID"), godina, operater, db);
 					if (faktureFunct.hasFirma) {
-						System.out.println("userFIRMA: "+faktureFunct.hasFirma);
+						System.out.println("userFIRMA: " + faktureFunct.hasFirma);
 						faktureFunct.createFakturu(rs, db);
 					}
 				}

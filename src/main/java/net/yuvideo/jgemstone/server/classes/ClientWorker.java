@@ -443,7 +443,9 @@ public class ClientWorker implements Runnable {
 						+ "kontaktOsoba=?, "
 						+ "PIB=?, "
 						+ "maticniBroj=?, "
-						+ "tekuciRacun=? "
+						+ "tekuciRacun=?, "
+						+ "fax=?, "
+						+ "adresaFirme=? "
 						+ "WHERE userID=?";
 				try {
 					ps = db.conn.prepareStatement(query);
@@ -453,7 +455,9 @@ public class ClientWorker implements Runnable {
 					ps.setString(4, rLine.getString("pib"));
 					ps.setString(5, rLine.getString("maticniBroj"));
 					ps.setString(6, rLine.getString("tekuciRacun"));
-					ps.setInt(7, rLine.getInt("userID"));
+					ps.setString(7, rLine.getString("fax"));
+					ps.setString(8, rLine.getString("adresaFirme"));
+					ps.setInt(9, rLine.getInt("userID"));
 					ps.executeUpdate();
 					ps.close();
 					setUserFirma(rLine.getInt("userID"), true);
@@ -468,9 +472,9 @@ public class ClientWorker implements Runnable {
 			} else {
 				query = "INSERT INTO firme "
 						+ "(userID, nazivFirme, kontaktOsoba, kodBanke, PIB, maticniBroj, "
-						+ "tekuciRacun) "
+						+ "tekuciRacun, fax, adresaFirme) "
 						+ "VALUES "
-						+ "(?,?,?,?,?,?,?)";
+						+ "(?,?,?,?,?,?,?,?,?)";
 				try {
 					ps = db.conn.prepareStatement(query);
 					ps.setInt(1, rLine.getInt("userID"));
@@ -480,6 +484,8 @@ public class ClientWorker implements Runnable {
 					ps.setString(5, rLine.getString("pib"));
 					ps.setString(6, rLine.getString("maticniBroj"));
 					ps.setString(7, rLine.getString("tekuciRacun"));
+					ps.setString(8, rLine.getString("fax"));
+					ps.setString(9, rLine.getString("adresaFirme"));
 					ps.executeUpdate();
 					ps.close();
 					setUserFirma(rLine.getInt("userID"), true);
@@ -512,6 +518,8 @@ public class ClientWorker implements Runnable {
 					jObj.put("pib", rs.getString("PIB"));
 					jObj.put("maticniBroj", rs.getString("maticniBroj"));
 					jObj.put("tekuciRacun", rs.getString("tekuciRacun"));
+					jObj.put("fax", rs.getString("fax"));
+					jObj.put("adresaFirme", rs.getString("adresaFirme"));
 				}
 				ps.close();
 				rs.close();
@@ -520,6 +528,48 @@ public class ClientWorker implements Runnable {
 				e.printStackTrace();
 			}
 
+			send_object(jObj);
+		}
+
+		if (rLine.getString("action").equals("deleteFirma")) {
+			JSONObject jObj = new JSONObject();
+			PreparedStatement ps;
+			String query = "UPDATE users set firma=false WHERE id=?";
+			try {
+				ps = db.conn.prepareStatement(query);
+				ps.setInt(1, rLine.getInt("userID"));
+				ps.executeUpdate();
+				ps.close();
+			} catch (SQLException ex) {
+				jObj.put("ERROR", ex.getMessage());
+				Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
+			}
+
+			query = "DELETE  FROM firme WHERE userID=?";
+			try {
+				ps = db.conn.prepareStatement(query);
+				ps.setInt(1, rLine.getInt("userID"));
+				ps.executeUpdate();
+				ps.close();
+				jObj.put("MESSAGE", "FIRMA IZBRISANA");
+
+			} catch (SQLException ex) {
+				jObj.put("ERROR", ex.getMessage());
+				Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
+			}
+
+			query = "DELETE FROM faktureData WHERE userID=?";
+			try {
+				ps = db.conn.prepareStatement(query);
+				ps.setInt(1, rLine.getInt("userID"));
+				ps.executeUpdate();
+				ps.close();
+				jObj.put("MESSAGE", "FIRMA IZBRISANA");
+
+			} catch (SQLException ex) {
+				jObj.put("ERROR", ex.getMessage());
+				ex.printStackTrace();
+			}
 			send_object(jObj);
 		}
 
@@ -1051,7 +1101,7 @@ public class ClientWorker implements Runnable {
 						double dug = cena + valueToPercent.getDiffValue(cena, pdv);
 						dug = dug - valueToPercent.getDiffValue(dug, popust);
 						userDebt.put("dug", dug);
-						
+
 						userDebt.put("cena", rs.getDouble("cena"));
 						userDebt.put("pdv", rs.getDouble("PDV"));
 						userDebt.put("popust", rs.getDouble("popust"));
@@ -1527,6 +1577,7 @@ public class ClientWorker implements Runnable {
 						faktureData.put("datum", rs.getString("datum"));
 						faktureData.put("godina", rs.getString("godina"));
 						faktureData.put("mesec", rs.getString("mesec"));
+						faktureData.put("cenaBezPDV", rs.getDouble("cenaBezPDV"));
 						jObj.put(String.valueOf(i), faktureData);
 						i++;
 					}
