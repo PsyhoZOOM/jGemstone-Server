@@ -1555,7 +1555,58 @@ public class ClientWorker implements Runnable {
 		if (rLine.getString("action").equals("get_fakture")) {
 			JSONObject faktureData;
 			jObj = new JSONObject();
-			query = "SELECT * FROM faktureData WHERE userId=?";
+			query = "SELECT * FROM faktureData WHERE userId=? AND datum=? and br=?";
+
+			try {
+				ps = db.conn.prepareStatement(query);
+				ps.setInt(1, rLine.getInt("userID"));
+				ps.setString(2, rLine.getString("datum"));
+				ps.setInt(3, rLine.getInt("br"));
+				rs = ps.executeQuery();
+				if (rs.isBeforeFirst()) {
+					int i = 0;
+					while (rs.next()) {
+						faktureData = new JSONObject();
+						faktureData.put("id", rs.getInt("id"));
+						faktureData.put("br", rs.getString("br"));
+						faktureData.put("naziv", rs.getString("naziv"));
+						faktureData.put("jedMere", rs.getString("jedMere"));
+						faktureData.put("kolicina", rs.getString("kolicina"));
+						faktureData.put("cenaBezPDV", rs.getDouble("cenaBezPDV"));
+						faktureData.put("pdv", rs.getDouble("pdv"));
+						double cena = rs.getDouble("cenaBezPDV");
+						double pdv = rs.getDouble("pdv");
+						double iznosPDV  =+ valueToPercent.getDiffValue(cena, pdv);
+						double osnovicaZaPDV =+ iznosPDV;
+						double iznosSaPDV = cena+iznosPDV;
+						faktureData.put("VrednostSaPDV", iznosSaPDV);
+						faktureData.put("iznosPDV", iznosPDV);
+						faktureData.put("OsnovicaZaPDV", rs.getInt("kolicina") * rs.getDouble("cenaBezPDV"));
+						faktureData.put("operater", rs.getString("operater"));
+						faktureData.put("userID", rs.getInt("userID"));
+						faktureData.put("datum", rs.getString("datum"));
+						faktureData.put("godina", rs.getString("godina"));
+						faktureData.put("mesec", rs.getString("mesec"));
+						jObj.put(String.valueOf(i), faktureData);
+						i++;
+					}
+				}
+				rs.close();
+				ps.close();
+			} catch (SQLException e) {
+				jObj.put("ERROR", e.getMessage());
+				e.printStackTrace();
+			}
+
+			send_object(jObj);
+
+			return;
+		}
+
+		if (rLine.getString("action").equals("get_uniqueFakture")) {
+			JSONObject faktureData;
+			jObj = new JSONObject();
+			query = "SELECT * FROM faktureData WHERE userId=? GROUP BY datum";
 
 			try {
 				ps = db.conn.prepareStatement(query);
@@ -1593,6 +1644,9 @@ public class ClientWorker implements Runnable {
 
 			return;
 		}
+		
+		
+		
 
 		if (rLine.getString("action").equals("delete_fakturu")) {
 			query = "DELETE FROM jFakture WHERE id=?";
