@@ -265,6 +265,7 @@ public class ClientWorker implements Runnable {
 					jObj.put("jAdresa", rs.getString("jAdresa"));
 					jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
 					jObj.put("jBroj", rs.getString("jBroj"));
+					jObj.put("firma", rs.getBoolean("firma"));
 
 				} else {
 					jObj.put("Message", "NO_SUCH_USER");
