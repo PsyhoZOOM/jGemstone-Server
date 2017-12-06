@@ -210,7 +210,7 @@ public class ServicesFunctions {
 		String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena,"
 				+ " obracun, brojUgovora, produzenje, newService, idDTVCard, DTVPaket, linkedService, paketType, endDate, PDV)"
 				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		try {
 			ps = db.conn.prepareStatement(query);
@@ -639,9 +639,10 @@ public class ServicesFunctions {
 		}
 
 		query = "INSERT INTO userDebts "
-				+ "(id_ServiceUser, nazivPaketa, datumZaduzenja, userID, paketType, cena, dug, zaduzenOd, zaMesec) "
+				+ "(id_ServiceUser, nazivPaketa, datumZaduzenja, userID, "
+				+ "paketType, cena, dug, zaduzenOd, zaMesec, PDV) "
 				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?)";
+				+ "(?,?,?,?,?,?,?,?,?,?)";
 
 		int daysInMonth = 0;
 		int daysToEndMonth = 0;
@@ -687,6 +688,7 @@ public class ServicesFunctions {
 			ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
 			ps.setString(8, operName);
 			ps.setString(9, LocalDate.now().format(dtfMesecZaduzenja));
+			ps.setDouble(10, rs.getDouble("pdv"));
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -729,9 +731,10 @@ public class ServicesFunctions {
 				PreparedStatement ps;
 
 				query = "INSERT INTO userDebts "
-						+ "(id_ServiceUser, nazivPaketa, datumZaduzenja, userID, paketType, cena, dug, zaduzenOd, zaMesec) "
+						+ "(id_ServiceUser, nazivPaketa, datumZaduzenja, "
+						+ "userID, paketType, cena, dug, zaduzenOd, zaMesec, PDV) "
 						+ "VALUES "
-						+ "(?,?,?,?,?,?,?,?,?)";
+						+ "(?,?,?,?,?,?,?,?,?,?)";
 
 				ps = db.conn.prepareStatement(query);
 				ps.setInt(1, rs.getInt("id"));
@@ -743,6 +746,7 @@ public class ServicesFunctions {
 				ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
 				ps.setString(8, operName);
 				ps.setString(9, LocalDate.now().format(dtfMesecZaduzenja));
+				ps.setDouble(10, rs.getDouble("PDV"));
 				ps.executeUpdate();
 				ps.close();
 

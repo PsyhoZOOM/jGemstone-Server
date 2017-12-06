@@ -1127,6 +1127,43 @@ public class ClientWorker implements Runnable {
 			return;
 		}
 
+
+		if (rLine.getString("action").equals("get_Service_ident")) {
+			jObj = new JSONObject();
+			PreparedStatement ps;
+			ResultSet rs;
+			String query = "SELECT * FROM servicesUser WHERE id=?";
+			String ident = null;
+
+			try {
+				ps = db.conn.prepareStatement(query);
+				ps.setInt(1, rLine.getInt("id_Service"));
+				rs = ps.executeQuery();
+				if (rs.isBeforeFirst()) {
+					rs.next();
+					if (rs.getString("idDTVCard") != null) {
+						ident = rs.getString("idDTVCard");
+					}
+					if (rs.getString("UserName") != null) {
+						ident = rs.getString("UserName");
+					}
+					if (rs.getString("FIKSNA_TEL") != null) {
+						ident = rs.getString("FIKSNA_TEL");
+					}
+					if (rs.getString("IPTV_MAC") != null) {
+						ident = rs.getString("IPTV_MAC");
+					}
+				}
+			} catch (SQLException ex) {
+				jObj.put("ERROR", ex.getMessage());
+				Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
+			}
+			jObj.put("ident", ident);
+
+			send_object(jObj);
+
+		}
+
 		if (rLine.getString("action").equals("uplata_servisa")) {
 			jObj = new JSONObject();
 
@@ -1577,9 +1614,9 @@ public class ClientWorker implements Runnable {
 						faktureData.put("pdv", rs.getDouble("pdv"));
 						double cena = rs.getDouble("cenaBezPDV");
 						double pdv = rs.getDouble("pdv");
-						double iznosPDV  =+ valueToPercent.getDiffValue(cena, pdv);
-						double osnovicaZaPDV =+ iznosPDV;
-						double iznosSaPDV = cena+iznosPDV;
+						double iznosPDV = +valueToPercent.getDiffValue(cena, pdv);
+						double osnovicaZaPDV = +iznosPDV;
+						double iznosSaPDV = cena + iznosPDV;
 						faktureData.put("VrednostSaPDV", iznosSaPDV);
 						faktureData.put("iznosPDV", iznosPDV);
 						faktureData.put("OsnovicaZaPDV", rs.getInt("kolicina") * rs.getDouble("cenaBezPDV"));
@@ -1645,9 +1682,6 @@ public class ClientWorker implements Runnable {
 
 			return;
 		}
-		
-		
-		
 
 		if (rLine.getString("action").equals("delete_fakturu")) {
 			query = "DELETE FROM jFakture WHERE id=?";
