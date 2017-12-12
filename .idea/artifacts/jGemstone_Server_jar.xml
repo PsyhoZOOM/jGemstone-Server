@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="jGemstone-Server:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/jGemstone_Server_jar</output-path>
+    <root id="archive" name="jGemstone-Server.jar">
+      <element id="module-output" name="jGemstone-Server" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/sun/jersey/jersey-client/1.19.1/jersey-client-1.19.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/sun/jersey/jersey-core/1.19.1/jersey-core-1.19.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/json/json/20170516/json-20170516.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/sourceforge/javacsv/javacsv/2.0/javacsv-2.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/javax/ws/rs/jsr311-api/1.1.1/jsr311-api-1.1.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/mysql/mysql-connector-java/3.1.14/mysql-connector-java-3.1.14.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

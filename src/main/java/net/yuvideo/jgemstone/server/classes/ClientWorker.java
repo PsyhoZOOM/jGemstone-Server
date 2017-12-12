@@ -1133,7 +1133,7 @@ public class ClientWorker implements Runnable {
 			PreparedStatement ps;
 			ResultSet rs;
 			String query = "SELECT * FROM servicesUser WHERE id=?";
-			String ident = null;
+			String ident = "SERVIS NEMA IDENTIFIKACIJU";
 
 			try {
 				ps = db.conn.prepareStatement(query);
@@ -1644,7 +1644,7 @@ public class ClientWorker implements Runnable {
 		if (rLine.getString("action").equals("get_uniqueFakture")) {
 			JSONObject faktureData;
 			jObj = new JSONObject();
-			query = "SELECT * FROM faktureData WHERE userId=? GROUP BY datum";
+			query = "SELECT * FROM faktureData WHERE userID=? GROUP BY datum";
 
 			try {
 				ps = db.conn.prepareStatement(query);
