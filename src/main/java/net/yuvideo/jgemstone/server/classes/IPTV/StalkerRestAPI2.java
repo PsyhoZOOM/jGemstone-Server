@@ -163,6 +163,7 @@ public class StalkerRestAPI2 {
                 .header("Authorization", "Basic " + AuthStringENC)
                 .put(ClientResponse.class, "end_date=" + endDate);
         String aa = clientResponse.getEntity(String.class);
+        System.out.println(aa.toString());
 
         JSONObject accInfo = new JSONObject();
 
