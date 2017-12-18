@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -83,7 +82,8 @@ public class monthlyScheduler {
 					} else {
 						setOldService(rs.getInt("id"));
 					}
-					date = LocalDate.of(cal.getInstance().get(Calendar.YEAR), cal.getInstance().get(Calendar.MONTH), cal.getInstance().get(Calendar.DAY_OF_MONTH));
+					//date = LocalDate.of(cal.getInstance().get(Calendar.YEAR), cal.getInstance().get(Calendar.MONTH), cal.getInstance().get(Calendar.DAY_OF_MONTH));
+					date = LocalDate.now();
 					userID = rs.getInt("userID");
 				}
 			}
