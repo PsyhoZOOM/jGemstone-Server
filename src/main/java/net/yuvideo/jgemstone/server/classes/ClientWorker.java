@@ -16,8 +16,8 @@ import java.net.Socket;
 import java.sql.*;
 import java.text.DecimalFormat;
 import java.text.Format;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
@@ -1076,8 +1076,8 @@ public class ClientWorker implements Runnable {
 			if (rLine.getBoolean("sveUplate")) {
 				query = "SELECT * FROM userDebts where userID=? ORDER BY zaMesec ASC";
 			} else {
-				query = "SELECT * FROM userDebts WHERE userId=? AND dug > uplaceno ORDER BY zaMesec ASC";
-			}
+                query = "SELECT * FROM userDebts WHERE userID=? AND dug > uplaceno ORDER BY zaMesec ASC";
+            }
 
 			try {
 				ps = db.conn.prepareStatement(query);
@@ -1096,12 +1096,8 @@ public class ClientWorker implements Runnable {
 						userDebt.put("userID", rs.getInt("userID"));
 						userDebt.put("popust", rs.getDouble("popust"));
 						userDebt.put("paketType", rs.getString("paketType"));
-						double cena = rs.getDouble("cena");
-						double pdv = rs.getDouble("PDV");
-						double popust = rs.getDouble("popust");
-						double dug = cena + valueToPercent.getDiffValue(cena, pdv);
-						dug = dug - valueToPercent.getDiffValue(dug, popust);
-						userDebt.put("dug", dug);
+                        userDebt.put("cena", rs.getDouble("cena"));
+                        userDebt.put("dug", rs.getDouble("dug"));
 
 						userDebt.put("cena", rs.getDouble("cena"));
 						userDebt.put("pdv", rs.getDouble("PDV"));
@@ -1121,11 +1117,11 @@ public class ClientWorker implements Runnable {
 				jObj.put("Message", "ERROR");
 				jObj.put("Error", e.getMessage());
 				e.printStackTrace();
-			}
+            }
 
-			send_object(jObj);
-			return;
-		}
+            send_object(jObj);
+            return;
+        }
 
 
 		if (rLine.getString("action").equals("get_Service_ident")) {
@@ -1218,42 +1214,68 @@ public class ClientWorker implements Runnable {
 
 		if (rLine.getString("action").equals("zaduzi_servis_manual")) {
 			jObj = new JSONObject();
-			Calendar cal = Calendar.getInstance();
+
+			/*
+            Calendar cal = Calendar.getInstance();
 			Calendar calRate = Calendar.getInstance();
 			calRate.set(Calendar.DAY_OF_MONTH, 1);
-			try {
-				calRate.setTime(formatMonthDate.parse(rLine.getString("zaMesec")));
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
-			int rate = rLine.getInt("rate");
-			int month = 0;
+			*/
+
+            LocalDate cal = LocalDate.now();
+            LocalDate calrate = LocalDate.now();
+            //	calRate.setTime(formatMonthDate.parse(rLine.getString("zaMesec")));
+            calrate = LocalDate.parse(rLine.getString("zaMesec") + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            int rate = rLine.getInt("rate");
+            int month = 0;
 
 			for (int i = 0; i < rate; i++) {
+
 
 				query = "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust,"
 						+ " paketType, cena, uplaceno, dug, zaduzenOd, zaMesec)"
 						+ " VALUES"
 						+ " (?,?,?,?,?,?,?,?,?,?,?)";
 				try {
-					ps = db.conn.prepareStatement(query);
-					ps.setNull(1, Types.INTEGER);
-					ps.setString(2, rLine.getString("nazivPaketa"));
-					ps.setString(3, normalDate.format(cal.getTime()));
-					ps.setInt(4, rLine.getInt("userID"));
-					ps.setDouble(5, 0.00);
+                    ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+                    ps.setNull(1, Types.INTEGER);
+                    ps.setString(2, rLine.getString("nazivPaketa"));
+                    ps.setString(3, cal.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                    ps.setInt(4, rLine.getInt("userID"));
+                    ps.setDouble(5, 0.00);
 					ps.setString(6, rLine.getString("paketType"));
 					ps.setDouble(7, rLine.getDouble("cena"));
 					ps.setDouble(8, 0.00);
 					ps.setDouble(9, Double.parseDouble(df.format(rLine.getDouble("cena") / rate)));
 					ps.setString(10, getOperName());
-					calRate.add(Calendar.MONTH, month);
-					if (month == 0) {
-						month++;
+                    //calRate.add(Calendar.MONTH, month);
+                    calrate = calrate.plusMonths(month);
+                    if (month == 0) {
+                        month++;
 					}
-					ps.setString(11, formatMonthDate.format(calRate.getTime()));
-					ps.executeUpdate();
-					ps.close();
+                    ps.setString(11, calrate.format(DateTimeFormatter.ofPattern("yyyy-MM")).toString());
+                    ps.executeUpdate();
+                    rs = ps.getGeneratedKeys();
+                    int id = 0;
+                    if (rs.isBeforeFirst()) {
+                        rs.next();
+                        id = rs.getInt(1);
+                    }
+
+
+                    //zaduzivanje fakture ako korisnik ima firmu
+                    query = "SELECT * FROM userDebts WHERE id=?";
+                    ps = db.conn.prepareStatement(query);
+                    ps.setInt(1, id);
+                    rs = ps.executeQuery();
+                    if (rs.isBeforeFirst()) {
+                        rs.next();
+
+                        //   LocalDate localDate =Date.of(calRate.get(Calendar.YEAR), calRate.get(Calendar.), 1);
+                        FaktureFunct faktureFunct = new FaktureFunct(rLine.getInt("userID"), calrate, getOperName(), db);
+                        faktureFunct.createFakturu(rs);
+                    }
+
+
 
 					LOGGER.info(ps.toString());
 				} catch (SQLException e) {
@@ -1262,6 +1284,14 @@ public class ClientWorker implements Runnable {
 				}
 
 			}
+
+            try {
+                rs.close();
+                ps.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
 
 			send_object(jObj);
 			return;

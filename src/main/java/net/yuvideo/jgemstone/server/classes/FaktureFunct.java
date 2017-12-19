@@ -95,7 +95,7 @@ public class FaktureFunct {
 			ps.setString(2, rs.getString("nazivPaketa"));
 			ps.setString(3, "kom.");
 			ps.setDouble(4, 1);
-			ps.setDouble(5, rs.getDouble("cena"));
+			ps.setDouble(5, rs.getDouble("dug"));
 			ps.setDouble(6, rs.getDouble("PDV"));
 			ps.setString(7, operName);
 			ps.setInt(8, rs.getInt("userID"));
@@ -152,7 +152,7 @@ public class FaktureFunct {
 		return broj;
 	}
 
-	public void createFakturu(ResultSet rs, database db) {
+	public void createFakturu(ResultSet rs) {
 		insertFaktureData(rs);
 	}
 }

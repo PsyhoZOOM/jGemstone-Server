@@ -640,15 +640,22 @@ public class ServicesFunctions {
 
 		query = "INSERT INTO userDebts "
 				+ "(id_ServiceUser, nazivPaketa, datumZaduzenja, userID, "
-				+ "paketType, cena, dug, zaduzenOd, zaMesec, PDV) "
-				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?)";
+                + "paketType, cena, dug, popust, zaduzenOd, zaMesec, PDV) "
+                + "VALUES "
+                + "(?,?,?,?,?,?,?,?,?,?,?)";
 
 		int daysInMonth = 0;
 		int daysToEndMonth = 0;
-		Double cenaService = null;
-		try {
-			cenaService = rs.getDouble("cena");
+        Double cenaService = 0.00;
+        Double pdv = 0.00;
+        Double popust = 0.00;
+        try {
+            cenaService = rs.getDouble("cena");
+            pdv = rs.getDouble("PDV");
+            popust = rs.getDouble("popust");
+            cenaService = cenaService + valueToPercent.getDiffValue(cenaService, pdv);
+            cenaService = cenaService - valueToPercent.getDiffValue(cenaService, popust);
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -686,11 +693,12 @@ public class ServicesFunctions {
 			ps.setString(5, rs.getString("paketType"));
 			ps.setDouble(6, cenaService);
 			ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
-			ps.setString(8, operName);
-			ps.setString(9, LocalDate.now().format(dtfMesecZaduzenja));
-			ps.setDouble(10, rs.getDouble("pdv"));
-			ps.executeUpdate();
-		} catch (SQLException e) {
+            ps.setDouble(8, rs.getDouble("popust"));
+            ps.setString(9, operName);
+            ps.setString(10, LocalDate.now().format(dtfMesecZaduzenja));
+            ps.setDouble(11, rs.getDouble("pdv"));
+            ps.executeUpdate();
+        } catch (SQLException e) {
 			e.printStackTrace();
 		}
 
@@ -716,8 +724,12 @@ public class ServicesFunctions {
 				int daysInMonth = 0;
 				int daysToEndMonth = 0;
 				Double cenaService = rs.getDouble("cena");
-				Double zaUplatu = 0.00;
-				Double cenaZaDan = 0.00;
+                Double pdv = rs.getDouble("PDV");
+                Double popust = rs.getDouble("popust");
+                Double zaUplatu = 0.00;
+                Double cenaZaDan = 0.00;
+                cenaService = cenaService + valueToPercent.getDiffValue(cenaService, pdv);
+                cenaService = cenaService - valueToPercent.getDiffValue(cenaService, popust);
 
 				if (rs.getBoolean("newService")) {
 					daysInMonth = date.getMonth().length(true);
@@ -732,9 +744,9 @@ public class ServicesFunctions {
 
 				query = "INSERT INTO userDebts "
 						+ "(id_ServiceUser, nazivPaketa, datumZaduzenja, "
-						+ "userID, paketType, cena, dug, zaduzenOd, zaMesec, PDV) "
-						+ "VALUES "
-						+ "(?,?,?,?,?,?,?,?,?,?)";
+                        + "userID, paketType, cena, dug, popust, zaduzenOd, zaMesec, PDV) "
+                        + "VALUES "
+                        + "(?,?,?,?,?,?,?,?,?,?,?)";
 
 				ps = db.conn.prepareStatement(query);
 				ps.setInt(1, rs.getInt("id"));
@@ -744,11 +756,12 @@ public class ServicesFunctions {
 				ps.setString(5, rs.getString("paketType"));
 				ps.setDouble(6, cenaService);
 				ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
-				ps.setString(8, operName);
-				ps.setString(9, LocalDate.now().format(dtfMesecZaduzenja));
-				ps.setDouble(10, rs.getDouble("PDV"));
-				ps.executeUpdate();
-				ps.close();
+                ps.setDouble(8, rs.getDouble("popust"));
+                ps.setString(9, operName);
+                ps.setString(10, LocalDate.now().format(dtfMesecZaduzenja));
+                ps.setDouble(11, rs.getDouble("PDV"));
+                ps.executeUpdate();
+                ps.close();
 
 				produziService(rs.getInt("id"), operName, false, db);
 
