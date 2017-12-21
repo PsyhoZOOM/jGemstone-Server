@@ -1232,27 +1232,36 @@ public class ClientWorker implements Runnable {
 
 
 				query = "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust,"
-						+ " paketType, cena, uplaceno, dug, zaduzenOd, zaMesec)"
-						+ " VALUES"
-						+ " (?,?,?,?,?,?,?,?,?,?,?)";
-				try {
+                        + " paketType, cena, uplaceno, dug, zaduzenOd, zaMesec, PDV)"
+                        + " VALUES"
+                        + " (?,?,?,?,?,?,?,?,?,?,?,?)";
+                try {
                     ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
                     ps.setNull(1, Types.INTEGER);
-                    ps.setString(2, rLine.getString("nazivPaketa"));
+                    ps.setString(2, String.format("%s (rata %d od %d)", rLine.getString("nazivPaketa"), i + 1, rate));
                     ps.setString(3, cal.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                     ps.setInt(4, rLine.getInt("userID"));
                     ps.setDouble(5, 0.00);
 					ps.setString(6, rLine.getString("paketType"));
 					ps.setDouble(7, rLine.getDouble("cena"));
 					ps.setDouble(8, 0.00);
-					ps.setDouble(9, Double.parseDouble(df.format(rLine.getDouble("cena") / rate)));
-					ps.setString(10, getOperName());
+                    ps.setDouble(9,
+                            Double.parseDouble(
+                                    df.format(
+                                            (rLine.getDouble("cena") +
+                                                    valueToPercent.getDiffValue(
+                                                            rLine.getDouble("cena"), rLine.getDouble("pdv")))
+                                                    / rate)
+                            )
+                    );
+                    ps.setString(10, getOperName());
                     //calRate.add(Calendar.MONTH, month);
                     calrate = calrate.plusMonths(month);
                     if (month == 0) {
                         month++;
 					}
                     ps.setString(11, calrate.format(DateTimeFormatter.ofPattern("yyyy-MM")).toString());
+                    ps.setDouble(12, rLine.getDouble("pdv"));
                     ps.executeUpdate();
                     rs = ps.getGeneratedKeys();
                     int id = 0;
@@ -1272,7 +1281,8 @@ public class ClientWorker implements Runnable {
 
                         //   LocalDate localDate =Date.of(calRate.get(Calendar.YEAR), calRate.get(Calendar.), 1);
                         FaktureFunct faktureFunct = new FaktureFunct(rLine.getInt("userID"), calrate, getOperName(), db);
-                        faktureFunct.createFakturu(rs);
+                        if (faktureFunct.hasFirma)
+                            faktureFunct.createFakturu(rs);
                     }
 
 

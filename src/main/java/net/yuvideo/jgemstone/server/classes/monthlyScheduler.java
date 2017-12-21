@@ -3,11 +3,11 @@ package net.yuvideo.jgemstone.server.classes;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -22,7 +22,8 @@ public class monthlyScheduler {
 	private SimpleDateFormat format_first_day_in_month = new SimpleDateFormat("yyyy-MM-01");
 	private SimpleDateFormat forma_normal_date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private SimpleDateFormat format_date = new SimpleDateFormat("yyyy-MM-dd");
-	private SimpleDateFormat format_month = new SimpleDateFormat("yyyy-MM");
+	private DateTimeFormatter format_month = DateTimeFormatter.ofPattern("yyyy-MM");
+	private DecimalFormat df = new DecimalFormat("0.##");
 	private Users users;
 	private ArrayList<Users> usersArrayList = new ArrayList<>();
 	private PreparedStatement ps;
@@ -41,14 +42,13 @@ public class monthlyScheduler {
 	private String query;
 
 	public void monthlyScheduler() {
-		LocalDate date = null;
 		int userID = 0;
 		query = "SELECT *  FROM servicesUser WHERE obracun=1 AND aktivan=1 AND linkedService=0  ";
 		//koji je mesec zaduzenja. posto je sada novi mesec kada se zaduzuje korisnik onda idemo mesec dana u nazad.
 		//obracun je za prosli mesec
 
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.MONTH, -1);
+		LocalDate date = LocalDate.now();
+		date.minusMonths(1);
 		try {
 			ps = db.conn.prepareStatement(query);
 			rs = ps.executeQuery();
@@ -67,23 +67,21 @@ public class monthlyScheduler {
 					double cena = rs.getDouble("cena");
 					double pdv = rs.getDouble("pdv");
 					double popust = rs.getDouble("popust");
-					double dug = cena + valueToPercent.getDiffValue(cena, pdv);
-					dug = dug - valueToPercent.getDiffValue(dug, popust);
+					double dug = cena - valueToPercent.getDiffValue(cena, popust);
+					dug = dug + valueToPercent.getDiffValue(dug, pdv);
 					psUpdateDebts.setDouble(7, cena);
 					//cena+pdv-popust=dug
-					psUpdateDebts.setDouble(8, dug);
-					psUpdateDebts.setString(9, format_month.format(cal.getTime()));
+					psUpdateDebts.setDouble(8, Double.parseDouble(df.format(dug)));
+					psUpdateDebts.setString(9, date.format(format_month));
 					psUpdateDebts.setDouble(10, rs.getDouble("pdv"));
 					if (!rs.getBoolean("newService")) {
 						//ako servis je vec zaduzen onda preskociti zaduzenje od strane servera :)
-						if (!check_skip_userDebt(rs.getInt("id"), rs.getInt("userID"), format_month.format(cal.getTime()))) {
+						if (!check_skip_userDebt(rs.getInt("id"), rs.getInt("userID"), date.format(format_month))) {
 							psUpdateDebts.executeUpdate();
 						}
 					} else {
 						setOldService(rs.getInt("id"));
 					}
-					//date = LocalDate.of(cal.getInstance().get(Calendar.YEAR), cal.getInstance().get(Calendar.MONTH), cal.getInstance().get(Calendar.DAY_OF_MONTH));
-					date = LocalDate.now();
 					userID = rs.getInt("userID");
 				}
 			}
@@ -92,7 +90,7 @@ public class monthlyScheduler {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-				zaduziFakturu(date, "SYSTEM");
+		zaduziFakturu(date.minusMonths(1), "SYSTEM");
 
 	}
 
@@ -100,16 +98,17 @@ public class monthlyScheduler {
 		try {
 			PreparedStatement ps;
 			ResultSet rs = null;
-			String query = "SELECT * FROM userDebts WHERE zaMesec=?";
+			String query = "SELECT * FROM userDebts WHERE zaMesec=? AND paketType != 'CUSTOM' ";
 
 			ps = db.conn.prepareStatement(query);
-			ps.setString(1, godina.format(DateTimeFormatter.ofPattern("yyyy-MM")));
+			ps.setString(1, godina.format(format_month));
 			rs = ps.executeQuery();
 			if (rs.isBeforeFirst()) {
 				while (rs.next()) {
 					FaktureFunct faktureFunct = new FaktureFunct(rs.getInt("userID"), godina, operater, db);
+					System.out.println("FAKTURE DA LI POSTJI: " + faktureFunct.hasFirma + " userID: " + rs.getInt("userID"));
 					if (faktureFunct.hasFirma) {
-						System.out.println("userFIRMA: " + faktureFunct.hasFirma);
+						System.out.println("userFIRMA: " + faktureFunct.hasFirma + "userID: " + rs.getInt("userID"));
 						faktureFunct.createFakturu(rs);
 					}
 				}

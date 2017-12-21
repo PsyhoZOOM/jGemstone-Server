@@ -1,16 +1,14 @@
 package net.yuvideo.jgemstone.server.classes.SERVICES;
 
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
+import net.yuvideo.jgemstone.server.classes.FaktureFunct;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
 import org.json.JSONObject;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -247,9 +245,9 @@ public class ServicesFunctions {
 			ps.setInt(1, Integer.valueOf(idDTVCard));
 			ps.setInt(2, userID);
 			ps.setInt(3, DTVPaket);
-			ps.setString(4, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-			ps.setString(5, LocalDate.parse("2000-01-01").format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-			ps.executeUpdate();
+            ps.setString(4, LocalDate.parse("2000-01-01").format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            ps.setString(5, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            ps.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -550,7 +548,17 @@ public class ServicesFunctions {
 				rs.next();
 				datumIsteka = rs.getString("endDate");
 			}
-		} catch (SQLException e) {
+            if (datumIsteka == null) {
+                query = "SELECT endDate FROM servicesUser WHERE box_id=?";
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("serviceID"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    datumIsteka = rs.getString("endDate");
+                }
+            }
+        } catch (SQLException e) {
 			e.printStackTrace();
 		}
 
@@ -578,10 +586,9 @@ public class ServicesFunctions {
 			double cena = rLine.getDouble("cena");
 			double pdv = rLine.getDouble("pdv");
 			double popust = rLine.getDouble("popust");
-			double dug = cena + valueToPercent.getDiffValue(cena, pdv);
-			dug = dug - valueToPercent.getDiffValue(dug, popust);
-			//cena+pdv-popust=dug
-			ps.setDouble(7, cena);
+            double dug = cena - valueToPercent.getDiffValue(cena, popust);
+            dug = dug + valueToPercent.getDiffValue(dug, pdv);
+            ps.setDouble(7, cena);
 			ps.setDouble(8, 0.00);
 			ps.setDouble(9, dug);
 			ps.setString(10, operName);
@@ -622,6 +629,7 @@ public class ServicesFunctions {
 		PreparedStatement ps;
 		ResultSet resultSet;
 		String query;
+        int lastInserID = 0;
 
 		query = "SELECT * FROM servicesUser WHERE box_id=?";
 
@@ -685,8 +693,8 @@ public class ServicesFunctions {
 				}
 			}
 
-			ps = db.conn.prepareStatement(query);
-			ps.setInt(1, rs.getInt("id"));
+            ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+            ps.setInt(1, rs.getInt("id"));
 			ps.setString(2, rs.getString("nazivPaketa"));
 			ps.setString(3, LocalDate.now().toString());
 			ps.setInt(4, rs.getInt("userID"));
@@ -698,9 +706,34 @@ public class ServicesFunctions {
             ps.setString(10, LocalDate.now().format(dtfMesecZaduzenja));
             ps.setDouble(11, rs.getDouble("pdv"));
             ps.executeUpdate();
+            ResultSet rsID = ps.getGeneratedKeys();
+            if (rsID.next()) {
+                lastInserID = rsID.getInt(1);
+            }
         } catch (SQLException e) {
+
 			e.printStackTrace();
 		}
+
+
+        //INSERT FAKTURE IF USER HAS FIRMA
+        try {
+            FaktureFunct faktureFunct = new FaktureFunct(rs.getInt("userID"), LocalDate.now(), operName, db);
+            if (faktureFunct.hasFirma) {
+                query = "SELECT * FROM userDebts WHERE id=?";
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, lastInserID);
+                ResultSet resultSet1 = ps.executeQuery();
+                if (resultSet1.next()) {
+                    faktureFunct.createFakturu(resultSet1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+
 
 		query = "UPDATE servicesUser set aktivan=1, newService=false, date_activated=? WHERE id=?";
 		try {
@@ -717,7 +750,8 @@ public class ServicesFunctions {
 	}
 
 	public static void activateService(String operName, ResultSet rs, database db) {
-		try {
+        int lastInserID = 0;
+        try {
 			if (rs.getBoolean("newService")) {
 				LocalDateTime date = LocalDateTime.now();
 				String query;
@@ -748,8 +782,8 @@ public class ServicesFunctions {
                         + "VALUES "
                         + "(?,?,?,?,?,?,?,?,?,?,?)";
 
-				ps = db.conn.prepareStatement(query);
-				ps.setInt(1, rs.getInt("id"));
+                ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+                ps.setInt(1, rs.getInt("id"));
 				ps.setString(2, rs.getString("nazivPaketa"));
 				ps.setString(3, LocalDate.now().toString());
 				ps.setInt(4, rs.getInt("userID"));
@@ -761,11 +795,33 @@ public class ServicesFunctions {
                 ps.setString(10, LocalDate.now().format(dtfMesecZaduzenja));
                 ps.setDouble(11, rs.getDouble("PDV"));
                 ps.executeUpdate();
-                ps.close();
+
+                ResultSet rsID = ps.getGeneratedKeys();
+                if (rsID.next()) {
+                    lastInserID = rsID.getInt(1);
+                }
 
 				produziService(rs.getInt("id"), operName, false, db);
 
 			}
+
+            //INSERT FAKTURE IF USER HAS FIRMA
+            try {
+                FaktureFunct faktureFunct = new FaktureFunct(rs.getInt("userID"), LocalDate.now(), operName, db);
+                if (faktureFunct.hasFirma) {
+                    String query = "SELECT * FROM userDebts WHERE id=?";
+                    PreparedStatement ps = db.conn.prepareStatement(query);
+                    ps.setInt(1, lastInserID);
+                    ResultSet resultSet = ps.executeQuery();
+                    if (resultSet.next()) {
+                        faktureFunct.createFakturu(resultSet);
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+
 
 			//samo u slucaju ako ima IPTV
 			if (rs.getString("IPTV_MAC") != null) {
