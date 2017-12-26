@@ -280,7 +280,7 @@ public class ClientWorker implements Runnable {
 
 		if (rLine.get("action").equals("get_groups")) {
 			query = String.format("SELECT * FROM grupa WHERE groupname LIKE '%s%%'", rLine.get("groupName"));
-			query = "SLEECT * FROM  grupa WHERE groupname LIKE ?";
+            query = "SELECT * FROM  grupa WHERE groupname LIKE ?";
 
 			try {
 				ps = db.conn.prepareStatement(query);
@@ -1098,8 +1098,9 @@ public class ClientWorker implements Runnable {
 						userDebt.put("paketType", rs.getString("paketType"));
                         userDebt.put("cena", rs.getDouble("cena"));
                         userDebt.put("dug", rs.getDouble("dug"));
-
-						userDebt.put("cena", rs.getDouble("cena"));
+                        userDebt.put("paketType", rs.getString("paketType"));
+                        userDebt.put("identification", ServicesFunctions.getIdentify(rs.getInt("id_ServiceUser"), db));
+                        userDebt.put("cena", rs.getDouble("cena"));
 						userDebt.put("pdv", rs.getDouble("PDV"));
 						userDebt.put("popust", rs.getDouble("popust"));
 						userDebt.put("uplaceno", rs.getDouble("uplaceno"));
@@ -1165,6 +1166,7 @@ public class ClientWorker implements Runnable {
 
 			PreparedStatement ps = null;
 			ResultSet rs;
+
 
 			query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=true WHERE id=?";
 
@@ -2839,9 +2841,18 @@ public class ClientWorker implements Runnable {
 		}
 
 		//FIXNA OBRACUNI
-		if (rLine.get("action").equals("obracun_fiksne_zaMesec")) {
 
-		}
+        if (rLine.getString("action").equals("get_FIX_account_saobracaj")) {
+            jObj = new JSONObject();
+            jObj = FIXFunctions.getAccountSaobracaj(
+                    rLine.getString("account"),
+                    rLine.getString("zaMesec"),
+                    rLine.getDouble("pdv"),
+                    rLine.getDouble("popust"),
+                    db);
+            send_object(jObj);
+            return;
+        }
 
 		if (rLine.getString("action").equals("addFixUslugu")) {
 			jObj = new JSONObject();
@@ -2900,6 +2911,7 @@ public class ClientWorker implements Runnable {
 						ps.setString(14, filename);
 
 						ps.executeUpdate();
+                        System.out.println("UPDATE Complete: ");
 
 					}
 					ps.close();
@@ -3149,7 +3161,7 @@ public class ClientWorker implements Runnable {
 			PreparedStatement ps;
 			ResultSet rs;
 
-			String query = "SELECT * FROM userDebts WHERE zaMesec=? AND paketType LIKE '%FIX'";
+            String query = "SELECT * FROM FIX_Debts WHERE zaMesec=?";
 
 			try {
 				ps = db.conn.prepareStatement(query);
@@ -3159,7 +3171,8 @@ public class ClientWorker implements Runnable {
 					exist = true;
 				}
 				ps.close();
-			} catch (SQLException e) {
+                rs.close();
+            } catch (SQLException e) {
 				jObj.put("Error", e.getMessage());
 				e.printStackTrace();
 			}
@@ -3170,9 +3183,8 @@ public class ClientWorker implements Runnable {
 			return;
 		}
 
-		if (rLine.getString("action").equals("obracunaj_za_mesec")) {
-			jObj = new JSONObject();
-
+        if (rLine.getString("action").equals("obracunaj_FIX_za_mesec")) {
+            jObj = new JSONObject();
 			jObj = FIXFunctions.obracunajZaMesec(db, rLine.getString("zaMesec"), getOperName());
 
 			send_object(jObj);

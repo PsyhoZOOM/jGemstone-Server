@@ -984,4 +984,36 @@ public class ServicesFunctions {
 		System.out.println("ENDATE IPTV: " + STB_MAC + " " + eDate);
 	}
 
+	public static String getIdentify(int id_servicesUser, database db) {
+		PreparedStatement ps;
+		ResultSet rs;
+		String ident = null;
+
+		String query = "SELECT * from servicesUser WHERE id=?";
+
+		try {
+			ps = db.conn.prepareStatement(query);
+			ps.setInt(1, id_servicesUser);
+			rs = ps.executeQuery();
+			if (rs.isBeforeFirst()) {
+				rs.next();
+				if (rs.getString("idDTVCard") != null)
+					ident = rs.getString("idDTVCard");
+				if (rs.getString("UserName") != null)
+					ident = rs.getString("UserName");
+				if (rs.getString("FIKSNA_TEL") != null)
+					ident = rs.getString("FIKSNA_TEL");
+				if (rs.getString("IPTV_MAC") != null)
+					ident = rs.getString("IPTV_MAC");
+			}
+			ps.close();
+			rs.close();
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return ident;
+
+	}
 }
