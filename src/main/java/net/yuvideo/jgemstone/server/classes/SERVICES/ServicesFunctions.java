@@ -987,7 +987,7 @@ public class ServicesFunctions {
 	public static String getIdentify(int id_servicesUser, database db) {
 		PreparedStatement ps;
 		ResultSet rs;
-		String ident = null;
+        String ident = "NEPOZNAT";
 
 		String query = "SELECT * from servicesUser WHERE id=?";
 

@@ -90,7 +90,7 @@ public class monthlyScheduler {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		zaduziFakturu(date.minusMonths(1), "SYSTEM");
+		zaduziFakturu(date, "SYSTEM");
 
 	}
 
