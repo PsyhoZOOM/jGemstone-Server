@@ -45,7 +45,7 @@ public class monthlyScheduler {
 		int userID = 0;
 		query = "SELECT *  FROM servicesUser WHERE obracun=1 AND aktivan=1 AND linkedService=0  ";
 		//koji je mesec zaduzenja. posto je sada novi mesec kada se zaduzuje korisnik onda idemo mesec dana u nazad.
-		//obracun je za prosli mesec
+		//obracun je za prosli mesec (-1 mesec)
 
 		LocalDate date = LocalDate.now();
         date = date.minusMonths(1);

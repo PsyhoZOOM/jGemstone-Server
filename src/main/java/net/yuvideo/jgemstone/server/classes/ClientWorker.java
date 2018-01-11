@@ -243,6 +243,7 @@ public class ClientWorker implements Runnable {
 				rs = ps.executeQuery();
 			} catch (SQLException e) {
 				e.printStackTrace();
+
 			}
 
 			try {
@@ -755,6 +756,7 @@ public class ClientWorker implements Runnable {
 			return;
 
 		}
+
 
 		if (rLine.get("action").equals("activate_service")) {
 			PreparedStatement ps;
