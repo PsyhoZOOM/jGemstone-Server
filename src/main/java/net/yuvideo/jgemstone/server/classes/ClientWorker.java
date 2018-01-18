@@ -1235,12 +1235,10 @@ public class ClientWorker implements Runnable {
                     if (rs.isBeforeFirst()) {
                         while (rs.next()) {
                             if (rs.getString("paketType").equals("FIX")) {
-                                idFixPaket = rLine.getInt("id");
-                                idFixPaket = 23;
+                                idFixPaket = rs.getInt("id");
                             }
                             if (rs.getString("paketType").equals("FIX_SAOBRACAJ")) {
-                                idFixSaobracaj = rLine.getInt("id");
-                                idFixSaobracaj = 44;
+                                idFixSaobracaj = rs.getInt("id");
                             }
                         }
                     }
