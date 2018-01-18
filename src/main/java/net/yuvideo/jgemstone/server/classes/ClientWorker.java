@@ -1841,7 +1841,6 @@ public class ClientWorker implements Runnable {
 						double cena = rs.getDouble("cenaBezPDV");
 						double pdv = rs.getDouble("pdv");
 						double iznosPDV = +valueToPercent.getDiffValue(cena, pdv);
-						double osnovicaZaPDV = +iznosPDV;
 						double iznosSaPDV = cena + iznosPDV;
 						faktureData.put("VrednostSaPDV", iznosSaPDV);
 						faktureData.put("iznosPDV", iznosPDV);
