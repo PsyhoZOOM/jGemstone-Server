@@ -1076,9 +1076,9 @@ public class ClientWorker implements Runnable {
 		if (rLine.getString("action").equals("get_zaduzenja_user")) {
 			jObj = new JSONObject();
 			if (rLine.getBoolean("sveUplate")) {
-				query = "SELECT * FROM userDebts where userID=? ORDER BY zaMesec ASC";
-			} else {
-                query = "SELECT * FROM userDebts WHERE userID=? AND dug > uplaceno ORDER BY zaMesec ASC";
+                query = "SELECT * FROM userDebts where userID=? AND paketType != 'FIX_SAOBRACAJ' ORDER BY zaMesec ASC";
+            } else {
+                query = "SELECT * FROM userDebts WHERE userID=? AND dug > uplaceno AND paketType != 'FIX_SAOBRACAJ' ORDER BY zaMesec ASC";
             }
 
 			try {
@@ -1126,6 +1126,46 @@ public class ClientWorker implements Runnable {
             return;
         }
 
+        if (rLine.getString("action").equals("getUserDebt")) {
+            jObj = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            double dug = 0;
+            double uplaceno = 0;
+            double ukupanDug = 0;
+            String query = "SELECT sum(dug) as dug FROM userDebts WHERE userID=?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("userID"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    dug = rs.getDouble("dug");
+
+                }
+                rs.close();
+                ps.close();
+                query = "SELECT sum(uplaceno) as uplaceno FROM userDebts WHERE userID=?";
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("userID"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    uplaceno = rs.getDouble("uplaceno");
+                }
+                ps.close();
+                rs.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            ukupanDug = dug - uplaceno;
+
+            jObj.put("ukupanDug", ukupanDug);
+            send_object(jObj);
+            return;
+        }
+
 
 		if (rLine.getString("action").equals("get_Service_ident")) {
 			jObj = new JSONObject();
@@ -1168,28 +1208,172 @@ public class ClientWorker implements Runnable {
 
 			PreparedStatement ps = null;
 			ResultSet rs;
+            String query;
 
 
-			query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=true WHERE id=?";
+            //ako je uplata fiksne telefonije uzimamo paket i saobracaj iz userDebta i vrsimo uplatu
+            //uplaceno - paketDug = ostatak (update paket fix dug)
+            //ostatak - saobracaj dug = uplacenoSaobracaj (update paket saobracaj fix dug)
+            //ili tako nesto :)
+            if (rLine.getString("paketType").equals("FIX")) {
+                double uplaceno = rLine.getDouble("uplaceno");
+                int idFixPaket = 0;
+                int idFixSaobracaj = 0;
+                double paketDug = 0;
+                double paketUplaceno = 0;
+                double saobracajDug = 0;
+                double saobracajUplaceno = 0;
 
-			try {
-				ps = db.conn.prepareStatement(query);
-				ps.setDouble(1, rLine.getDouble("uplaceno"));
-				ps.setString(2, date_format_full.format(Calendar.getInstance().getTime()));
-				ps.setString(3, getOperName());
-				ps.setInt(4, rLine.getInt("id"));
-				ps.executeUpdate();
-				jObj.put("Message", "SERVICE_PAYMENTS_DONE");
-				ps.close();
-			} catch (SQLException e) {
-				jObj.put("Error", e.getMessage());
-				e.printStackTrace();
-			}
+                //prvo uzeti id-ove od paketa i saobracaja od servisa, userID i zaMesec
+                query = "SELECT id, paketType FROM userDebts WHERE zaMesec=? and id_ServiceUser=? and userID=?";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setString(1, rLine.getString("zaMesec"));
+                    ps.setInt(2, rLine.getInt("id_ServiceUser"));
+                    ps.setInt(3, rLine.getInt("userID"));
+                    rs = ps.executeQuery();
+                    if (rs.isBeforeFirst()) {
+                        while (rs.next()) {
+                            if (rs.getString("paketType").equals("FIX")) {
+                                idFixPaket = rLine.getInt("id");
+                                idFixPaket = 23;
+                            }
+                            if (rs.getString("paketType").equals("FIX_SAOBRACAJ")) {
+                                idFixSaobracaj = rLine.getInt("id");
+                                idFixSaobracaj = 44;
+                            }
+                        }
+                    }
+                    ps.close();
+                    rs.close();
+                } catch (SQLException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+                }
+
+                //onda moramo prveriti da li vec postoji uplata
+                //ako postoji proverti koliko fali za paket a koliko za saobracaj
+
+                //CODE HERE
+                //get paket dug
+                query = "SELECT uplaceno, dug FROM userDebts WHERE id=?";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setInt(1, idFixPaket);
+                    rs = ps.executeQuery();
+                    if (rs.isBeforeFirst()) {
+                        rs.next();
+                        paketDug = rs.getDouble("dug");
+                        paketUplaceno = rs.getDouble("uplaceno");
+                    }
+                    ps.close();
+                    rs.close();
+
+                } catch (SQLException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+                }
+
+                //get saobracaj dug
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setInt(1, idFixSaobracaj);
+                    rs = ps.executeQuery();
+                    if (rs.isBeforeFirst()) {
+                        rs.next();
+                        saobracajDug = rs.getDouble("dug");
+                        saobracajUplaceno = rs.getDouble("uplaceno");
+                    }
+                    rs.close();
+                    ps.close();
+                } catch (SQLException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+
+                }
+
+
+                double zaUplatuPaket = 0; // = paketDug - paketUplaceno;
+                double zaUplatuSaobracaj = 0; // = saobracajDug - saobracajUplaceno;
+
+                //saobracaj
+                double ukupnoUplaceno = paketUplaceno + saobracajUplaceno + uplaceno;
+                double ukupanDug = paketDug + saobracajDug;
+                double dug = ukupanDug - ukupnoUplaceno;
+
+                if (ukupnoUplaceno >= paketDug) {
+                    ukupnoUplaceno -= paketDug;
+                    zaUplatuPaket = paketDug;
+                    zaUplatuSaobracaj = ukupnoUplaceno;
+                } else {
+                    zaUplatuPaket = ukupnoUplaceno;
+                    zaUplatuSaobracaj = 0;
+                }
+
+
+                query = "UPDATE userDebts set uplaceno = ? where id=?";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setDouble(1, zaUplatuPaket);
+                    ps.setInt(2, idFixPaket);
+                    ps.executeUpdate();
+                    ps.close();
+                } catch (SQLException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+                }
+
+                query = "UPDATE userDebts set uplaceno =? where id=?";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setDouble(1, zaUplatuSaobracaj);
+                    ps.setInt(2, idFixSaobracaj);
+                    ps.executeUpdate();
+                } catch (SQLException e) {
+                    jObj.put("ERROR", e.getMessage());
+                    e.printStackTrace();
+                }
+
+
+            } else {
+                //uplata za box i obicne servise
+                double ukupnoUplaceno = 0;
+                double zaUplatu = 0;
+                query = "SELECT dug, uplaceno FROM userDebts WHERE id=?";
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setInt(1, rLine.getInt("id"));
+                    rs = ps.executeQuery();
+                    if (rs.isBeforeFirst()) {
+                        rs.next();
+                        ukupnoUplaceno = rs.getDouble("uplaceno");
+                        zaUplatu = ukupnoUplaceno + rLine.getDouble("uplaceno");
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+                query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=true WHERE id=?";
+
+                try {
+                    ps = db.conn.prepareStatement(query);
+                    ps.setDouble(1, zaUplatu);
+                    ps.setString(2, date_format_full.format(Calendar.getInstance().getTime()));
+                    ps.setString(3, getOperName());
+                    ps.setInt(4, rLine.getInt("id"));
+                    ps.executeUpdate();
+                    jObj.put("Message", "SERVICE_PAYMENTS_DONE");
+                    ps.close();
+                } catch (SQLException e) {
+                    jObj.put("Error", e.getMessage());
+                    e.printStackTrace();
+                }
+            }
 
 			if (rLine.getString("paketType").equals("BOX")) {
 				query = "SELECT * FROM servicesUser WHERE box_id=?";
-			} else {
-				query = "SELECT * FROM servicesUser WHERE id=?";
+            } else {
+                query = "SELECT * FROM servicesUser WHERE id=?";
 			}
 			rs = null;
 			try {
@@ -2849,8 +3033,6 @@ public class ClientWorker implements Runnable {
             jObj = FIXFunctions.getAccountSaobracaj(
                     rLine.getString("account"),
                     rLine.getString("zaMesec"),
-                    rLine.getDouble("pdv"),
-                    rLine.getDouble("popust"),
                     db);
             send_object(jObj);
             return;
@@ -3163,7 +3345,7 @@ public class ClientWorker implements Runnable {
 			PreparedStatement ps;
 			ResultSet rs;
 
-            String query = "SELECT * FROM FIX_Debts WHERE zaMesec=?";
+            String query = "SELECT * FROM userDebts WHERE zaMesec=? AND paketType='FIX_SAOBRACAJ'";
 
 			try {
 				ps = db.conn.prepareStatement(query);
@@ -3227,22 +3409,22 @@ public class ClientWorker implements Runnable {
 		return dug;
 	}
 
-	private String get_paket_naziv(String digitalniTVPaket, int dtv_id) {
-		String naziv = "";
+    private String get_paket_naziv(String nazivPaketa, int dtv_id) {
+        String naziv = "";
 		try {
-			if (digitalniTVPaket.equals("FIXPaketi")) {
-				String query = String.format("SELECT * FROM FIX_paketi WHERE id=?", digitalniTVPaket);
-				ps = db.conn.prepareStatement(query);
+            if (nazivPaketa.equals("FIXPaketi")) {
+                String query = String.format("SELECT * FROM FIX_paketi WHERE id=?", nazivPaketa);
+                ps = db.conn.prepareStatement(query);
 				ps.setInt(1, dtv_id);
 			} else {
-				ps = db.conn.prepareStatement("SELECT * FROM " + digitalniTVPaket + " WHERE id=?");
-				ps.setInt(1, dtv_id);
+                ps = db.conn.prepareStatement("SELECT * FROM " + nazivPaketa + " WHERE id=?");
+                ps.setInt(1, dtv_id);
 			}
 			rs = ps.executeQuery();
 			if (rs.isBeforeFirst()) {
 				rs.next();
-				if (digitalniTVPaket.equals("IPTV_Paketi")) {
-					naziv = rs.getString("name");
+                if (nazivPaketa.equals("IPTV_Paketi")) {
+                    naziv = rs.getString("name");
 				} else {
 					naziv = rs.getString("naziv");
 				}
