@@ -1013,6 +1013,31 @@ public class ServicesFunctions {
 		}
 
 		return ident;
-
 	}
+
+    public static String uplataLOG(JSONObject rLine, database db) {
+        PreparedStatement ps;
+        String result;
+        String query = "INSERT INTO UPLATE " +
+                "(datumUplate, uplaceno, nazivServisa, idServisa, mesto, operater, userID, napomena) " +
+                "VALUES (?,?,?,?,?,?,?,?)";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setString(1, LocalDate.now().format(dtf));
+            ps.setDouble(2, rLine.getDouble("uplaceno"));
+            ps.setString(3, rLine.getString("identification"));
+            ps.setInt(4, rLine.getInt("id"));
+            ps.setString(5, "mesto");
+            ps.setString(6, rLine.getString("operater"));
+            ps.setInt(7, rLine.getInt("userID"));
+            ps.setString(8, "napomena");
+
+            ps.executeUpdate();
+            result = "UPLACENO";
+        } catch (SQLException e) {
+            result = e.getMessage();
+            e.printStackTrace();
+        }
+        return result;
+    }
 }

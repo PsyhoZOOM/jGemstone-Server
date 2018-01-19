@@ -1001,47 +1001,7 @@ public class ClientWorker implements Runnable {
 			return;
 		}
 
-		if (rLine.getString("action").equals("new_uplata")) {
-			jObj = new JSONObject();
-			query = "INSERT INTO uplate (datumUplate, uplaceno, mesto, operater, userID, napomena) VALUES (?,?,?,?,?,?)";
 
-			try {
-				ps = db.conn.prepareStatement(query);
-				ps.setString(1, rLine.getString("datumUplate"));
-				ps.setDouble(2, rLine.getDouble("uplaceno"));
-				ps.setString(3, rLine.getString("mesto"));
-				ps.setString(4, getOperName());
-				ps.setInt(5, rLine.getInt("userID"));
-				ps.setString(6, rLine.getString("napomena"));
-				ps.executeUpdate();
-				jObj.put("Message", "UPLATA_UPLACENA");
-			} catch (SQLException e) {
-				jObj.put("Error", e.getMessage());
-				e.printStackTrace();
-			}
-
-			send_object(jObj);
-			return;
-		}
-
-		if (rLine.getString("action").equals("DELETE_UPLATA")) {
-			jObj = new JSONObject();
-
-			query = "DELETE FROM uplate where id=?";
-
-			try {
-				ps = db.conn.prepareStatement(query);
-				ps.setInt(1, rLine.getInt("uplataID"));
-				ps.executeUpdate();
-				jObj.put("Message", "UPLATA_DELETED");
-			} catch (SQLException e) {
-				jObj.put("Error", e.getMessage());
-				e.printStackTrace();
-			}
-
-			send_object(jObj);
-			return;
-		}
 
 		if (rLine.getString("action").equals("get_uplate_user")) {
 			jObj = new JSONObject();
@@ -1366,6 +1326,7 @@ public class ClientWorker implements Runnable {
                     jObj.put("Error", e.getMessage());
                     e.printStackTrace();
                 }
+
             }
 
 			if (rLine.getString("paketType").equals("BOX")) {
@@ -1394,6 +1355,18 @@ public class ClientWorker implements Runnable {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
+
+            //UPLATA LOG SVAKE UPLATE
+            JSONObject logUplate = new JSONObject();
+            logUplate.put("uplaceno", rLine.getDouble("uplaceno"));
+            logUplate.put("id", rLine.getInt("id"));
+            logUplate.put("nazivServisa", rLine.getString("identification"));
+            logUplate.put("operater", getOperName());
+            logUplate.put("userID", rLine.getInt("userID"));
+
+
+            ServicesFunctions.uplataLOG(logUplate, db);
+
 			send_object(jObj);
 			return;
 		}
