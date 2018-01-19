@@ -1363,6 +1363,7 @@ public class ClientWorker implements Runnable {
             logUplate.put("nazivServisa", rLine.getString("identification"));
             logUplate.put("operater", getOperName());
             logUplate.put("userID", rLine.getInt("userID"));
+			logUplate.put("identification", rLine.getString("identification"));
 
 
             ServicesFunctions.uplataLOG(logUplate, db);

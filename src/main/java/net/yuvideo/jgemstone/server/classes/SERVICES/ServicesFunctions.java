@@ -1023,7 +1023,7 @@ public class ServicesFunctions {
                 "VALUES (?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
-            ps.setString(1, LocalDate.now().format(dtf));
+            ps.setString(1, LocalDateTime.now().toString());
             ps.setDouble(2, rLine.getDouble("uplaceno"));
             ps.setString(3, rLine.getString("identification"));
             ps.setInt(4, rLine.getInt("id"));
