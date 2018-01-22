@@ -1126,7 +1126,6 @@ public class ClientWorker implements Runnable {
             return;
         }
 
-
 		if (rLine.getString("action").equals("get_Service_ident")) {
 			jObj = new JSONObject();
 			PreparedStatement ps;
@@ -1158,9 +1157,7 @@ public class ClientWorker implements Runnable {
 				Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
 			}
 			jObj.put("ident", ident);
-
 			send_object(jObj);
-
 		}
 
 		if (rLine.getString("action").equals("uplata_servisa")) {
@@ -1170,11 +1167,9 @@ public class ClientWorker implements Runnable {
 			ResultSet rs;
             String query;
 
-
             //ako je uplata fiksne telefonije uzimamo paket i saobracaj iz userDebta i vrsimo uplatu
             //uplaceno - paketDug = ostatak (update paket fix dug)
             //ostatak - saobracaj dug = uplacenoSaobracaj (update paket saobracaj fix dug)
-            //ili tako nesto :)
             if (rLine.getString("paketType").equals("FIX")) {
                 double uplaceno = rLine.getDouble("uplaceno");
                 int idFixPaket = 0;
@@ -1294,8 +1289,8 @@ public class ClientWorker implements Runnable {
 
 
             } else {
-                //uplata za box i obicne servise
-                double ukupnoUplaceno = 0;
+				//uplata za   obicne servise
+				double ukupnoUplaceno = 0;
                 double zaUplatu = 0;
                 query = "SELECT dug, uplaceno FROM userDebts WHERE id=?";
                 try {
@@ -1328,7 +1323,7 @@ public class ClientWorker implements Runnable {
                 }
 
             }
-
+			//uplata box paketa
 			if (rLine.getString("paketType").equals("BOX")) {
 				query = "SELECT * FROM servicesUser WHERE box_id=?";
             } else {
@@ -1364,6 +1359,7 @@ public class ClientWorker implements Runnable {
             logUplate.put("operater", getOperName());
             logUplate.put("userID", rLine.getInt("userID"));
 			logUplate.put("identification", rLine.getString("identification"));
+			logUplate.put("id_ServiceUser", rLine.getInt("id_ServiceUser"));
 
 
             ServicesFunctions.uplataLOG(logUplate, db);

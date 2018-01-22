@@ -1017,21 +1017,40 @@ public class ServicesFunctions {
 
     public static String uplataLOG(JSONObject rLine, database db) {
         PreparedStatement ps;
+        ResultSet rs = null;
         String result;
-        String query = "INSERT INTO UPLATE " +
-                "(datumUplate, uplaceno, nazivServisa, idServisa, mesto, operater, userID, napomena) " +
-                "VALUES (?,?,?,?,?,?,?,?)";
+        String nazivPaketa = "";
+
+        String query = "SELECT * FROM servicesUser WHERE id = ?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("id"));
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                nazivPaketa = rs.getString("nazivPaketa");
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        query = "INSERT INTO uplate " +
+                "(datumUplate, uplaceno, nazivServisa, idServisa, mesto, operater, userID, napomena, identification, idUserDebts) " +
+                "VALUES (?,?,?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, LocalDateTime.now().toString());
             ps.setDouble(2, rLine.getDouble("uplaceno"));
-            ps.setString(3, rLine.getString("identification"));
-            ps.setInt(4, rLine.getInt("id"));
+            ps.setString(3, nazivPaketa);
+            ps.setInt(4, rLine.getInt("id_ServiceUser"));
             ps.setString(5, "mesto");
             ps.setString(6, rLine.getString("operater"));
             ps.setInt(7, rLine.getInt("userID"));
             ps.setString(8, "napomena");
-
+            ps.setString(9, rLine.getString("identification"));
+            ps.setInt(10, rLine.getInt("id"));
             ps.executeUpdate();
             result = "UPLACENO";
         } catch (SQLException e) {
