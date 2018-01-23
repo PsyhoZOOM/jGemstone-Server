@@ -152,7 +152,8 @@ public class sendEMMUDP {
             packet = new DatagramPacket(packetSend, packetSend.length, soAddress, Port);
             socket = new DatagramSocket();
 
-            socket.send(packet);
+            //we gonna check if network is reachable, if it is then send socket.send(packet) ;0
+            if (socket.getInetAddress().getByName(HostName).isReachable(1000)) socket.send(packet);
             socket.close();
         } catch (UnknownHostException ex) {
             Logger.getLogger(sendEMMUDP.class.getName()).log(Level.SEVERE, null, ex);
