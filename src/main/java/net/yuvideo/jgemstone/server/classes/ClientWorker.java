@@ -1019,6 +1019,10 @@ public class ClientWorker implements Runnable {
 					ServicesFunctions.deleteServiceIPTV(delObj, getOperName(), db);
 				}
 
+                if (delObj.getString("paketType").equals("OSTALE_USLUGE")) {
+                    ServicesFunctions.deleteServiceOstalo(delObj, operName, db);
+                }
+
 			}
 
 			send_object(jObj);
@@ -3468,6 +3472,18 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
             send_object(jsonObject);
+        }
+
+        if (rLine.getString("action").equals("save_OstaleUsluge_USER")) {
+            String Message = ServicesFunctions.addServiceOstalo(rLine, operName, db);
+            JSONObject jObj = new JSONObject();
+            if (!Message.equals("SERVICE_ADDED")) {
+                jObj.put("ERROR", Message);
+            } else {
+                jObj.put("INFO", "SERVICE_ADDED");
+            }
+
+            send_object(jObj);
         }
 
 

@@ -341,7 +341,6 @@ public class ServicesFunctions {
 				+ "obracun, brojUgovora, aktivan, produzenje, newService, IPTV_EXT_ID, IPTV_MAC, paketType, endDate, PDV)"
 				+ "VALUES "
 				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?)";
-
 		try {
 			ps = db.conn.prepareStatement(query);
 			ps.setInt(1, rLine.getInt("id"));
@@ -364,14 +363,58 @@ public class ServicesFunctions {
 			ps.executeUpdate();
 			ps.close();
 			Message = "SERVICE_ADDED";
-
 		} catch (SQLException e) {
 			Message = e.getMessage();
 			e.printStackTrace();
 		}
-
 		return Message;
 	}
+
+    public static String addServiceOstalo(JSONObject rLine, String opername, database db) {
+        PreparedStatement ps;
+        String Message = "SERVICE_ADDED";
+        String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, " +
+                "obracun, aktivan, newService, paketType, PDV, endDate)" +
+                "VALUES " +
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, rLine.getInt("id"));
+            ps.setString(2, rLine.getString("naziv"));
+            ps.setString(3, LocalDateTime.now().format(dtf));
+            ps.setInt(4, rLine.getInt("userID"));
+            ps.setString(5, opername);
+            ps.setDouble(6, rLine.getDouble("popust"));
+            ps.setDouble(7, rLine.getDouble("cena"));
+            ps.setBoolean(8, rLine.getBoolean("obracun"));
+            ps.setBoolean(9, false);
+            ps.setBoolean(10, true);
+            ps.setString(11, rLine.getString("paketType"));
+            ps.setDouble(12, rLine.getDouble("pdv"));
+            ps.setString(13, "");
+            ps.executeUpdate();
+            ps.close();
+
+
+        } catch (SQLException e) {
+            Message = e.getMessage();
+            e.printStackTrace();
+        }
+
+        return Message;
+    }
+
+    public static void deleteServiceOstalo(JSONObject delObj, String opername, database db) {
+        PreparedStatement ps;
+        String query = "DELETE FROM servicesUser WHERE id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, delObj.getInt("id"));
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
 	public static void deleteServiceDTV(JSONObject delObj, String operName, database db) {
 		PreparedStatement ps;
