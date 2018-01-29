@@ -2081,6 +2081,42 @@ public class ClientWorker implements Runnable {
 			return;
 		}
 
+        if (rLine.getString("action").equals("getAllAdrese")) {
+            query = "SELECT * FROM adrese";
+            jObj = new JSONObject();
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
+
+                JSONObject adrese = new JSONObject();
+                JSONObject adresa;
+
+                int i = 0;
+
+                while (rs.next()) {
+                    adresa = new JSONObject();
+                    adresa.put("id", rs.getInt("id"));
+                    adresa.put("nazivAdrese", rs.getString("naziv"));
+                    adresa.put("brojAdrese", rs.getString("broj"));
+                    adresa.put("idMesta", rs.getInt("idMesta"));
+                    adresa.put("brojMesta", rs.getString("brojMesta"));
+                    adresa.put("nazivMesta", rs.getString("nazivMesta"));
+                    adrese.put(String.valueOf(i), adresa);
+                    i++;
+                }
+                send_object(adrese);
+                return;
+
+            } catch (SQLException e) {
+                jObj = new JSONObject();
+                jObj.put("Message", e.getMessage());
+                send_object(jObj);
+                e.printStackTrace();
+            }
+            return;
+        }
+
 		if (rLine.getString("action").equals("getAdrese")) {
 			query = "SELECT * FROM adrese WHERE idMesta = ?";
 			jObj = new JSONObject();
