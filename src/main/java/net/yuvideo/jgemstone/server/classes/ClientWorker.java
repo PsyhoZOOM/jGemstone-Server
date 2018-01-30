@@ -1,6 +1,7 @@
 package net.yuvideo.jgemstone.server.classes;
 
 import com.csvreader.CsvReader;
+import net.yuvideo.jgemstone.server.classes.ARTIKLI.ArtikliFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.addBoxService;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
@@ -3521,6 +3522,63 @@ public class ClientWorker implements Runnable {
 
             send_object(jObj);
         }
+
+
+        if (rLine.getString("action").equals("addArtikal")) {
+            JSONObject jsonObject = new JSONObject();
+            ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
+            artikliFunctions.addArtikl(rLine);
+            if (artikliFunctions.isError()) {
+                jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+            } else {
+                jsonObject.put("MESSAGE", "ARTIKL_ADDED");
+            }
+
+            send_object(jsonObject);
+            return;
+        }
+
+        if (rLine.getString("action").equals("deleteArtikl")) {
+            JSONObject jsonObject = new JSONObject();
+            ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
+            artikliFunctions.deleteArtikl(rLine.getInt("id"));
+            if (artikliFunctions.isError()) {
+                jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+            } else {
+                jsonObject.put("MESSAGE", "ARTIKLE_DELETED");
+            }
+
+            send_object(jsonObject);
+        }
+
+        if (rLine.getString("action").equals("editArtikal")) {
+            JSONObject jsonObject = new JSONObject();
+            ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
+            artikliFunctions.editArtikl(rLine);
+            if (artikliFunctions.isError()) {
+                jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+            } else {
+                jsonObject.put("MESSAGE", "ARTIKLE_EDITED");
+            }
+
+            send_object(jsonObject);
+            return;
+        }
+
+        if (rLine.getString("action").equals("searchArtikal")) {
+            JSONObject jsonObject = new JSONObject();
+            ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
+            artikliFunctions.searchArtikles(rLine);
+            if (artikliFunctions.isError()) {
+                jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+            } else {
+                jsonObject = artikliFunctions.getArtikles();
+            }
+
+            send_object(jsonObject);
+            return;
+        }
+
 
 
 	}
