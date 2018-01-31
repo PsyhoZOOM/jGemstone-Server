@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Created by PsyhoZOOM@gmail.com on 1/30/18.
@@ -45,7 +46,7 @@ public class ArtikliFunctions {
             ps.setString(9, rLine.getString("jMere"));
             ps.setInt(10, rLine.getInt("kolicina"));
             ps.setString(11, rLine.getString("opis"));
-            ps.setString(12, LocalDateTime.now().toString());
+            ps.setString(12, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
             ps.setString(13, operName);
 
             ps.executeUpdate();
@@ -77,7 +78,7 @@ public class ArtikliFunctions {
             ps.setString(9, rLine.getString("jMere"));
             ps.setDouble(10, rLine.getInt("kolicina"));
             ps.setString(11, rLine.getString("opis"));
-            ps.setString(12, rLine.getString(operName));
+            ps.setString(12, operName);
             ps.setInt(13, rLine.getInt("id"));
             ps.executeUpdate();
             ps.close();
