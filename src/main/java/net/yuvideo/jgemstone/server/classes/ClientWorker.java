@@ -8,6 +8,7 @@ import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
+import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import org.json.JSONObject;
@@ -206,8 +207,8 @@ public class ClientWorker implements Runnable {
                         jObj.put("fullName", rs.getString("ime"));
                         jObj.put("mesto", rs.getString("mesto"));
                         jObj.put("adresa", (rs.getString("adresa")));
-                        jObj.put("adresaUsluge", rs.getString("adresaUsluge"));
-                        jObj.put("mestoUsluge", rs.getString("mestoUsluge"));
+                        jObj.put("adresaRacuna", rs.getString("adresaRacuna"));
+                        jObj.put("mestoRacuna", rs.getString("mestoRacuna"));
                         jObj.put("brLk", rs.getString("brlk"));
                         jObj.put("datumRodjenja", rs.getString("datumRodjenja"));
                         jObj.put("telFixni", rs.getString("telFiksni"));
@@ -219,6 +220,11 @@ public class ClientWorker implements Runnable {
                         jObj.put("jAdresa", rs.getString("jAdresa"));
                         jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
                         jObj.put("jMesto", rs.getString("jMesto"));
+                        MestaFuncitons mestaFuncitons = new MestaFuncitons(db);
+                        jObj.put("adresaUsluge", mestaFuncitons.getNazivAdrese(rs.getString("jMesto"), rs.getString("jAdresa")));
+                        jObj.put("mestoUsluge", mestaFuncitons.getNazivMesta(rs.getString("jMesto")));
+
+                        //DUG
                         jObj.put("dug", df.format(get_userDebt(rs.getInt("id"))));
                         //FIRMA
                         jObj.put("firma", rs.getBoolean("firma"));
@@ -276,13 +282,16 @@ public class ClientWorker implements Runnable {
                     jObj.put("telMob", rs.getString("telMobilni"));
                     jObj.put("brLk", rs.getString("brLk"));
                     jObj.put("JMBG", rs.getString("JMBG"));
-                    jObj.put("mestoUsluge", rs.getString("mestoUsluge"));
-                    jObj.put("adresaUsluge", rs.getString("adresaUsluge"));
                     jObj.put("komentar", rs.getString("komentar"));
                     jObj.put("jMesto", rs.getString("jMesto"));
                     jObj.put("jAdresa", rs.getString("jAdresa"));
                     jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
                     jObj.put("jBroj", rs.getString("jBroj"));
+                    jObj.put("adresaRacuna", rs.getString("adresaRacuna"));
+                    jObj.put("mestoRacuna", rs.getString("mestoRacuna"));
+                    MestaFuncitons mestaFuncitons = new MestaFuncitons(db);
+                    jObj.put("mestoUsluge", mestaFuncitons.getNazivMesta(rs.getString("jMesto")));
+                    jObj.put("adresaUsluge", mestaFuncitons.getNazivAdrese(rs.getString("jMesto"), rs.getString("jAdresa")));
 
                     //FIRMA
                     jObj.put("firma", rs.getBoolean("firma"));
@@ -1707,9 +1716,9 @@ public class ClientWorker implements Runnable {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
-            query = "INSERT INTO ugovori_korisnik (naziv, textUgovora, komentar, pocetakUgovora, krajUgovora, userID, brojUgovora) "
+            query = "INSERT INTO ugovori_korisnik (naziv, textUgovora, komentar, pocetakUgovora, krajUgovora, userID, brojUgovora, trajanje) "
                     + "VALUES "
-                    + "(?,?,?,?,?,?,?)";
+                    + "(?,?,?,?,?,?,?,?)";
 
             try {
                 ps = db.conn.prepareStatement(query);
@@ -1720,6 +1729,7 @@ public class ClientWorker implements Runnable {
                 ps.setString(5, rLine.getString("krajUgovora"));
                 ps.setInt(6, rLine.getInt("userID"));
                 ps.setString(7, rLine.getString("brojUgovora"));
+                ps.setString(8, rLine.getString("trajanjeUgovora"));
                 ps.executeUpdate();
                 jObj.put("Message", "UGOVOR_ADDED");
 
@@ -2042,8 +2052,57 @@ public class ClientWorker implements Runnable {
             return;
         }
 
+        if (rLine.getString("action").equals("getNazivMesta")) {
+            JSONObject jsonObject = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT naziv FROM mesta WHERE broj=?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("brojMesta"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    jsonObject.put("nazivMesta", rs.getString("naziv"));
+                }
+                ps.close();
+            } catch (SQLException e) {
+                jsonObject.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jsonObject);
+        }
+
+
+        if (rLine.getString("action").equals("getNazivAdrese")) {
+            JSONObject jsonObject = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT naziv FROM adrese WHERE broj=? AND brojMesta=?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("brojAdrese"));
+                ps.setString(2, rLine.getString("brojMesta"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    jsonObject.put("nazivAdrese", rs.getString("naziv"));
+                }
+                ps.close();
+                rs.close();
+
+            } catch (SQLException e) {
+                jObj.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jsonObject);
+
+        }
+
         if (rLine.getString("action").equals("getMesto")) {
-            query = "SELECT * FROM mesta WHERE id=?";
+            query = "SELECT * FROM mesta WHERE broj=?";
             jObj = new JSONObject();
 
             try {
@@ -2125,12 +2184,12 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.getString("action").equals("getAdrese")) {
-            query = "SELECT * FROM adrese WHERE idMesta = ?";
+            query = "SELECT * FROM adrese WHERE brojMesta = ?";
             jObj = new JSONObject();
 
             try {
                 ps = db.conn.prepareStatement(query);
-                ps.setInt(1, rLine.getInt("idMesta"));
+                ps.setString(1, rLine.getString("brojMesta"));
                 rs = ps.executeQuery();
 
                 JSONObject adrese = new JSONObject();
@@ -2162,13 +2221,14 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.getString("action").equals("getAdresa")) {
-            query = "SELECT * FROM adrese WHERE id=?";
+            query = "SELECT * FROM adrese WHERE brojMesta=? AND broj=?";
 
             jObj = new JSONObject();
 
             try {
                 ps = db.conn.prepareStatement(query);
-                ps.setInt(1, rLine.getInt("idMesta"));
+                ps.setString(1, rLine.getString("brojMesta"));
+                ps.setString(2, rLine.getString("brojAdrese"));
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
                     rs.next();
@@ -3680,8 +3740,8 @@ public class ClientWorker implements Runnable {
         jObj = new JSONObject();
         int userID = jObju.getInt("userID");
         query = "UPDATE users SET ime = ?, datumrodjenja = ?, adresa = ?, mesto = ?,"
-                + " postbr = ?, telFiksni = ?, telMobilni = ?,  brlk = ?,  JMBG =?, adresaUsluge = ?, "
-                + "mestoUsluge = ?, jAdresaBroj=?, jAdresa = ?, jMesto=?, jBroj=?, "
+                + " postbr = ?, telFiksni = ?, telMobilni = ?,  brlk = ?,  JMBG =?, adresaRacuna = ?, "
+                + "mestoRacuna = ?, jAdresaBroj=?, jAdresa = ?, jMesto=?, jBroj=?, "
                 + "komentar = ?, firma=?, nazivFirme=?, kontaktOsoba=?, kontaktOsobaTel=?, kodBanke=?, tekuciRacun=?, PIB=?, maticniBroj = ?, " +
                 "fax=?, adresaFirme=? WHERE id = ? ";
 
