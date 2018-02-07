@@ -1613,10 +1613,12 @@ public class ClientWorker implements Runnable {
             jObj = new JSONObject();
 
             try {
-                rs.next();
-                jObj.put("idUgovora", rs.getInt("id"));
-                jObj.put("nazivUgovora", rs.getString("naziv"));
-                jObj.put("textUgovora", rs.getString("text_ugovor"));
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    jObj.put("idUgovora", rs.getInt("id"));
+                    jObj.put("nazivUgovora", rs.getString("naziv"));
+                    jObj.put("textUgovora", rs.getString("text_ugovor"));
+                }
             } catch (SQLException e) {
                 e.printStackTrace();
             }
