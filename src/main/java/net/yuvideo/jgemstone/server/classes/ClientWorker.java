@@ -60,6 +60,7 @@ public class ClientWorker implements Runnable {
     private JSONObject jGrupe;
     //JSON Users
     private JSONObject jUsers;
+    private int operID;
 
     public ClientWorker(SSLSocket client) {
         //this.client = client;
@@ -131,6 +132,14 @@ public class ClientWorker implements Runnable {
 
     public void setOperName(String operName) {
         this.operName = operName;
+    }
+
+    public int getOperID() {
+        return this.operID;
+    }
+
+    public void setOperID(int id) {
+        this.operID = id;
     }
 
     private void object_worker(JSONObject rLine) {
@@ -3640,10 +3649,10 @@ public class ClientWorker implements Runnable {
             return;
         }
 
-        if (rLine.getString("action").equals("searchArtikal")) {
+        if (rLine.getString("action").equals("getAllArtikles")) {
             JSONObject jsonObject = new JSONObject();
             ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
-            artikliFunctions.searchArtikles(rLine);
+            artikliFunctions.getAllArtikles();
             if (artikliFunctions.isError()) {
                 jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
             } else {
@@ -3653,6 +3662,95 @@ public class ClientWorker implements Runnable {
             send_object(jsonObject);
             return;
         }
+
+        if (rLine.getString("action").equals("editMagacin")) {
+            JSONObject jsonObject = new JSONObject();
+            PreparedStatement ps;
+            String query = "UPDATE Magacin SET naziv=?, opis=? WHERE id=?";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("naziv"));
+                ps.setString(2, rLine.getString("opis"));
+                ps.setInt(3, rLine.getInt("id"));
+                ps.executeUpdate();
+                ps.close();
+            } catch (SQLException e) {
+                jsonObject.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jsonObject);
+
+        }
+
+        if (rLine.getString("action").equals("novMagacin")) {
+            JSONObject jsonObject = new JSONObject();
+            PreparedStatement ps;
+            String query = "INSERT INTO Magacin (naziv, opis) VALUES (?,?)";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("naziv"));
+                ps.setString(2, rLine.getString("opis"));
+                ps.executeUpdate();
+                ps.close();
+
+            } catch (SQLException e) {
+                jsonObject.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jsonObject);
+        }
+
+        if (rLine.getString("action").equals("getMagacini")) {
+            JSONObject jsonObject = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT * FROM Magacin";
+
+            try {
+                ps = db.conn.prepareStatement(query);
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    int i = 0;
+                    while (rs.next()) {
+                        JSONObject mag = new JSONObject();
+                        mag.put("id", rs.getInt("id"));
+                        mag.put("naziv", rs.getString("naziv"));
+                        mag.put("opis", rs.getString("opis"));
+                        jsonObject.put(String.valueOf(i), mag);
+                        i++;
+                    }
+                }
+                ps.close();
+                rs.close();
+            } catch (SQLException e) {
+                jsonObject.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jsonObject);
+        }
+
+        if (rLine.getString("action").equals("deleteMagacin")) {
+            JSONObject jsonObject = new JSONObject();
+            PreparedStatement ps;
+            String query = "DELETE FROM Magacin WHERE id=?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("id"));
+                ps.executeUpdate();
+                query = "DELETE FROM magacini WHER idMagacin=?";
+                ps.setInt(1, rLine.getInt("id"));
+                ps.executeUpdate();
+                ps.close();
+            } catch (SQLException e) {
+                jObj.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+            send_object(jsonObject);
+
+        }
+
 
 
     }
@@ -3809,7 +3907,7 @@ public class ClientWorker implements Runnable {
         this.setOperName(userName);
 
         try {
-            ps = db.conn.prepareStatement("SELECT username,password, aktivan FROM operateri WHERE username=? AND password=?");
+            ps = db.conn.prepareStatement("SELECT id, username,password, aktivan FROM operateri WHERE username=? AND password=?");
             ps.setString(1, username);
             ps.setString(2, password);
             rs = ps.executeQuery();
@@ -3818,6 +3916,7 @@ public class ClientWorker implements Runnable {
                 userName = rs.getString("username");
                 passWord = rs.getString("password");
                 aktivan = rs.getBoolean("aktivan");
+                setOperID(rs.getInt("id"));
 
             } else {
                 userName = null;

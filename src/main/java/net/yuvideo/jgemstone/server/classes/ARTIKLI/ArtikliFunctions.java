@@ -64,7 +64,7 @@ public class ArtikliFunctions {
     public void editArtikl(JSONObject rLine) {
         PreparedStatement ps;
         String query = "UPDATE magacini SET naziv=?, model=?, serijski=?, pserijski=?, mac=?, dobavljac=?, brDokumenta=?, " +
-                "nabavnaCena=?, jMere=?, kolicina=?, opis=?, operName=? WHERE id=?";
+                "nabavnaCena=?, jMere=?, kolicina=?, opis=?, operName=? idMagacin=? WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, rLine.getString("naziv"));
@@ -79,7 +79,8 @@ public class ArtikliFunctions {
             ps.setDouble(10, rLine.getInt("kolicina"));
             ps.setString(11, rLine.getString("opis"));
             ps.setString(12, operName);
-            ps.setInt(13, rLine.getInt("id"));
+            ps.setInt(13, rLine.getInt("idMagacin"));
+            ps.setInt(14, rLine.getInt("id"));
             ps.executeUpdate();
             ps.close();
         } catch (SQLException e) {
@@ -119,23 +120,13 @@ public class ArtikliFunctions {
         return artikli;
     }
 
-    public void searchArtikles(JSONObject rLine) {
+    public void getAllArtikles() {
         JSONObject jsonObject = new JSONObject();
-
         PreparedStatement ps;
         ResultSet rs;
-        String query = "SELECT * FROM magacini WHERE naziv LIKE ? AND model LIKE ? AND serijski LIKE ? AND pserijski LIKE ? " +
-                "AND mac LIKE ? AND dobavljac LIKE ? AND brDokumenta LIKE ? AND opis LIKE ?";
+        String query = "SELECT * FROM magacini";
         try {
             ps = db.conn.prepareStatement(query);
-            ps.setString(1, rLine.getString("naziv") + "%");
-            ps.setString(2, rLine.getString("model") + "%");
-            ps.setString(3, rLine.getString("serijski") + "%");
-            ps.setString(4, rLine.getString("pserijski") + "%");
-            ps.setString(5, rLine.getString("mac") + "%");
-            ps.setString(6, rLine.getString("dobavljac") + "%");
-            ps.setString(7, rLine.getString("brDokumenta") + "%");
-            ps.setString(8, rLine.getString("opis") + "%");
             rs = ps.executeQuery();
             if (rs.isBeforeFirst()) {
                 int i = 0;
@@ -155,6 +146,55 @@ public class ArtikliFunctions {
                     artObj.put("opis", rs.getString("opis"));
                     artObj.put("datum", rs.getString("datum"));
                     artObj.put("operName", rs.getString("operName"));
+                    artObj.put("idMagacin", rs.getInt("idMagacin"));
+                    jsonObject.put(String.valueOf(i), artObj);
+                    i++;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        this.artikli = jsonObject;
+    }
+
+    public void searchArtikles(JSONObject rLine) {
+        JSONObject jsonObject = new JSONObject();
+
+        PreparedStatement ps;
+        ResultSet rs;
+        String query = "SELECT * FROM magacini WHERE naziv LIKE ? AND model LIKE ? AND serijski LIKE ? AND pserijski LIKE ? " +
+                "AND mac LIKE ? AND dobavljac LIKE ? AND brDokumenta LIKE ? AND opis LIKE ? AND idMagacin = ?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setString(1, rLine.getString("naziv") + "%");
+            ps.setString(2, rLine.getString("model") + "%");
+            ps.setString(3, rLine.getString("serijski") + "%");
+            ps.setString(4, rLine.getString("pserijski") + "%");
+            ps.setString(5, rLine.getString("mac") + "%");
+            ps.setString(6, rLine.getString("dobavljac") + "%");
+            ps.setString(7, rLine.getString("brDokumenta") + "%");
+            ps.setString(8, rLine.getString("opis") + "%");
+            ps.setInt(9, rLine.getInt("idMagacin"));
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                int i = 0;
+                while (rs.next()) {
+                    JSONObject artObj = new JSONObject();
+                    artObj.put("id", rs.getInt("id"));
+                    artObj.put("naziv", rs.getString("naziv"));
+                    artObj.put("model", rs.getString("model"));
+                    artObj.put("serijski", rs.getString("serijski"));
+                    artObj.put("pserijski", rs.getString("pserijski"));
+                    artObj.put("mac", rs.getString("mac"));
+                    artObj.put("dobavljac", rs.getString("dobavljac"));
+                    artObj.put("brDokumenta", rs.getString("brDokumenta"));
+                    artObj.put("nabavnaCena", rs.getDouble("nabavnaCena"));
+                    artObj.put("jMere", rs.getString("jMere"));
+                    artObj.put("kolicina", rs.getInt("kolicina"));
+                    artObj.put("opis", rs.getString("opis"));
+                    artObj.put("datum", rs.getString("datum"));
+                    artObj.put("operName", rs.getString("operName"));
+                    artObj.put("idMagacin", rs.getInt("idMagacin"));
                     jsonObject.put(String.valueOf(i), artObj);
                     i++;
                 }
@@ -171,4 +211,18 @@ public class ArtikliFunctions {
 
         this.artikli = jsonObject;
     }
+
+
+    public void zaduziArtikal(JSONObject rLine, int operID) {
+        PreparedStatement ps;
+        ResultSet rs;
+        String query = "INSERT INTO (" +
+                "magaciniTracking naziv, model, serijski, pserijski, mac, dobavljac, brDokumenta, nabavnaCena, " +
+                "jMere, kolicina, opis, datum, operName, sourceID, destinationID, dateTransfer, komentarTransfer, artikalID)" +
+                "VALUES " +
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+
+    }
+
 }
