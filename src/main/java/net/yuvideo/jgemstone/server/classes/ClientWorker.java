@@ -3663,6 +3663,16 @@ public class ClientWorker implements Runnable {
             return;
         }
 
+        if (rLine.getString("action").equals("searchArtikal")) {
+            JSONObject jsonObject = new JSONObject();
+            ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
+            artikliFunctions.searchArtikles(rLine);
+            jsonObject = artikliFunctions.getArtikles();
+            send_object(jsonObject);
+            return;
+
+        }
+
         if (rLine.getString("action").equals("editMagacin")) {
             JSONObject jsonObject = new JSONObject();
             PreparedStatement ps;
@@ -3728,6 +3738,31 @@ public class ClientWorker implements Runnable {
                 jsonObject.put("ERROR", e.getMessage());
                 e.printStackTrace();
             }
+            send_object(jsonObject);
+        }
+
+        if (rLine.getString("action").equals("getMagacin")) {
+            JSONObject jsonObject = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT * FROM Magacin WHERE id=?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("idMagacin"));
+                rs = ps.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    rs.next();
+                    jsonObject.put("id", rs.getInt("id"));
+                    jsonObject.put("naziv", rs.getString("naziv"));
+                    jsonObject.put("opis", rs.getString("opis"));
+                }
+                ps.close();
+                rs.close();
+            } catch (SQLException e) {
+                jsonObject.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+
             send_object(jsonObject);
         }
 

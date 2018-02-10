@@ -30,9 +30,9 @@ public class ArtikliFunctions {
     public void addArtikl(JSONObject rLine) {
         PreparedStatement ps;
         String query = "INSERT INTO magacini (naziv, model, serijski, pserijski, mac, dobavljac, brDokumenta, nabavnaCena, " +
-                "jMere, kolicina, opis, datum, operName) " +
+                "jMere, kolicina, opis, datum, operName, idMagacin) " +
                 "VALUES " +
-                "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, rLine.getString("naziv"));
@@ -48,6 +48,7 @@ public class ArtikliFunctions {
             ps.setString(11, rLine.getString("opis"));
             ps.setString(12, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
             ps.setString(13, operName);
+            ps.setInt(14, rLine.getInt("idMagacin"));
 
             ps.executeUpdate();
             ps.close();
@@ -64,7 +65,7 @@ public class ArtikliFunctions {
     public void editArtikl(JSONObject rLine) {
         PreparedStatement ps;
         String query = "UPDATE magacini SET naziv=?, model=?, serijski=?, pserijski=?, mac=?, dobavljac=?, brDokumenta=?, " +
-                "nabavnaCena=?, jMere=?, kolicina=?, opis=?, operName=? idMagacin=? WHERE id=?";
+                "nabavnaCena=?, jMere=?, kolicina=?, opis=?, operName=?, idMagacin=? WHERE id=?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, rLine.getString("naziv"));
