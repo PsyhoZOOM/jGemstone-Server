@@ -187,7 +187,7 @@ public class ClientWorker implements Runnable {
         }
 
         if (rLine.get("action").equals("get_users")) {
-            query = "SELECT * FROM users WHERE  ime LIKE ? or id LIKE ? or jBroj LIKE ?  ";
+            query = "SELECT * FROM users WHERE  ime LIKE ? or id LIKE ? or jBroj LIKE ? or nazivFirme LIKE ? ";
             String userSearch;
             if (!rLine.has("username")) {
                 userSearch = "%";
@@ -199,6 +199,7 @@ public class ClientWorker implements Runnable {
                 ps.setString(1, userSearch);
                 ps.setString(2, userSearch);
                 ps.setString(3, userSearch);
+                ps.setString(4, userSearch);
                 rs = ps.executeQuery();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -835,6 +836,7 @@ public class ClientWorker implements Runnable {
                 rs.close();
 
             } catch (SQLException e) {
+                jObj.put("ERROR", e.getMessage());
                 e.printStackTrace();
             }
 
@@ -3673,16 +3675,30 @@ public class ClientWorker implements Runnable {
 
         }
 
+
+        if (rLine.getString("action").equals("zaduziMagacinArtikal")) {
+            JSONObject jObj = new JSONObject();
+            ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
+            artikliFunctions.zaduziArtikalMag(rLine);
+            if (artikliFunctions.isError()) {
+                jObj.put("ERROR", artikliFunctions.getErrorMessage());
+            } else {
+                jObj.put("INFO", "SUCCESS");
+            }
+            send_object(jObj);
+        }
+
         if (rLine.getString("action").equals("editMagacin")) {
             JSONObject jsonObject = new JSONObject();
             PreparedStatement ps;
-            String query = "UPDATE Magacin SET naziv=?, opis=? WHERE id=?";
+            String query = "UPDATE Magacin SET naziv=?, opis=?, glavniMagacin=? WHERE id=?";
 
             try {
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("naziv"));
                 ps.setString(2, rLine.getString("opis"));
-                ps.setInt(3, rLine.getInt("id"));
+                ps.setBoolean(3, rLine.getBoolean("glavniMagacin"));
+                ps.setInt(4, rLine.getInt("id"));
                 ps.executeUpdate();
                 ps.close();
             } catch (SQLException e) {
@@ -3697,11 +3713,12 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("novMagacin")) {
             JSONObject jsonObject = new JSONObject();
             PreparedStatement ps;
-            String query = "INSERT INTO Magacin (naziv, opis) VALUES (?,?)";
+            String query = "INSERT INTO Magacin (naziv, opis, glavniMagacin) VALUES (?,?,?)";
             try {
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("naziv"));
                 ps.setString(2, rLine.getString("opis"));
+                ps.setBoolean(3, rLine.getBoolean("glavniMagacin"));
                 ps.executeUpdate();
                 ps.close();
 
@@ -3728,6 +3745,7 @@ public class ClientWorker implements Runnable {
                         mag.put("id", rs.getInt("id"));
                         mag.put("naziv", rs.getString("naziv"));
                         mag.put("opis", rs.getString("opis"));
+                        mag.put("glavniMagacin", rs.getBoolean("glavniMagacin"));
                         jsonObject.put(String.valueOf(i), mag);
                         i++;
                     }
@@ -3755,6 +3773,7 @@ public class ClientWorker implements Runnable {
                     jsonObject.put("id", rs.getInt("id"));
                     jsonObject.put("naziv", rs.getString("naziv"));
                     jsonObject.put("opis", rs.getString("opis"));
+                    jsonObject.put("glavniMagacin", rs.getString("glavniMagacin"));
                 }
                 ps.close();
                 rs.close();
@@ -3774,7 +3793,8 @@ public class ClientWorker implements Runnable {
                 ps = db.conn.prepareStatement(query);
                 ps.setInt(1, rLine.getInt("id"));
                 ps.executeUpdate();
-                query = "DELETE FROM magacini WHER idMagacin=?";
+                query = "DELETE FROM Artikli WHERE idMagacin=?";
+                ps = db.conn.prepareStatement(query);
                 ps.setInt(1, rLine.getInt("id"));
                 ps.executeUpdate();
                 ps.close();
@@ -3785,6 +3805,17 @@ public class ClientWorker implements Runnable {
             send_object(jsonObject);
 
         }
+
+        if (rLine.getString("action").equals("getArtikliTracking")) {
+            ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, operName);
+            JSONObject artOBJ = artikliFunctions.getArtikliTracking(rLine.getInt("artiklID"), rLine.getInt("magID"));
+
+            send_object(artOBJ);
+            return;
+
+        }
+
+
 
 
 
