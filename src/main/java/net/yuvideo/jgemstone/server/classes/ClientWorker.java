@@ -11,6 +11,7 @@ import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
+import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import org.json.JSONObject;
 
 import javax.net.ssl.SSLSocket;
@@ -92,7 +93,8 @@ public class ClientWorker implements Runnable {
                 }
             }
 
-            System.out.println("Waitin for client data..");
+            if (DEBUG)
+                System.out.println("Waitin for client data..");
             try {
 
 //unencripted
@@ -115,7 +117,9 @@ public class ClientWorker implements Runnable {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            System.out.println("Reading Bfr.readline()" + jObj);
+
+            if (DEBUG)
+                System.out.println("Reading Bfr.readline()" + jObj);
             object_worker(jObj);
 
         }
@@ -626,6 +630,17 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("delete_user")) {
             delete_user(rLine);
+
+        }
+
+        if (rLine.getString("action").equals("getUserOprema")) {
+            JSONObject jsonObject = new JSONObject();
+            UsersData usersData = new UsersData(db, getOperName());
+            jsonObject = usersData.getUserOprema(rLine.getInt("userID"));
+            if (usersData.isERROR()) {
+                jsonObject.put("ERROR", usersData.getERROR());
+            }
+            send_object(jsonObject);
 
         }
 
@@ -3688,6 +3703,18 @@ public class ClientWorker implements Runnable {
             send_object(jObj);
         }
 
+        if (rLine.getString("action").equals("zaduziUserArtikal")) {
+            JSONObject jsonObject = new JSONObject();
+            ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
+            artikliFunctions.zaduziArtikalUser(rLine);
+            if (artikliFunctions.isError()) {
+                jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+            } else {
+                jsonObject.put("INFOP", "SUCCES");
+            }
+            send_object(jsonObject);
+        }
+
         if (rLine.getString("action").equals("editMagacin")) {
             JSONObject jsonObject = new JSONObject();
             PreparedStatement ps;
@@ -3808,12 +3835,13 @@ public class ClientWorker implements Runnable {
 
         if (rLine.getString("action").equals("getArtikliTracking")) {
             ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, operName);
-            JSONObject artOBJ = artikliFunctions.getArtikliTracking(rLine.getInt("artiklID"), rLine.getInt("magID"));
+            JSONObject artOBJ = artikliFunctions.getArtikliTracking(rLine.getInt("artiklID"), rLine.getInt("magID"), rLine.getInt("uniqueID"));
 
             send_object(artOBJ);
             return;
 
         }
+
 
 
 
@@ -4020,7 +4048,8 @@ public class ClientWorker implements Runnable {
     }
 
     public void send_object(JSONObject obj) {
-        LOGGER.info("Sending Object: " + obj.toString());
+        if (DEBUG)
+            LOGGER.info("Sending Object: " + obj.toString());
 
         if (client.isClosed()) {
             LOGGER.info("CLIENT DISCONNECTED!!");

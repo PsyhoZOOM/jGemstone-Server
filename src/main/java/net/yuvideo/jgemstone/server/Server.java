@@ -4,6 +4,7 @@ import net.yuvideo.jgemstone.server.classes.ClientWorker;
 import net.yuvideo.jgemstone.server.classes.EMMServer;
 import net.yuvideo.jgemstone.server.classes.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.database;
+
 import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -26,7 +27,7 @@ public class Server {
 	public static void main(String[] args) {
 
 		SSLServerSocket serverSock = null;
-		Boolean DEBUG = false;
+		Boolean DEBUG = true;
 		String query;
 		PreparedStatement ps;
 		int portNumber = 8543;
