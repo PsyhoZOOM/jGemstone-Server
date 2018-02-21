@@ -1,5 +1,6 @@
 package net.yuvideo.jgemstone.server.classes.ARTIKLI;
 
+import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
@@ -50,7 +51,7 @@ public class ArtikliFunctions {
             ps.setString(10, rLine.getString("jMere"));
             ps.setInt(11, rLine.getInt("kolicina"));
             ps.setString(12, rLine.getString("opis"));
-            ps.setString(13, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+            ps.setString(13, LocalDateTime.now().format(dateTimeFormatter));
             ps.setString(14, operName);
             ps.setInt(15, rLine.getInt("idMagacin"));
 
@@ -226,6 +227,9 @@ public class ArtikliFunctions {
         if (rLine.getInt("idMagacin") == 0) {
             query = "SELECT * FROM Artikli WHERE naziv LIKE ? AND proizvodjac LIKE ? AND model LIKE ? AND serijski LIKE ? " +
                     "AND pon LIKE ? AND mac LIKE ? AND dobavljac LIKE ? AND brDokumenta LIKE ? AND opis LIKE ?";
+        } else if (rLine.getInt("idMagacin") == 1) {
+            query = "SELECT * FROM Artikli WHERE naziv LIKE ? AND proizvodjac LIKE ? AND model LIKE ? AND serijski LIKE ? AND pon LIKE ? " +
+                    "AND mac LIKE ? AND dobavljac LIKE ? AND brDokumenta LIKE ? AND opis LIKE ? AND isUser=true";
         } else {
             query = "SELECT * FROM Artikli WHERE naziv LIKE ? AND proizvodjac LIKE ? AND model LIKE ? AND serijski LIKE ? AND pon LIKE ? " +
                     "AND mac LIKE ? AND dobavljac LIKE ? AND brDokumenta LIKE ? AND opis LIKE ? AND idMagacin LIKE ?";
@@ -242,7 +246,12 @@ public class ArtikliFunctions {
             ps.setString(7, rLine.getString("dobavljac") + "%");
             ps.setString(8, rLine.getString("brDokumenta") + "%");
             ps.setString(9, rLine.getString("opis") + "%");
+
+            //ako trazimo sve magacine onda je idMagacin == 0 u suprotnom trazimo sve artikle iz magacina idMagacin ;)
             if (rLine.getInt("idMagacin") == 0) {
+
+                //ako trazimo artikle-opermu korisnika
+            } else if (rLine.getInt("idMagacin") == 1) {
 
             } else {
                 ps.setInt(10, rLine.getInt("idMagacin"));
@@ -316,6 +325,7 @@ public class ArtikliFunctions {
             artObj.put("operName", rs.getString("operName"));
             artObj.put("idMagacin", rs.getInt("idMagacin"));
             artObj.put("uniqueID", rs.getInt("uniqueID"));
+            artObj.put("isUser", rs.getBoolean("isUser"));
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -330,6 +340,8 @@ public class ArtikliFunctions {
         PreparedStatement ps;
         ResultSet rs;
         String query;
+        UsersData user = new UsersData(db, operName);
+        JSONObject destUser = user.getUserData(rLine.getInt("destUserID"));
 
         if (artikal.getInt("kolicina") == 0) {
             return;
@@ -502,9 +514,9 @@ public class ArtikliFunctions {
 
     private void artikliTrackingMag(JSONObject rLine, JSONObject artikal) {
         PreparedStatement ps;
-        String query = "INSERT INTO ArtikliTracking (sourceID, destinationID, source, destination, kolicina ,date, message, isUser, operName, artikalID, artikalNaziv, uniqueID)" +
+        String query = "INSERT INTO ArtikliTracking (sourceID, destinationID, source, destination, kolicina ,date, message, isUser, operName, artikalID, artikalNaziv, uniqueID, opis)" +
                 "VALUES" +
-                "(?,?,?,?,?,?,?,?,?,?,?,?)";
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, rLine.getInt("sourceMagID"));
@@ -524,6 +536,7 @@ public class ArtikliFunctions {
             ps.setInt(10, artikal.getInt("id"));
             ps.setString(11, artikal.getString("naziv"));
             ps.setInt(12, artikal.getInt("uniqueID"));
+            ps.setString(13, rLine.getString("opis"));
             ps.executeUpdate();
             ps.close();
         } catch (SQLException e) {
@@ -538,9 +551,9 @@ public class ArtikliFunctions {
     private void artikliTrackingUser(JSONObject rLine, JSONObject artikal) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         PreparedStatement ps;
-        String query = "INSERT INTO ArtikliTracking (sourceID, destinationID, source, destination, kolicina ,date, message, isUser, operName, artikalID, artikalNaziv, uniqueID)" +
+        String query = "INSERT INTO ArtikliTracking (sourceID, destinationID, source, destination, kolicina ,date, message, isUser, operName, artikalID, artikalNaziv, uniqueID, opis)" +
                 "VALUES" +
-                "(?,?,?,?,?,?,?,?,?,?,?,?)";
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, rLine.getInt("sourceMagID"));
@@ -560,6 +573,7 @@ public class ArtikliFunctions {
             ps.setInt(10, artikal.getInt("id"));
             ps.setString(11, artikal.getString("naziv"));
             ps.setInt(12, artikal.getInt("uniqueID"));
+            ps.setString(13, rLine.getString("opis"));
             ps.executeUpdate();
             ps.close();
         } catch (SQLException e) {
@@ -657,6 +671,7 @@ public class ArtikliFunctions {
                     art.put("artikalID", rs.getInt("artikalID"));
                     art.put("artikalNaziv", rs.getString("artikalNaziv"));
                     art.put("uniqueID", rs.getInt("uniqueID"));
+                    art.put("opis", rs.getString("opis"));
                     obj.put(String.valueOf(i), art);
                     i++;
                 }

@@ -27,7 +27,7 @@ public class Server {
 	public static void main(String[] args) {
 
 		SSLServerSocket serverSock = null;
-		Boolean DEBUG = true;
+		Boolean DEBUG = false;
 		String query;
 		PreparedStatement ps;
 		int portNumber = 8543;

@@ -25,8 +25,48 @@ public class UsersData {
         PreparedStatement ps;
         ResultSet rs;
         String query;
+        query = "SELECT * FROM users WHERE id=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, userID);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                user.put("id", rs.getInt("id"));
+                user.put("ime", rs.getString("ime"));
+                user.put("datumRodjenja", rs.getString("datumRodjenja"));
+                user.put("postBr", rs.getString("postBr"));
+                user.put("adresa", rs.getString("adresa"));
+                user.put("mesto", rs.getString("mesto"));
+                user.put("brLk", rs.getString("brLk"));
+                user.put("JMBG", rs.getString("JMBG"));
+                user.put("adresaRacuna", rs.getString("adresaRacuna"));
+                user.put("mestoRacuna", rs.getString("mestoRacuna"));
+                user.put("komentar", rs.getString("komentar"));
+                user.put("telFiksni", rs.getString("telFiksni"));
+                user.put("telMobilni", rs.getString("telMobilni"));
+                user.put("datumKreiranja", rs.getString("datumKreiranja"));
+                user.put("operater", rs.getString("operater"));
+                user.put("jMesto", rs.getString("jMesto"));
+                user.put("jAdresa", rs.getString("jAdresa"));
+                user.put("jAdresaBroj", rs.getString("jAdresaBroj"));
+                user.put("jBroj", rs.getString("jBroj"));
+                user.put("firma", rs.getBoolean("firma"));
+                user.put("nazivFirme", rs.getString("nazivFirme"));
+                user.put("kontaktOsoba", rs.getString("kontaktOsoba"));
+                user.put("konetaktOsobaTel", rs.getString("kontaktOsobaTel"));
+                user.put("kodBanke", rs.getString("kodBanke"));
+                user.put("PIB", rs.getString("PIB"));
+                user.put("tekuciRacun", rs.getString("tekuciRacun"));
+                user.put("maticniBroj", rs.getString("maticniBroj"));
+                user.put("fax", rs.getString("fax"));
+                user.put("adresaFirme", rs.getString("adresaFirme"));
 
-        //TODO set user data
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         return user;
     }
 

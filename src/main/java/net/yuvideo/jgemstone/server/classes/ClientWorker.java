@@ -3571,13 +3571,13 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("updateOstaleUslugu")) {
             PreparedStatement ps;
             JSONObject jsonObject = new JSONObject();
-            String query = "UPDATE ostaleUsluge set naziv=?, cena=?, pdv=?, komentar=? WHERE id =?";
+            String query = "UPDATE ostaleUsluge set naziv=?, cena=?, pdv=?, opis=? WHERE id =?";
             try {
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("naziv"));
                 ps.setDouble(2, rLine.getDouble("cena"));
                 ps.setDouble(3, rLine.getDouble("pdv"));
-                ps.setString(4, rLine.getString("komentar"));
+                ps.setString(4, rLine.getString("opis"));
                 ps.setInt(5, rLine.getInt("id"));
                 ps.executeUpdate();
                 ps.close();
@@ -3593,13 +3593,13 @@ public class ClientWorker implements Runnable {
         if (rLine.getString("action").equals("snimiOstaleUslugu")) {
             PreparedStatement ps;
             JSONObject jsonObject = new JSONObject();
-            String query = "INSERT INTO ostaleUsluge (naziv, cena, pdv, komentar) VALUES (?,?,?,?)";
+            String query = "INSERT INTO ostaleUsluge (naziv, cena, pdv, opis) VALUES (?,?,?,?)";
             try {
                 ps = db.conn.prepareStatement(query);
                 ps.setString(1, rLine.getString("naziv"));
                 ps.setDouble(2, rLine.getDouble("cena"));
                 ps.setDouble(3, rLine.getDouble("pdv"));
-                ps.setString(4, rLine.getString("komentar"));
+                ps.setString(4, rLine.getString("opis"));
                 ps.executeUpdate();
                 ps.close();
 
