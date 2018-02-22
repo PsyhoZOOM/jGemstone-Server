@@ -97,7 +97,6 @@ public class ClientWorker implements Runnable {
                 System.out.println("Waitin for client data..");
             try {
 
-//unencripted
                 String A = Bfr.readLine();
 
                 if (A == null) {
@@ -1834,7 +1833,7 @@ public class ClientWorker implements Runnable {
                     jObj.put("krajUgovora", rs.getString("krajUgovora"));
                     jObj.put("userID", rs.getInt("userID"));
                     jObj.put("serviceID", rs.getInt("serviceID"));
-                    jObj.put("brojUgovora", rs.getShort("brojUgovora"));
+                    jObj.put("brojUgovora", rs.getString("brojUgovora"));
 
                 }
             } catch (SQLException e) {
