@@ -1280,7 +1280,7 @@ public class ClientWorker implements Runnable {
                     e.printStackTrace();
                 }
 
-                //onda moramo prveriti da li vec postoji uplata
+                //onda moramo proveriti da li vec postoji uplata
                 //ako postoji proverti koliko fali za paket a koliko za saobracaj
 
                 //CODE HERE
@@ -1433,7 +1433,7 @@ public class ClientWorker implements Runnable {
             JSONObject logUplate = new JSONObject();
             logUplate.put("uplaceno", rLine.getDouble("uplaceno"));
             logUplate.put("id", rLine.getInt("id"));
-            logUplate.put("nazivServisa", rLine.getString("identification"));
+            logUplate.put("nazivPaketa", rLine.getString("nazivPaketa"));
             logUplate.put("operater", getOperName());
             logUplate.put("userID", rLine.getInt("userID"));
             logUplate.put("identification", rLine.getString("identification"));
@@ -1472,7 +1472,11 @@ public class ClientWorker implements Runnable {
                 try {
                     ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
                     ps.setNull(1, Types.INTEGER);
-                    ps.setString(2, String.format("%s (rata %d od %d)", rLine.getString("nazivPaketa"), i + 1, rate));
+                    if (rate > 1) {
+                        ps.setString(2, String.format("%s (rata %d od %d)", rLine.getString("nazivPaketa"), i + 1, rate));
+                    } else {
+                        ps.setString(2, rLine.getString("nazivPaketa"));
+                    }
                     ps.setString(3, cal.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                     ps.setInt(4, rLine.getInt("userID"));
                     ps.setDouble(5, 0.00);

@@ -163,6 +163,13 @@ public class FIXFunctions {
                 "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try {
+            double cena = ukupno;
+            double popust = rs.getDouble("popust");
+            double pdv = rs.getDouble("PDV");
+
+            double dug = cena - valueToPercent.getDiffValue(cena, popust);
+            dug = dug + valueToPercent.getDiffValue(cena, pdv);
+
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, rs.getInt("id"));
             ps.setString(2, "Saobraćaj-" + account);
@@ -170,10 +177,10 @@ public class FIXFunctions {
             ps.setInt(4, rs.getInt("userID"));
             ps.setDouble(5, rs.getDouble("popust"));
             ps.setString(6, "FIX_SAOBRACAJ");
-            ps.setDouble(7, Double.valueOf(df.format(ukupno)));
+            ps.setDouble(7, Double.valueOf(df.format(cena)));
             ps.setDouble(8, 0.00);
             ps.setString(9, "1000-01-01 00:00:00");
-            ps.setDouble(10, Double.valueOf(df.format(ukupno)));
+            ps.setDouble(10, Double.valueOf(df.format(dug)));
             ps.setString(11, "");
             ps.setString(12, "SYSTEM");
             ps.setString(13, zaMesec);

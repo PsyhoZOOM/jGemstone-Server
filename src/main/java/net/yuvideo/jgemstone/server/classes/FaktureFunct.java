@@ -92,8 +92,8 @@ public class FaktureFunct {
 		try {
 			ps = db.conn.prepareStatement(query);
 			ps.setString(1, String.valueOf(brFakture));
-			ps.setString(2, rs.getString("nazivPaketa"));
-			ps.setString(3, "kom.");
+            ps.setString(2, String.format("%s - %s", rs.getString("nazivPaketa"), getMonthName(this.zaGodinu.format(DateTimeFormatter.ofPattern("MM")))));
+            ps.setString(3, "kom.");
 			ps.setDouble(4, 1);
 			ps.setDouble(5, rs.getDouble("dug"));
 			ps.setDouble(6, rs.getDouble("PDV"));
@@ -155,4 +155,51 @@ public class FaktureFunct {
 	public void createFakturu(ResultSet rs) {
 		insertFaktureData(rs);
 	}
+
+    private String getMonthName(String month) {
+        String monthName;
+        switch (month) {
+            case "01":
+                monthName = "Januar";
+                break;
+            case "02":
+                monthName = "Februar";
+                break;
+            case "03":
+                monthName = "Mart";
+                break;
+            case "04":
+                monthName = "April";
+                break;
+            case "05":
+                monthName = "Maj";
+                break;
+            case "06":
+                monthName = "Jun";
+                break;
+            case "07":
+                monthName = "Jul";
+                break;
+            case "08":
+                monthName = "Avgust";
+                break;
+            case "09":
+                monthName = "Septembar";
+                break;
+            case "10":
+                monthName = "Oktobar";
+                break;
+            case "11":
+                monthName = "Novembar";
+                break;
+            case "12":
+                monthName = "Decembar";
+                break;
+
+            default:
+                monthName = "";
+
+        }
+        return monthName;
+    }
 }

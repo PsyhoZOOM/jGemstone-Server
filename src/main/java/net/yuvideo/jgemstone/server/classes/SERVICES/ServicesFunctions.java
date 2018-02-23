@@ -633,7 +633,7 @@ public class ServicesFunctions {
             dug = dug + valueToPercent.getDiffValue(dug, pdv);
             ps.setDouble(7, cena);
 			ps.setDouble(8, 0.00);
-			ps.setDouble(9, dug);
+			ps.setDouble(9, Double.parseDouble(df.format(dug)));
 			ps.setString(10, operName);
 			ps.setString(11, calZaMesec.format(dtfMesecZaduzenja));
 			ps.setDouble(12, rLine.getDouble("pdv"));
@@ -1063,22 +1063,7 @@ public class ServicesFunctions {
         PreparedStatement ps;
         ResultSet rs = null;
         String result;
-        String nazivPaketa = "";
-
-        String query = "SELECT * FROM servicesUser WHERE id = ?";
-        try {
-            ps = db.conn.prepareStatement(query);
-            ps.setInt(1, rLine.getInt("id"));
-            rs = ps.executeQuery();
-            if (rs.isBeforeFirst()) {
-                rs.next();
-                nazivPaketa = rs.getString("nazivPaketa");
-            }
-            rs.close();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+		String query;
 
         query = "INSERT INTO uplate " +
                 "(datumUplate, uplaceno, nazivServisa, idServisa, mesto, operater, userID, napomena, identification, idUserDebts) " +
@@ -1087,8 +1072,8 @@ public class ServicesFunctions {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, LocalDateTime.now().toString());
             ps.setDouble(2, rLine.getDouble("uplaceno"));
-            ps.setString(3, nazivPaketa);
-            ps.setInt(4, rLine.getInt("id_ServiceUser"));
+			ps.setString(3, rLine.getString("nazivPaketa"));
+			ps.setInt(4, rLine.getInt("id_ServiceUser"));
             ps.setString(5, "mesto");
             ps.setString(6, rLine.getString("operater"));
             ps.setInt(7, rLine.getInt("userID"));
