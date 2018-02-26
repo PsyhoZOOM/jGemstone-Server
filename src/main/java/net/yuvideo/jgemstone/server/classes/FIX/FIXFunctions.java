@@ -75,7 +75,6 @@ public class FIXFunctions {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        System.out.println("PAKET_ID=" + paketID);
         return paketID;
     }
 

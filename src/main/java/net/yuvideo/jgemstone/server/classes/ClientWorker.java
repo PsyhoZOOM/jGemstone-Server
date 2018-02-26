@@ -1194,7 +1194,7 @@ public class ClientWorker implements Runnable {
 
             ukupanDug = dug - uplaceno;
 
-            jObj.put("ukupanDug", ukupanDug);
+            jObj.put("ukupanDug", Double.valueOf(df.format(ukupanDug)));
             send_object(jObj);
             return;
         }
