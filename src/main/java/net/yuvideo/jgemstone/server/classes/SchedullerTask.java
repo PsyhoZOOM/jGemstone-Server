@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.logging.Logger;
@@ -19,6 +20,7 @@ public class SchedullerTask implements Runnable {
     public int timeout;
     public database db;
     public Boolean DEBUG;
+    public int DEBUG_VAL;
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     Date date;
     ArrayList<ClientWorker> clientWorkerArrayList = new ArrayList<ClientWorker>();
@@ -44,8 +46,19 @@ public class SchedullerTask implements Runnable {
 
 
         while (true) {
+            LocalDateTime dateTime = LocalDateTime.now();
             check_scheduler_tasks();
-            //show_clients();
+
+            //show connected clients
+            if(DEBUG_VAL == 2 ) show_clients();
+
+
+            //run every half hour
+            if(dateTime.getMinute() == 30){
+              ////TODO wifi finder
+                WiFiTracker wiFiTracker = new WiFiTracker(db);
+            }
+
 
             try {
                 Thread.sleep(timeout * MINUTES);

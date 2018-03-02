@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -1199,6 +1200,38 @@ public class ClientWorker implements Runnable {
             return;
         }
 
+        if(rLine.getString("action").equals("getUserUplate")){
+            JSONObject jsonObject = new JSONObject();
+            PreparedStatement ps;
+            ResultSet rs;
+            String query = "SELECT * FROM uplate  WHERE userID=? ORDER BY datumUplate DESC";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setInt(1, rLine.getInt("userID"));
+                rs = ps.executeQuery();
+                if(rs.isBeforeFirst()){
+                    int i=0;
+                    while (rs.next()){
+                        JSONObject uplate = new JSONObject();
+                        uplate.put("id", rs.getInt("id"));
+                        uplate.put("uplaceno", rs.getDouble("uplaceno"));
+                        uplate.put("mestoUplate", rs.getString("mestoUplate"));
+                        uplate.put("datumUplate", rs.getString("datumUplate"));
+                        uplate.put("nazivServisa", rs.getString("nazivServisa"));
+                        uplate.put("operater", rs.getString("operater"));
+                        jsonObject.put(String.valueOf(i), uplate);
+
+                        i++;
+                    }
+                }
+            } catch (SQLException e) {
+                jsonObject.put("ERROR", e.getMessage());
+                e.printStackTrace();
+            }
+
+            send_object(jsonObject);
+        }
+
         if (rLine.getString("action").equals("get_Service_ident")) {
             jObj = new JSONObject();
             PreparedStatement ps;
@@ -1438,6 +1471,7 @@ public class ClientWorker implements Runnable {
             logUplate.put("userID", rLine.getInt("userID"));
             logUplate.put("identification", rLine.getString("identification"));
             logUplate.put("id_ServiceUser", rLine.getInt("id_ServiceUser"));
+            logUplate.put("mestoUplate", rLine.getString("mestoUplate"));
 
             ServicesFunctions.uplataLOG(logUplate, db);
 
@@ -3559,6 +3593,7 @@ public class ClientWorker implements Runnable {
                         obj.put("naziv", rs.getString("naziv"));
                         obj.put("cena", Double.valueOf(df.format(rs.getDouble("cena"))));
                         obj.put("pdv", Double.valueOf(df.format(rs.getDouble("pdv"))));
+                        obj.put("cenaPDV", Double.valueOf(rs.getDouble("cena")+valueToPercent.getValueOfPercentAdd(rs.getDouble("cena"), rs.getDouble("pdv"))));
                         obj.put("opis", rs.getString("opis"));
                         jObj.put(String.valueOf(i), obj);
                         i++;

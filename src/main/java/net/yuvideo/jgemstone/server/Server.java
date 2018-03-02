@@ -55,7 +55,6 @@ public class Server {
 			SSLContext ssl = SSLContext.getInstance("TLS");
 			ssl.init(serverKeyManager.getKeyManagers(), trustManager.getTrustManagers(), SecureRandom.getInstance("SHA1PRNG"));
 			serverSock = (SSLServerSocket) ssl.getServerSocketFactory().createServerSocket(portNumber);
-			//socket = (SSLSocket) serverSock.accept();
 
 		} catch (KeyStoreException e) {
 			e.printStackTrace();
