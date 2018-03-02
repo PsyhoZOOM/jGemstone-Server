@@ -1219,6 +1219,7 @@ public class ClientWorker implements Runnable {
                         uplate.put("datumUplate", rs.getString("datumUplate"));
                         uplate.put("nazivServisa", rs.getString("nazivServisa"));
                         uplate.put("operater", rs.getString("operater"));
+                        uplate.put("zaMesec", rs.getString("zaMesec"));
                         jsonObject.put(String.valueOf(i), uplate);
 
                         i++;
@@ -1472,6 +1473,7 @@ public class ClientWorker implements Runnable {
             logUplate.put("identification", rLine.getString("identification"));
             logUplate.put("id_ServiceUser", rLine.getInt("id_ServiceUser"));
             logUplate.put("mestoUplate", rLine.getString("mestoUplate"));
+            logUplate.put("zaMesec", rLine.getString("zaMesec"));
 
             ServicesFunctions.uplataLOG(logUplate, db);
 

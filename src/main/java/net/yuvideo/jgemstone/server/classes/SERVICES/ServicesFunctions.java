@@ -1066,8 +1066,8 @@ public class ServicesFunctions {
 		String query;
 
         query = "INSERT INTO uplate " +
-                "(datumUplate, uplaceno, nazivServisa, idServisa, mesto, operater, userID, napomena, identification, idUserDebts, mestoUplate) " +
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+                "(datumUplate, uplaceno, nazivServisa, idServisa, mesto, operater, userID, napomena, identification, idUserDebts, mestoUplate, zaMesec) " +
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, LocalDateTime.now().toString());
@@ -1081,6 +1081,7 @@ public class ServicesFunctions {
             ps.setString(9, rLine.getString("identification"));
             ps.setInt(10, rLine.getInt("id"));
             ps.setString(11, rLine.getString("mestoUplate"));
+            ps.setString(12, rLine.getString("zaMesec"));
             ps.executeUpdate();
             result = "UPLACENO";
         } catch (SQLException e) {
