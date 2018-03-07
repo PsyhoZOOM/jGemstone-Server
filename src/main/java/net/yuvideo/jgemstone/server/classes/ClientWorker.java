@@ -10,6 +10,7 @@ import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
+import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import org.json.JSONObject;
@@ -3275,7 +3276,6 @@ public class ClientWorker implements Runnable {
                         ps.setString(14, filename);
 
                         ps.executeUpdate();
-                        System.out.println("UPDATE Complete: ");
 
                     }
                     ps.close();
@@ -3880,6 +3880,20 @@ public class ClientWorker implements Runnable {
             send_object(artOBJ);
             return;
 
+        }
+
+
+
+
+
+
+
+
+
+        //////TEST
+        if(rLine.getString("action").equals("getUserRacun")){
+            UserRacun userRacun = new UserRacun(rLine, getOperName(), db);
+            send_object(userRacun.getData());
         }
 
 
