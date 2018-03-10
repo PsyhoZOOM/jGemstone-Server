@@ -50,6 +50,7 @@ public class database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        System.out.println("Database initialized.");
 
 
     }

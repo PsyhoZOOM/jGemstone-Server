@@ -374,9 +374,9 @@ public class ServicesFunctions {
         PreparedStatement ps;
         String Message = "SERVICE_ADDED";
         String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, " +
-                "obracun, aktivan, newService, paketType, PDV, endDate)" +
+                "obracun, aktivan, newService, paketType, PDV, endDate, brojUgovora)" +
                 "VALUES " +
-                "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, rLine.getInt("id"));
@@ -392,6 +392,7 @@ public class ServicesFunctions {
             ps.setString(11, rLine.getString("paketType"));
             ps.setDouble(12, rLine.getDouble("pdv"));
             ps.setString(13, "");
+            ps.setString(14, rLine.getString("brojUgovora"));
             ps.executeUpdate();
             ps.close();
 
@@ -714,7 +715,7 @@ public class ServicesFunctions {
 		Double cenaZaDan = 0.00;
 		LocalDateTime date = LocalDateTime.now();
 
-		//status on STALKER STATus
+        //status on STALKER
 		try {
 			if (rs.getString("paketType").equals("IPTV") || rs.getString("paketType").equals("LINKED_IPTV")) {
 				StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);

@@ -12,6 +12,7 @@ import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
+import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import org.json.JSONObject;
 
@@ -27,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -3964,29 +3964,16 @@ public class ClientWorker implements Runnable {
 
     private void delete_user(JSONObject mes) {
         int userId = mes.getInt("userId");
-        query = "DELETE FROM users WHERE id=?";
 
-        try {
-            ps = db.conn.prepareStatement(query);
-            ps.setInt(1, userId);
-            ps.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        boolean deleted = UserFunc.deleteUser(userId, db);
 
-        //delete from Services_user
-        query = "DELETE FROM Services_User, user_debts,  WHERE  userID=?";
-
-        try {
-            ps = db.conn.prepareStatement(query);
-            ps.setInt(1, userId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
 
         jObj = new JSONObject();
-        jObj.put("message", "USER_DELETED");
+        if (deleted) {
+            jObj.put("message", "USER_DELETED");
+        } else {
+            jObj.put("ERROR", "Doslo je do greske prilikom brisanja korisnika!");
+        }
         send_object(jObj);
         return;
     }

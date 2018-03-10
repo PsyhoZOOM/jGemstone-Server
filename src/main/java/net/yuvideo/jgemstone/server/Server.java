@@ -120,9 +120,12 @@ public class Server {
 		}
 
 		EMMServer emmServer = new EMMServer(EMMTimeout, db, EMMhost, EMMport);
+        emmServer.DEBUG = DEBUG;
 		Thread emmThread = new Thread(emmServer);
 		emmThread.start();
 
+
+        System.out.println("Server started");
 		while (true) {
 			ClientWorker cw;
 			try {

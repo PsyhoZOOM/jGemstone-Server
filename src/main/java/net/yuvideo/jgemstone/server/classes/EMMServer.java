@@ -19,6 +19,7 @@ public class EMMServer implements Runnable {
     private String query;
     private String host;
     private int port;
+    public boolean DEBUG;
 
     public EMMServer(int timeout, database db, String host, int port) {
         this.timeout = timeout;
@@ -32,18 +33,16 @@ public class EMMServer implements Runnable {
         PreparedStatement ps = null;
         ResultSet rs = null;
         query = "SELECT * FROM DTVKartice ";
-        try {
-            ps = db.conn.prepareStatement(query);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
 
         sendEmmUDP = new sendEMMUDP(this.host, this.port);
         while (true) {
             try {
+                ps = db.conn.prepareStatement(query);
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
                     while (rs.next()) {
+                        if (DEBUG)
+                            System.out.println(String.format("Send EMMUDP Packet to: %s:%d CARD_ID: %d", this.host, this.port, rs.getInt("idKartica")));
                         sendEmmUDP.send(
                                 rs.getInt("idKartica"),
                                 LocalDate.parse(rs.getDate("createDate").toString(), df),
@@ -53,6 +52,8 @@ public class EMMServer implements Runnable {
                         );
                     }
                 }
+                rs.close();
+                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }

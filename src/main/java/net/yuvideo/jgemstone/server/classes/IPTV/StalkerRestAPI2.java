@@ -278,11 +278,7 @@ public class StalkerRestAPI2 {
 		} else {
 			jsonObject = new JSONObject(response.readEntity(String.class));
 
-			if (jsonObject.has("error")) {
-				userExist = false;
-			} else {
-				userExist = true;
-			}
+			userExist = !jsonObject.has("error");
 		}
 
 		return userExist;
@@ -298,7 +294,6 @@ public class StalkerRestAPI2 {
 		target = target.path(stb_mac);
 
 		jsonObject.put("status", statusInt);
-
 		response = target.request(MediaType.APPLICATION_JSON)
 				.put(Entity.entity("status=" + statusInt, MediaType.APPLICATION_JSON));
 
