@@ -41,8 +41,14 @@ public class EMMServer implements Runnable {
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
                     while (rs.next()) {
-                        if (DEBUG)
-                            System.out.println(String.format("Send EMMUDP Packet to: %s:%d CARD_ID: %d", this.host, this.port, rs.getInt("idKartica")));
+                        if (DEBUG) {
+                            System.out.println(
+                                    String.format
+                                            ("Send EMMUDP Packet to: %s:%d CARD_ID: %d",
+                                                    this.host,
+                                                    this.port,
+                                                    rs.getInt("idKartica")));
+                        }
                         sendEmmUDP.send(
                                 rs.getInt("idKartica"),
                                 LocalDate.parse(rs.getDate("createDate").toString(), df),
