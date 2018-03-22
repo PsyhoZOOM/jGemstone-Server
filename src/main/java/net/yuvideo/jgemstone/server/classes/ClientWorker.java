@@ -10,6 +10,7 @@ import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
+import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
@@ -3880,6 +3881,18 @@ public class ClientWorker implements Runnable {
             send_object(artOBJ);
             return;
 
+        }
+
+        if (rLine.getString("action").equals("getMesecniObracun")) {
+            JSONObject jsonObject = new JSONObject();
+            MesecniObracun mesecniObracun = new MesecniObracun();
+            jsonObject = mesecniObracun.getMesecniObracun(rLine.getInt("brOd"), rLine.getInt("brDo"),
+                    rLine.getString("odDatuma"), rLine.getString("doDatum"), getOperName(), db);
+            if (mesecniObracun.hasError) {
+                jsonObject.put("ERROR", mesecniObracun.errorMessage);
+            }
+
+            send_object(jsonObject);
         }
 
 
