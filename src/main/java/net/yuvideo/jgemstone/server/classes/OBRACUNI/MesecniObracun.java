@@ -24,9 +24,10 @@ public class MesecniObracun {
 
     public JSONObject getMesecniObracun(int userOd, int userDo, String datumOd, String datumDo, String operName, database db) {
         this.operName = operName;
+        mesecniObracunObject = new JSONObject();
         PreparedStatement ps;
         ResultSet rs;
-        String query = "SELECT * FROM userDebts WHERE zaMesec >= ? AND zaMesec <= ? AND id >= ? AND id <= ?";
+        String query = "SELECT * FROM userDebts WHERE zaMesec >= ? AND zaMesec <= ? AND userID >= ? AND userID <= ?";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, LocalDate.parse(datumOd, dtfNormal).format(dtf));
@@ -37,7 +38,6 @@ public class MesecniObracun {
             System.out.println(ps.toString());
             if (rs.isBeforeFirst()) {
                 int i = 0;
-                mesecniObracunObject = new JSONObject();
                 while (rs.next()) {
                     JSONObject mesec = new JSONObject();
                     Double cena = rs.getDouble("cena");

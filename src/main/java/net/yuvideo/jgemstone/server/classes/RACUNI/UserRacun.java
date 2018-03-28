@@ -75,7 +75,9 @@ public class UserRacun {
                     double osnovica =  iznos * kolicina;
                     double stopaPDV = rs.getDouble("PDV");
                     double PDV = valueToPercent.getValueOfPercentAdd(iznos, stopaPDV);
-                    double ukupno = osnovica - valueToPercent.getValueOfPercentAdd(osnovica , popust) + PDV;
+                    double ukupno;
+                    ukupno = osnovica - valueToPercent.getValueOfPercentAdd(osnovica, popust) + PDV;
+
 
 
                     ////TODO get data
