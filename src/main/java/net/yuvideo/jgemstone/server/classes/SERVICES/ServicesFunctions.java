@@ -33,9 +33,9 @@ public class ServicesFunctions {
 		ResultSet rs;
 		PreparedStatement ps;
 		String query = "INSERT INTO servicesUser "
-				+ "(id_service, box_id, nazivPaketa, UserName, idDTVCard, DTVPaket, userID, obracun, produzenje, operName, linkedService, paketType, PDV) "
+                + "(id_service, box_id, nazivPaketa, UserName, idDTVCard, DTVPaket, userID, obracun, produzenje, operName, linkedService, paketType, PDV, opis) "
 				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		try {
 			ps = db.conn.prepareStatement(query);
 			if (rLine.has("DTV_service_ID")) {
@@ -82,6 +82,7 @@ public class ServicesFunctions {
 			ps.setBoolean(11, true);
 			ps.setString(12, "LINKED");
 			ps.setDouble(13, rLine.getDouble("pdv"));
+            ps.setString(14, rLine.getString("komentar"));
 
 			ps.executeUpdate();
 
@@ -92,9 +93,9 @@ public class ServicesFunctions {
 
 	public static void addServiceDTVLinked(JSONObject rLine, String opername, int BOX_Service_ID, database db) {
 		PreparedStatement ps;
-		String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added,  idDTVCard, DTVPaket,  userID, produzenje, operName, linkedService, paketType, endDate, PDV) "
+        String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added,  idDTVCard, DTVPaket,  userID, produzenje, operName, linkedService, paketType, endDate, PDV, opis) "
 				+ "VALUES"
-				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		try {
 			ps = db.conn.prepareStatement(query);
@@ -111,6 +112,7 @@ public class ServicesFunctions {
 			ps.setString(11, "LINKED_DTV");
 			ps.setString(12, "2000-01-01");
 			ps.setDouble(13, rLine.getDouble("pdv"));
+            ps.setString(14, rLine.getString("komentar"));
 			ps.executeUpdate();
 
 		} catch (SQLException e) {
@@ -121,9 +123,9 @@ public class ServicesFunctions {
 
 	public static void addServiceNETLinked(JSONObject rLine, String opername, int BOX_Service_ID, database db) {
 		PreparedStatement ps;
-		String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, operName, UserName, GroupName, linkedService, paketType, endDate, PDV ) "
+        String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, operName, UserName, GroupName, linkedService, paketType, endDate, PDV, opis ) "
 				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		try {
 			ps = db.conn.prepareStatement(query);
 			ps.setInt(1, rLine.getInt("NET_service_ID"));
@@ -139,6 +141,7 @@ public class ServicesFunctions {
 			ps.setString(11, "LINKED_NET");
 			ps.setString(12, "2000-01-01");
 			ps.setDouble(13, rLine.getDouble("pdv"));
+            ps.setString(14, rLine.getString("komentar"));
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -149,9 +152,9 @@ public class ServicesFunctions {
 	public static void addServiceFIXLinked(JSONObject rLine, String opername, int box_service_id, database db) {
 		PreparedStatement ps;
 		String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, operName,"
-				+ " FIKSNA_TEL, FIKSNA_TEL_PAKET_ID, linkedService, paketType, PDV)"
+                + " FIKSNA_TEL, FIKSNA_TEL_PAKET_ID, linkedService, paketType, PDV, opis)"
 				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?)";
+                + "(?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		try {
 			ps = db.conn.prepareStatement(query);
@@ -166,6 +169,7 @@ public class ServicesFunctions {
 			ps.setBoolean(9, true);
 			ps.setString(10, "LINKED_FIX");
 			ps.setDouble(11, rLine.getDouble("pdv"));
+            ps.setString(12, rLine.getString("komentar"));
 			ps.executeUpdate();
 			ps.close();
 		} catch (SQLException e) {
@@ -176,7 +180,7 @@ public class ServicesFunctions {
 	public static void addServiceIPTVLinked(JSONObject rLIne, String opername, int box_service_id, database db) {
 		PreparedStatement ps;
 		String query = "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, opername,"
-				+ "IPTV_MAC, linkedService, paketType, endDate, PDV) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "IPTV_MAC, linkedService, paketType, endDate, PDV, opis) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		try {
 			ps = db.conn.prepareStatement(query);
@@ -192,6 +196,7 @@ public class ServicesFunctions {
 			ps.setString(10, "LINKED_IPTV");
 			ps.setString(11, "2000-01-01");
 			ps.setDouble(12, rLIne.getDouble("pdv"));
+            ps.setString(13, rLIne.getString("komentar"));
 			ps.executeUpdate();
 			ps.close();
 		} catch (SQLException e) {
@@ -201,14 +206,14 @@ public class ServicesFunctions {
 	}
 
 	public static String addServiceDTV(int id_service, String nazivPaketa, int userID,
-			String opername, double popust, double cena, Boolean obracun,
-			String brojUgovora, int produzenje, String idDTVCard, int DTVPaket, double pdv, database db) {
+                                       String opername, double popust, double cena, Boolean obracun,
+                                       String brojUgovora, int produzenje, String idDTVCard, int DTVPaket, double pdv, String opis, database db) {
 		PreparedStatement ps;
 		String ServiceAdded;
 		String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena,"
-				+ " obracun, brojUgovora, produzenje, newService, idDTVCard, DTVPaket, linkedService, paketType, endDate, PDV)"
+                + " obracun, brojUgovora, produzenje, newService, idDTVCard, DTVPaket, linkedService, paketType, endDate, PDV, opis)"
 				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		try {
 			ps = db.conn.prepareStatement(query);
@@ -229,6 +234,7 @@ public class ServicesFunctions {
 			ps.setString(15, "DTV");
 			ps.setString(16, "2000-01-01");
 			ps.setDouble(17, pdv);
+            ps.setString(18, opis);
 			ps.executeUpdate();
 
 			ServiceAdded = "SERVICE_ADDED";
@@ -267,8 +273,8 @@ public class ServicesFunctions {
 
 		PreparedStatement ps;
 		String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, "
-				+ "obracun, brojUgovora, aktivan, produzenje, newService, UserName, GroupName, paketType, endDate, PDV) VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
+                + "obracun, brojUgovora, aktivan, produzenje, newService, UserName, GroupName, paketType, endDate, PDV, opis) VALUES "
+                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
 
 		try {
 			ps = db.conn.prepareStatement(query);
@@ -289,6 +295,7 @@ public class ServicesFunctions {
 			ps.setString(15, "NET");
 			ps.setString(16, "2000-01-01");
 			ps.setDouble(17, rLine.getDouble("pdv"));
+            ps.setString(18, rLine.getString("komentar"));
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -303,9 +310,9 @@ public class ServicesFunctions {
 
 		PreparedStatement ps;
 		String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, "
-				+ "obracun, brojUgovora, aktivan, produzenje, newService, FIKSNA_TEL, paketType, PDV) "
+                + "obracun, brojUgovora, aktivan, produzenje, newService, FIKSNA_TEL, paketType, PDV, opis) "
 				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		try {
 			ps = db.conn.prepareStatement(query);
@@ -324,6 +331,7 @@ public class ServicesFunctions {
 			ps.setString(13, rLine.getString("brojTel"));
 			ps.setString(14, "FIX");
 			ps.setDouble(15, rLine.getDouble("pdv"));
+            ps.setString(16, rLine.getString("komentar"));
 			ps.executeUpdate();
 			ps.close();
 			Message = "SERVICE_ADDED";
@@ -338,9 +346,9 @@ public class ServicesFunctions {
 		String Message = null;
 		PreparedStatement ps;
 		String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena,"
-				+ "obracun, brojUgovora, aktivan, produzenje, newService, IPTV_EXT_ID, IPTV_MAC, paketType, endDate, PDV)"
+                + "obracun, brojUgovora, aktivan, produzenje, newService, IPTV_EXT_ID, IPTV_MAC, paketType, endDate, PDV, opis)"
 				+ "VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?)";
+                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		try {
 			ps = db.conn.prepareStatement(query);
 			ps.setInt(1, rLine.getInt("id"));
@@ -360,6 +368,7 @@ public class ServicesFunctions {
 			ps.setString(15, "IPTV");
 			ps.setString(16, "2000-01-01");
 			ps.setDouble(17, rLine.getDouble("pdv"));
+            ps.setString(18, rLine.getString("komentar"));
 			ps.executeUpdate();
 			ps.close();
 			Message = "SERVICE_ADDED";
@@ -374,9 +383,9 @@ public class ServicesFunctions {
         PreparedStatement ps;
         String Message = "SERVICE_ADDED";
         String query = "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, " +
-                "obracun, aktivan, newService, paketType, PDV, endDate, brojUgovora)" +
+                "obracun, aktivan, newService, paketType, PDV, endDate, brojUgovora, opis)" +
                 "VALUES " +
-                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
             ps = db.conn.prepareStatement(query);
             ps.setInt(1, rLine.getInt("id"));
@@ -393,6 +402,7 @@ public class ServicesFunctions {
             ps.setDouble(12, rLine.getDouble("pdv"));
             ps.setString(13, "");
             ps.setString(14, rLine.getString("brojUgovora"));
+            ps.setString(15, rLine.getString("komentar"));
             ps.executeUpdate();
             ps.close();
 
