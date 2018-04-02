@@ -1006,7 +1006,7 @@ public class ClientWorker implements Runnable {
             String serviceAdded = ServicesFunctions.addServiceDTV(rLine.getInt("id"), rLine.getString("nazivPaketa"),
                     rLine.getInt("userID"), getOperName(), rLine.getDouble("servicePopust"),
                     rLine.getDouble("cena"), rLine.getBoolean("obracun"), rLine.getString("brojUgovora"),
-                    rLine.getInt("produzenje"), rLine.getString("idUniqueName"), rLine.getInt("packetID"), rLine.getDouble("pdv"), this.db);
+                    rLine.getInt("produzenje"), rLine.getString("idUniqueName"), rLine.getInt("packetID"), rLine.getDouble("pdv"), rLine.getString("komentar"), this.db);
 
             if (serviceAdded.equals("SERVICE_ADDED")) {
                 jObj.put("Message", "SERVICE_ADDED");
