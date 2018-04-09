@@ -730,6 +730,7 @@ public class ClientWorker implements Runnable {
                             service.put("STB_MAC", rs.getString("IPTV_MAC"));
                             service.put("external_id", rs.getString("IPTV_EXT_ID"));
                         }
+                        service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
                         service.put("obracun", rs.getBoolean("obracun"));
                         service.put("aktivan", rs.getBoolean("aktivan"));
                         service.put("produzenje", rs.getInt("produzenje"));
@@ -740,6 +741,7 @@ public class ClientWorker implements Runnable {
                         service.put("paketType", rs.getString("paketType"));
                         service.put("linkedService", rs.getBoolean("linkedService"));
                         service.put("newService", rs.getBoolean("newService"));
+                        service.put("idDTVCard", rs.getString("idDTVCard"));
                         service.put("DTVPaketID", rs.getInt("DTVPaket"));
                         service.put("endDate", rs.getString("endDate"));
 
@@ -792,6 +794,8 @@ public class ClientWorker implements Runnable {
                         service.put("linkedService", rs2.getBoolean("linkedService"));
                         service.put("aktivan", rs2.getBoolean("aktivan"));
                         service.put("endDate", rs2.getString("endDate"));
+                        service.put("paketType", rs2.getString("paketType"));
+                        /*
                         if (rs2.getString("GroupName") != null) {
                             service.put("paketType", "NET");
                         }
@@ -807,6 +811,7 @@ public class ClientWorker implements Runnable {
                         if (rs2.getString("IPTV_MAC") != null) {
                             service.put("paketType", "IPTV");
                         }
+                        */
                         service.put("newService", rs2.getBoolean("newService"));
 
                         jObj2.put(String.valueOf(i), service);
@@ -862,6 +867,17 @@ public class ClientWorker implements Runnable {
             send_object(jObj);
             return;
 
+        }
+
+        if (rLine.getString("action").equals("updateService")) {
+            JSONObject jsonObject = new JSONObject();
+            ServicesFunctions servicesFunctions = new ServicesFunctions();
+            servicesFunctions.updateService(getOperName(), db, rLine);
+            if (servicesFunctions.isHaveError()) {
+                jsonObject.put("ERROR", servicesFunctions.getErrorMessage());
+            }
+            send_object(jsonObject);
+            return;
         }
 
         if (rLine.getString("action").equals("get_datum_isteka_servisa")) {
@@ -3243,6 +3259,8 @@ public class ClientWorker implements Runnable {
                     csvReader.setDelimiter(',');
                     csvReader.readHeaders();
                     ps = db.conn.prepareStatement(query);
+
+
                     while (csvReader.readRecord()) {
                         //ako je csv fajl  na kraju prekinuti import
                         if (csvReader.get("Account").equals("SUBTOTAL") || csvReader.get("Account").isEmpty()
@@ -3278,7 +3296,12 @@ public class ClientWorker implements Runnable {
 
                         ps.executeUpdate();
 
+                        if (DEBUG) System.out.println(String.format("UPDATE %s complete", customerID));
+
                     }
+
+                    if (DEBUG) System.out.println("IMPORT CSV COMPLETE");
+
                     ps.close();
                     jObj.put("Mesage", "CSV_IMPORT_SUCCESS");
                 } catch (FileNotFoundException e) {

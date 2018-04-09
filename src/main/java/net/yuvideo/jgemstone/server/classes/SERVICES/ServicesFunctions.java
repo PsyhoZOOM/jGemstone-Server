@@ -29,6 +29,9 @@ public class ServicesFunctions {
 	private static DateTimeFormatter dtfIPTV = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 	private static DecimalFormat df = new DecimalFormat("#.##");
 
+    private boolean haveError = false;
+    private String errorMessage = "";
+
 	public static void addServiceLinked(JSONObject rLine, String opername, database db) {
 		ResultSet rs;
 		PreparedStatement ps;
@@ -1122,4 +1125,67 @@ public class ServicesFunctions {
 
 		return haveFix;
 	}
+
+    public void updateService(String operName, database db, JSONObject rLine) {
+        PreparedStatement ps;
+        String query = "";
+        if (rLine.has("idDTVCard")) {
+            query = "UPDATE servicesUser set idDTVCard=? where id=?";
+        } else if (rLine.has("IPTV_MAC")) {
+            query = "UPDATE servicesUser set IPTV_MAC=? where id=?";
+        }
+
+        try {
+            ps = db.conn.prepareStatement(query);
+            if (rLine.has("idDTVCard")) {
+                ps.setString(1, rLine.getString("idDTVCard"));
+                ps.setInt(2, rLine.getInt("id"));
+            } else if (rLine.has("IPTV_MAC")) {
+                ps.setString(1, rLine.getString("IPTV_MAC"));
+                ps.setInt(2, rLine.getInt("id"));
+            }
+            ps.executeUpdate();
+            ps.close();
+
+        } catch (SQLException e) {
+            this.haveError = true;
+            this.errorMessage = e.getMessage();
+            e.printStackTrace();
+        }
+
+        //update popust i obracun
+        query = "UPDATE servicesUser SERT popust=? where id=?";
+
+
+        //update field of DTVCard no with a new one
+        if (rLine.has("idDTVCard")) {
+            query = "UPDATE DTVKartice SET idKartica=? WHERE idKartica=?";
+            try {
+                ps = db.conn.prepareStatement(query);
+                ps.setString(1, rLine.getString("idDTVCard"));
+                ps.setString(2, rLine.getString("old_idDTVCard"));
+                ps.executeUpdate();
+                ps.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    public boolean isHaveError() {
+        return haveError;
+    }
+
+    public void setHaveError(boolean haveError) {
+        this.haveError = haveError;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
 }
