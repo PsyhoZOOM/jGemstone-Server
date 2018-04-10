@@ -712,20 +712,24 @@ public class ServicesFunctions {
 		int daysInMonth = 0;
 		int daysToEndMonth = 0;
         Double cenaService = 0.00;
+		Double cenaServiceOrig = 0.00;
         Double pdv = 0.00;
         Double popust = 0.00;
         try {
             cenaService = rs.getDouble("cena");
+			cenaServiceOrig = cenaService;
             pdv = rs.getDouble("PDV");
             popust = rs.getDouble("popust");
             cenaService = cenaService + valueToPercent.getDiffValue(cenaService, pdv);
             cenaService = cenaService - valueToPercent.getDiffValue(cenaService, popust);
+			cenaServiceOrig = cenaServiceOrig - valueToPercent.getDiffValue(cenaServiceOrig, popust);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		Double zaUplatu = 0.00;
 		Double cenaZaDan = 0.00;
+		Double cenaZaDanOrig = 0.00;
 		LocalDateTime date = LocalDateTime.now();
 
         //status on STALKER
@@ -743,8 +747,11 @@ public class ServicesFunctions {
 				daysInMonth = date.getMonth().length(true);
 				daysToEndMonth = daysInMonth - date.getDayOfMonth();
 				cenaZaDan = cenaService / daysInMonth;
+				cenaZaDanOrig = cenaServiceOrig / daysInMonth;
+
 				if (rs.getBoolean("newService")) {
 					zaUplatu = cenaZaDan * daysToEndMonth;
+					cenaServiceOrig = cenaZaDanOrig * daysToEndMonth;
 				} else {
 					zaUplatu = cenaService;
 				}
@@ -756,7 +763,7 @@ public class ServicesFunctions {
 			ps.setString(3, LocalDate.now().toString());
 			ps.setInt(4, rs.getInt("userID"));
 			ps.setString(5, rs.getString("paketType"));
-			ps.setDouble(6, cenaService);
+			ps.setDouble(6, cenaServiceOrig);
 			ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
             ps.setDouble(8, rs.getDouble("popust"));
             ps.setString(9, operName);
@@ -815,10 +822,12 @@ public class ServicesFunctions {
 				int daysInMonth = 0;
 				int daysToEndMonth = 0;
 				Double cenaService = rs.getDouble("cena");
+				Double cenaServiceOrig = cenaService;
                 Double pdv = rs.getDouble("PDV");
                 Double popust = rs.getDouble("popust");
                 Double zaUplatu = 0.00;
                 Double cenaZaDan = 0.00;
+				Double cenaZaDaOrig = 0.00;
                 cenaService = cenaService + valueToPercent.getDiffValue(cenaService, pdv);
                 cenaService = cenaService - valueToPercent.getDiffValue(cenaService, popust);
 
@@ -826,7 +835,9 @@ public class ServicesFunctions {
                     daysInMonth = date.getMonth().length(LocalDate.now().isLeapYear());
                     daysToEndMonth = daysInMonth - date.getDayOfMonth();
 					cenaZaDan = cenaService / daysInMonth;
+					cenaZaDaOrig = cenaServiceOrig / daysInMonth;
 					zaUplatu = cenaZaDan * daysToEndMonth;
+					cenaServiceOrig = cenaZaDaOrig * daysToEndMonth;
 				} else {
 					zaUplatu = cenaService;
 				}
@@ -845,7 +856,7 @@ public class ServicesFunctions {
 				ps.setString(3, LocalDate.now().toString());
 				ps.setInt(4, rs.getInt("userID"));
 				ps.setString(5, rs.getString("paketType"));
-				ps.setDouble(6, cenaService);
+				ps.setDouble(6, cenaServiceOrig);
 				ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
                 ps.setDouble(8, rs.getDouble("popust"));
                 ps.setString(9, operName);
