@@ -3301,7 +3301,6 @@ public class ClientWorker implements Runnable {
                     }
 
                     if (DEBUG) System.out.println("IMPORT CSV COMPLETE");
-
                     ps.close();
                     jObj.put("Mesage", "CSV_IMPORT_SUCCESS");
                 } catch (FileNotFoundException e) {
