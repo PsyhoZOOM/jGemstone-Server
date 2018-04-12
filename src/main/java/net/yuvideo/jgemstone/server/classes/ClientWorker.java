@@ -3913,28 +3913,14 @@ public class ClientWorker implements Runnable {
             if (mesecniObracun.hasError) {
                 jsonObject.put("ERROR", mesecniObracun.errorMessage);
             }
-
             send_object(jsonObject);
         }
 
 
-
-
-
-
-
-
-
-        //////TEST
         if(rLine.getString("action").equals("getUserRacun")){
             UserRacun userRacun = new UserRacun(rLine, getOperName(), db);
             send_object(userRacun.getData());
         }
-
-
-
-
-
 
     }
 
