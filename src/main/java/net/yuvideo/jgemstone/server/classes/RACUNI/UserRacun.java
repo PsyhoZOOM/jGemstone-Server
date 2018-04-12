@@ -20,21 +20,10 @@ public class UserRacun {
     private String sifraKorisnika;
     private String mesto_i_datum_izdavanja;
 
-    private int userID;
-    private int kolicina;
-    private double iznos;
-    private double popust;
-    private double osnovica;
-    private double stopPDV;
-    private double PDV;
-    private double ukupno;
-    private double prethodniDUG = 0;
-
     private UsersData user;
 
-    DecimalFormat df = new DecimalFormat("#,###,###,###,###,###,##0.00");
-
-    private JSONObject data;
+    private DecimalFormat df = new DecimalFormat("0.00");
+    private JSONObject racun;
 
 
     public UserRacun(JSONObject rLine, String operName, database db) {
@@ -52,6 +41,7 @@ public class UserRacun {
 
 
     private void  getDataZaMesec(int userID, String zaMesec){
+        System.out.println(zaMesec);
         PreparedStatement ps;
         ResultSet rs;
         String query = "SELECT * FROM userDebts WHERE userID=? AND zaMesec=?";
@@ -61,57 +51,46 @@ public class UserRacun {
             ps.setInt(1, userID);
             ps.setString(2, zaMesec);
             rs = ps.executeQuery();
-            data = new JSONObject();
+            racun = new JSONObject();
             if(rs.isBeforeFirst()){
                 int i=0;
-                double ukupnoUkupno= 0;
+                double ukupno = 0.00;
                 double ukupnoPDV=0;
-                double ukpnoOsnovica=0;
+                double ukupnoOsnovica = 0;
                 while (rs.next()){
+                    JSONObject racunSingle = new JSONObject();
                     String usluga = rs.getString("nazivPaketa");
-                    int kolicina = 1; ////TODO setkolicina
-                    double iznos = rs.getDouble("cena");
+                    double cena = rs.getDouble("cena");
                     double popust = rs.getDouble("popust");
-                    double osnovica =  iznos * kolicina;
-                    double stopaPDV = rs.getDouble("PDV");
-                    double PDV = valueToPercent.getValueOfPercentAdd(iznos, stopaPDV);
-                    double ukupno;
-                    ukupno = osnovica - valueToPercent.getValueOfPercentAdd(osnovica, popust) + PDV;
+                    double PDV = rs.getDouble("PDV");
+                    double stopaPopust = valueToPercent.getDiffValue(cena, popust);
+                    double stopaPDV = valueToPercent.getDiffValue((cena - stopaPopust), PDV);
+                    ukupno += (cena - stopaPopust) + stopaPDV;
 
+                    racunSingle.put("nazivUsluge", usluga);
+                    racunSingle.put("cena", Double.valueOf(df.format(cena)));
+                    racunSingle.put("popust", Double.valueOf(df.format(popust)));
+                    racunSingle.put("stopaPDV", Double.valueOf(df.format(stopaPDV)));
+                    racunSingle.put("PDV", Double.valueOf(df.format(PDV)));
+                    ukupnoPDV += stopaPDV;
+                    ukupnoOsnovica += cena;
 
-
-                    ////TODO get data
-                    data.put(String.valueOf(i), String.format(
-                                    "Ime: %20s " +
-                                    "Usluga: %-30s " +
-                                    "Iznos: %10s " +
-                                            "Popust: %10s " +
-                                            "Osnovica: %10s " +
-                                            "Stopa PDV: %10s " +
-                                            "PDV: %10s " +
-                                            "UKUPNO: %10s ",
-                            this.imePrezime,
-                            usluga,
-                            df.format(iznos),
-                            df.format(popust),
-                            df.format(osnovica),
-                            df.format(stopaPDV),
-                            df.format(PDV),
-                            df.format(ukupno)
-                    ));
-                    ukupnoPDV += PDV;
-                    ukpnoOsnovica += osnovica;
+                    racun.put(String.valueOf(i), racunSingle);
                     i++;
-
                 }
-                prethodniDUG = getPrethodniDug(userID, zaMesec);
-                ukupnoUkupno = ukpnoOsnovica + ukupnoPDV;
-                data.put(String.valueOf(i), String.format("Ukupno osnovica: %-10s Ukupno PDV: %-10s Ukupno: %-10s", df.format(ukpnoOsnovica), df.format(ukupnoPDV), df.format(ukupnoUkupno)));
+
+                JSONObject ukupnoObj = new JSONObject();
+                ukupnoObj.put("ukupnoPDV", Double.valueOf(df.format(ukupnoPDV)));
+                ukupnoObj.put("ukupnoOsnovica", Double.valueOf(df.format(ukupnoOsnovica)));
+                ukupnoObj.put("ukupno", Double.valueOf(df.format(ukupno)));
+                double prethodniDug = getPrethodniDug(userID, zaMesec);
+                ukupnoObj.put("prethodniDug", Double.valueOf(df.format(prethodniDug)));
+                double sve = prethodniDug + ukupno;
+                ukupnoObj.put("ukupnoSve", Double.valueOf(df.format(sve)));
                 i++;
-                data.put(String.valueOf(i), String.format("Prethodni dug: %-10s",df.format(prethodniDUG)));
-                i++;
-                data.put(String.valueOf(i), String.format("UKUPAN DUG: %-10s", df.format(ukupnoUkupno+prethodniDUG)));
+                racun.put(String.valueOf(i), ukupnoObj);
             }
+            System.out.println(racun.toString());
             ps.close();
             rs.close();
         } catch (SQLException e) {
@@ -123,7 +102,22 @@ public class UserRacun {
     private double getPrethodniDug(int userID, String zaMesec){
         PreparedStatement ps;
         ResultSet rs;
-        String query = "SELECT * FROM userDebts WHERE zaMesec < ? AND userID=?";
+        double ukupnoUplaceno = 0;
+        String query = "SELECT SUM(uplaceno) as uplaceno FROM uplate WHERE userID=?";
+        try {
+            ps = db.conn.prepareStatement(query);
+            ps.setInt(1, userID);
+            rs = ps.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                ukupnoUplaceno = rs.getDouble("uplaceno");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        query = "SELECT * FROM userDebts WHERE zaMesec < ? AND userID=?";
         double prethodniDug = 0;
         try {
             ps = db.conn.prepareStatement(query);
@@ -135,10 +129,9 @@ public class UserRacun {
                     double popust = rs.getDouble("popust");
                     double cena = rs.getDouble("cena");
                     double pdv = rs.getDouble("pdv");
-                    double uplaceno = rs.getDouble("uplaceno");
-                    double iznos = cena - valueToPercent.getValueOfPercentAdd(cena,popust);
+                    double iznos = cena - valueToPercent.getValueOfPercentSub(cena, popust);
                     prethodniDug += iznos + valueToPercent.getValueOfPercentAdd(iznos, pdv) ;
-                    prethodniDug -= uplaceno;
+
                 }
             }
             ps.close();
@@ -146,11 +139,16 @@ public class UserRacun {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+
+        System.out.println(String.format("Prethodni dug: %f, Ukupno uplaceno: %f", prethodniDug, ukupnoUplaceno));
+        prethodniDug = prethodniDug - ukupnoUplaceno;
+
         return prethodniDug;
     }
 
 
     public JSONObject getData() {
-        return data;
+        return this.racun;
     }
 }
