@@ -9,7 +9,7 @@ import java.util.logging.Logger;
  * Created by zoom on 8/11/16.
  */
 public class database {
-    public boolean DEBUG = false;
+    public int DEBUG = 1;
     public String query;
     public Connection conn;
     public Connection connRad;
