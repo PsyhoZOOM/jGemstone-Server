@@ -27,14 +27,14 @@ public class Server {
 	public static void main(String[] args) {
 
 		SSLServerSocket serverSock = null;
-		Boolean DEBUG = false;
+        int DEBUG = 0;
 		String query;
 		PreparedStatement ps;
 		int portNumber = 8543;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].contains("debug=1")) {
-				DEBUG = true;
+                DEBUG = 1;
 			}
 		}
 

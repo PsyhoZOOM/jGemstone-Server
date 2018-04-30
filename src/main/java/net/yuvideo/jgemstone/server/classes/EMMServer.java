@@ -19,7 +19,7 @@ public class EMMServer implements Runnable {
     private String query;
     private String host;
     private int port;
-    public boolean DEBUG;
+    public int DEBUG;
 
     public EMMServer(int timeout, database db, String host, int port) {
         this.timeout = timeout;
@@ -41,7 +41,7 @@ public class EMMServer implements Runnable {
                 rs = ps.executeQuery();
                 if (rs.isBeforeFirst()) {
                     while (rs.next()) {
-                        if (DEBUG) {
+                        if (DEBUG > 1) {
                             System.out.println(
                                     String.format
                                             ("Send EMMUDP Packet to: %s:%d CARD_ID: %d",

@@ -43,7 +43,7 @@ public class ClientWorker implements Runnable {
     private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
     private final SimpleDateFormat normalDate = new SimpleDateFormat("yyyy-MM-dd");
     private final SimpleDateFormat formatMonthDate = new SimpleDateFormat("yyyy-MM");
-    public boolean DEBUG = false;
+    public int DEBUG = 0;
     public boolean client_db_update = false;
     //private Socket client;
     private SSLSocket client;
@@ -96,7 +96,7 @@ public class ClientWorker implements Runnable {
                 }
             }
 
-            if (DEBUG)
+            if (DEBUG > 1)
                 System.out.println("Waitin for client data..");
             try {
 
@@ -120,7 +120,7 @@ public class ClientWorker implements Runnable {
                 e.printStackTrace();
             }
 
-            if (DEBUG)
+            if (DEBUG > 0)
                 System.out.println("Reading Bfr.readline()" + jObj);
             object_worker(jObj);
 
@@ -3296,11 +3296,9 @@ public class ClientWorker implements Runnable {
 
                         ps.executeUpdate();
 
-                        if (DEBUG) System.out.println(String.format("UPDATE %s complete", customerID));
 
                     }
 
-                    if (DEBUG) System.out.println("IMPORT CSV COMPLETE");
                     ps.close();
                     jObj.put("Mesage", "CSV_IMPORT_SUCCESS");
                 } catch (FileNotFoundException e) {
@@ -4110,7 +4108,7 @@ public class ClientWorker implements Runnable {
     }
 
     public void send_object(JSONObject obj) {
-        if (DEBUG)
+        if (DEBUG > 0)
             LOGGER.info("Sending Object: " + obj.toString());
 
         if (client.isClosed()) {

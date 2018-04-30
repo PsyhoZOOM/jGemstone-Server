@@ -19,7 +19,7 @@ public class SchedullerTask implements Runnable {
     final int MINUTES = (60 * 100); //for debuging use
     public int timeout;
     public database db;
-    public Boolean DEBUG;
+    public int DEBUG;
     public int DEBUG_VAL;
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     Date date;
@@ -119,7 +119,7 @@ public class SchedullerTask implements Runnable {
                     clientWorkerArrayList.get(i).get_socket().getInetAddress(),
                     clientWorkerArrayList.get(i).hashCode()
             );
-            if (DEBUG) {
+            if (DEBUG > 1) {
                 LOGGER.info(info);
             }
             if (clientWorker.get_socket().isClosed()) {
