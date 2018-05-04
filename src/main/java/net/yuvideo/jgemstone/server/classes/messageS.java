@@ -5,98 +5,98 @@ import java.io.Serializable;
 /**
  * Created by zoom on 8/8/16.
  */
-public class messageS implements Serializable{
-    private String message;
-    private String username;
-    private String password;
-    private String action;
-    private String function;
-    private Boolean alive;
-    private String query;
-    private Users user_update;
-    private Groups group_update;
-    private Services services;
+public class messageS implements Serializable {
 
-    public Services getServices() {
-        return services;
-    }
+  private String message;
+  private String username;
+  private String password;
+  private String action;
+  private String function;
+  private Boolean alive;
+  private String query;
+  private Users user_update;
+  private Groups group_update;
+  private Services services;
 
-    public void setServices(Services services) {
-        this.services = services;
-    }
+  public Services getServices() {
+    return services;
+  }
 
-    public Groups getGroup_update() {
-        return group_update;
-    }
+  public void setServices(Services services) {
+    this.services = services;
+  }
 
-    public void setGroup_update(Groups group_update) {
-        this.group_update = group_update;
-    }
+  public Groups getGroup_update() {
+    return group_update;
+  }
 
-    public Users getUser_update() {
-        return user_update;
-    }
+  public void setGroup_update(Groups group_update) {
+    this.group_update = group_update;
+  }
 
-    public void setUser_update(Users user_update) {
-        this.user_update = user_update;
-    }
+  public Users getUser_update() {
+    return user_update;
+  }
 
-    public String getQuery() {
-        return query;
-    }
+  public void setUser_update(Users user_update) {
+    this.user_update = user_update;
+  }
 
-    public void setQuery(String query) {
-        this.query = query;
-    }
+  public String getQuery() {
+    return query;
+  }
 
-    public Boolean getAlive() {
-        return alive;
-    }
+  public void setQuery(String query) {
+    this.query = query;
+  }
 
-    public void setAlive(Boolean alive) {
-        this.alive = alive;
-    }
+  public Boolean getAlive() {
+    return alive;
+  }
 
-    public String getAction() {
-        return action;
-    }
+  public void setAlive(Boolean alive) {
+    this.alive = alive;
+  }
 
-    public void setAction(String action) {
-        this.action = action;
-    }
+  public String getAction() {
+    return action;
+  }
 
-    public String getFunction() {
-        return function;
-    }
+  public void setAction(String action) {
+    this.action = action;
+  }
 
-    public void setFunction(String function) {
-        this.function = function;
-    }
+  public String getFunction() {
+    return function;
+  }
 
-    public String getPassword() {
-        return password;
-    }
+  public void setFunction(String function) {
+    this.function = function;
+  }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+  public String getPassword() {
+    return password;
+  }
 
-    public String getUsername() {
+  public void setPassword(String password) {
+    this.password = password;
+  }
 
-        return username;
-    }
+  public String getUsername() {
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
 
 
+  public String getMessage() {
+    return message;
+  }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
+  public void setMessage(String message) {
+    this.message = message;
+  }
 }

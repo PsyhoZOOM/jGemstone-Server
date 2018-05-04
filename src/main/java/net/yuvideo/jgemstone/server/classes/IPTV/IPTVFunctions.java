@@ -9,14 +9,14 @@ import org.json.JSONObject;
 public class IPTVFunctions {
 
 
-    public static JSONObject add_account(JSONObject rLine, database db) {
-        StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
-        JSONObject jsonObject = restAPI2.saveUSER(rLine);
-        return jsonObject;
-    }
+  public static JSONObject add_account(JSONObject rLine, database db) {
+    StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
+    JSONObject jsonObject = restAPI2.saveUSER(rLine);
+    return jsonObject;
+  }
 
-    public static Boolean checkUserBussy(String STB_MAC, database db) {
-        StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
-        return restAPI2.checkUser(STB_MAC);
-    }
+  public static Boolean checkUserBussy(String STB_MAC, database db) {
+    StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
+    return restAPI2.checkUser(STB_MAC);
+  }
 }

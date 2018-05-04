@@ -6,140 +6,141 @@ import java.io.Serializable;
  * Created by PsyhoZOOM@gmail.com on 8/29/17.
  */
 public class CSVData implements Serializable {
-    int id;
-    String account;
-    String from;
-    String to;
-    String country;
-    String description;
-    String connectTime;
-    String chargedTimeMinSec;
-    int chargedTimeSec;
-    double chargedAmountRSD;
-    String serviceName;
-    int chargedQuantity;
-    String serviceUnit;
-    String customerID;
-    String fileName;
 
-    public String getFileName() {
-        return fileName;
-    }
+  int id;
+  String account;
+  String from;
+  String to;
+  String country;
+  String description;
+  String connectTime;
+  String chargedTimeMinSec;
+  int chargedTimeSec;
+  double chargedAmountRSD;
+  String serviceName;
+  int chargedQuantity;
+  String serviceUnit;
+  String customerID;
+  String fileName;
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
+  public String getFileName() {
+    return fileName;
+  }
 
-    public String getCustomerID() {
-        return customerID;
-    }
+  public void setFileName(String fileName) {
+    this.fileName = fileName;
+  }
 
-    public void setCustomerID(String customerID) {
-        this.customerID = customerID;
-    }
+  public String getCustomerID() {
+    return customerID;
+  }
 
-    public int getId() {
-        return id;
-    }
+  public void setCustomerID(String customerID) {
+    this.customerID = customerID;
+  }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+  public int getId() {
+    return id;
+  }
 
-    public String getAccount() {
-        return account;
-    }
+  public void setId(int id) {
+    this.id = id;
+  }
 
-    public void setAccount(String account) {
-        this.account = account;
-    }
+  public String getAccount() {
+    return account;
+  }
 
-    public String getFrom() {
-        return from;
-    }
+  public void setAccount(String account) {
+    this.account = account;
+  }
 
-    public void setFrom(String from) {
-        this.from = from;
-    }
+  public String getFrom() {
+    return from;
+  }
 
-    public String getTo() {
-        return to;
-    }
+  public void setFrom(String from) {
+    this.from = from;
+  }
 
-    public void setTo(String to) {
-        this.to = to;
-    }
+  public String getTo() {
+    return to;
+  }
 
-    public String getCountry() {
-        return country;
-    }
+  public void setTo(String to) {
+    this.to = to;
+  }
 
-    public void setCountry(String country) {
-        this.country = country;
-    }
+  public String getCountry() {
+    return country;
+  }
 
-    public String getDescription() {
-        return description;
-    }
+  public void setCountry(String country) {
+    this.country = country;
+  }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+  public String getDescription() {
+    return description;
+  }
 
-    public String getConnectTime() {
-        return connectTime;
-    }
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
-    public void setConnectTime(String connectTime) {
-        this.connectTime = connectTime;
-    }
+  public String getConnectTime() {
+    return connectTime;
+  }
 
-    public String getChargedTimeMinSec() {
-        return chargedTimeMinSec;
-    }
+  public void setConnectTime(String connectTime) {
+    this.connectTime = connectTime;
+  }
 
-    public void setChargedTimeMinSec(String chargedTimeMinSec) {
-        this.chargedTimeMinSec = chargedTimeMinSec;
-    }
+  public String getChargedTimeMinSec() {
+    return chargedTimeMinSec;
+  }
 
-    public int getChargedTimeSec() {
-        return chargedTimeSec;
-    }
+  public void setChargedTimeMinSec(String chargedTimeMinSec) {
+    this.chargedTimeMinSec = chargedTimeMinSec;
+  }
 
-    public void setChargedTimeSec(int chargedTimeSec) {
-        this.chargedTimeSec = chargedTimeSec;
-    }
+  public int getChargedTimeSec() {
+    return chargedTimeSec;
+  }
 
-    public double getChargedAmountRSD() {
-        return chargedAmountRSD;
-    }
+  public void setChargedTimeSec(int chargedTimeSec) {
+    this.chargedTimeSec = chargedTimeSec;
+  }
 
-    public void setChargedAmountRSD(double chargedAmountRSD) {
-        this.chargedAmountRSD = chargedAmountRSD;
-    }
+  public double getChargedAmountRSD() {
+    return chargedAmountRSD;
+  }
 
-    public String getServiceName() {
-        return serviceName;
-    }
+  public void setChargedAmountRSD(double chargedAmountRSD) {
+    this.chargedAmountRSD = chargedAmountRSD;
+  }
 
-    public void setServiceName(String serviceName) {
-        this.serviceName = serviceName;
-    }
+  public String getServiceName() {
+    return serviceName;
+  }
 
-    public int getChargedQuantity() {
-        return chargedQuantity;
-    }
+  public void setServiceName(String serviceName) {
+    this.serviceName = serviceName;
+  }
 
-    public void setChargedQuantity(int chargedQuantity) {
-        this.chargedQuantity = chargedQuantity;
-    }
+  public int getChargedQuantity() {
+    return chargedQuantity;
+  }
 
-    public String getServiceUnit() {
-        return serviceUnit;
-    }
+  public void setChargedQuantity(int chargedQuantity) {
+    this.chargedQuantity = chargedQuantity;
+  }
 
-    public void setServiceUnit(String serviceUnit) {
-        this.serviceUnit = serviceUnit;
-    }
+  public String getServiceUnit() {
+    return serviceUnit;
+  }
+
+  public void setServiceUnit(String serviceUnit) {
+    this.serviceUnit = serviceUnit;
+  }
 
 }
