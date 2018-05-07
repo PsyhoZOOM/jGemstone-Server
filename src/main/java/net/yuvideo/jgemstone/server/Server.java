@@ -45,6 +45,7 @@ public class Server {
       }
     }
 
+    DEBUG =1;
     database db;
 
     // SSL SOCKET INIT

@@ -1961,7 +1961,7 @@ public class ClientWorker implements Runnable {
             faktureData.put("br", rs.getString("br"));
             faktureData.put("naziv", rs.getString("naziv"));
             faktureData.put("jedMere", rs.getString("jedMere"));
-            faktureData.put("kolicina", rs.getString("kolicina"));
+            faktureData.put("kolicina", rs.getInt("kolicina"));
             faktureData.put("cenaBezPDV", rs.getDouble("cenaBezPDV"));
             faktureData.put("pdv", rs.getDouble("pdv"));
             double cena = rs.getDouble("cenaBezPDV");
@@ -2009,7 +2009,7 @@ public class ClientWorker implements Runnable {
             faktureData.put("br", rs.getString("br"));
             faktureData.put("naziv", rs.getString("naziv"));
             faktureData.put("jedMere", rs.getString("jedMere"));
-            faktureData.put("kolicina", rs.getString("kolicina"));
+            faktureData.put("kolicina", rs.getInt("kolicina"));
             faktureData.put("cenaBezPDV", rs.getDouble("cenaBezPDV"));
             faktureData.put("pdv", rs.getDouble("pdv"));
             faktureData.put("operater", rs.getString("operater"));
@@ -3942,6 +3942,110 @@ public class ClientWorker implements Runnable {
       send_object(userRacun.getData());
     }
 
+    if (rLine.getString("action").equals("FIRMA_OPTIONS_SAVE")) {
+      JSONObject obj = new JSONObject();
+      JSONObject retObj = new JSONObject();
+      PreparedStatement ps = null;
+      String query;
+
+      //BRISANJE PODATAKA FIRME
+      query = "DELETE  FROM settings WHERE settings LIKE ? ";
+      try {
+        ps = db.conn.prepareStatement(query);
+        ps.setString(1, "FIRMA%");
+        ps.executeUpdate();
+        ps.close();
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
+
+      obj = rLine;
+      //UNOS NOVIH PODATAKA ILI IZMENA
+      String FIRMA_NAZIV = obj.getString("FIRMA_NAZIV");
+      String FIRMA_ADRESA = obj.getString("FIRMA_ADRESA");
+      String FIRMA_PIB = obj.getString("FIRMA_PIB");
+      String FIRMA_MBR = obj.getString("FIRMA_MBR");
+      String FIRMA_TEKUCIRACUN = obj.getString("FIRMA_TEKUCIRACUN");
+      String FIRMA_TELEFON = obj.getString("FIRMA_TELEFON");
+      String FIRMA_FAX = obj.getString("FIRMA_FAX");
+      String FIRMA_SERVIS_TELEFON = obj.getString("FIRMA_SERVIS_TELEFON");
+      String FIRMA_SERVIS_EMAIL = obj.getString("FIRMA_SERVIS_EMAIL");
+      String FIRMA_WEBPAGE = obj.getString("FIRMA_WEBPAGE");
+      String FIRMA_PEPDV = obj.getString("FIRMA_FAKTURA_PEPDV");
+
+      query = "INSERT INTO settings (settings, value) VALUES (?,?)";
+
+      try {
+        for (String t : rLine.keySet()) {
+          System.out.println(t);
+          if(t.equals("action")) continue;
+          ps = db.conn.prepareStatement(query);
+          ps.setString(1, t);
+          ps.setString(2, obj.getString(t));
+          ps.executeUpdate();
+        }
+        ps.close();
+      } catch (SQLException e) {
+        retObj.put("EROOR", e.getMessage());
+        e.printStackTrace();
+      }
+
+      send_object(retObj);
+    }
+
+    if(rLine.getString("action").equals("get_FIRMA_OPTIONS")){
+      JSONObject jObj = new JSONObject();
+      PreparedStatement ps;
+      ResultSet rs;
+      String query = "SELECT * FROM settings";
+      try {
+        ps = db.conn.prepareStatement(query);
+        rs = ps.executeQuery();
+        if(rs.isBeforeFirst()){
+          while (rs.next()) {
+            if (rs.getString("settings").equals("FIRMA_WEBPAGE")) {
+              jObj.put("FIRMA_WEBPAGE", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("FIRMA_ADRESA")) {
+              jObj.put("FIRMA_ADRESA", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("FIRMA_MBR")) {
+              jObj.put("FIRMA_MBR", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("FIRMA_FAX")) {
+              jObj.put("FIRMA_FAX", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("FIRMA_TELEFON")) {
+              jObj.put("FIRMA_TELEFON", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("FIRMA_NAZIV")) {
+              jObj.put("FIRMA_NAZIV", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("FIRMA_SERVIS_TELEFON")) {
+              jObj.put("FIRMA_SERVIS_TELEFON", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("FIRMA_TEKUCIRACUN")) {
+              jObj.put("FIRMA_TEKUCIRACUN", rs.getString("value"));
+            }
+            if(rs.getString("settings").equals("FIRMA_FAKTURA_PEPDV")){
+              jObj.put("FIRMA_FAKTURA_PEPDV", rs.getString("value"));
+            }
+            if(rs.getString("settings").equals("FIRMA_SERVIS_EMAIL")){
+              jObj.put("FIRMA_SERVIS_EMAIL", rs.getString("value"));
+            }
+            if(rs.getString("settings").equals("FIRMA_PIB")){
+              jObj.put("FIRMA_PIB", rs.getString("value"));
+            }
+          }
+
+        }
+        ps.close();
+        rs.close();
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
+      send_object(jObj);
+    }
   }
 
   private void setUserFirma(int userID, boolean hasFirma) {
