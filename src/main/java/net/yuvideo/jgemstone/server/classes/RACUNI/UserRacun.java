@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
-import java.util.Set;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
@@ -69,12 +68,15 @@ public class UserRacun {
           double cena = rs.getDouble("cena");
           double stopaPopust = rs.getDouble("popust");
           double stopaPDV = rs.getDouble("PDV");
+          int kolicina = rs.getInt("kolicina");
+          String jMere = rs.getString("jMere");
 
           racunSingle.put("nazivUsluge", nazivUsluge);
           racunSingle.put("cena", cena);
           racunSingle.put("stopaPopust", stopaPopust);
           racunSingle.put("stopaPDV", stopaPDV);
-          racunSingle.put("kolicina", 1);
+          racunSingle.put("kolicina", kolicina);
+          racunSingle.put("jMere", jMere);
           racunSingle.put("index", i);
           racun.put(String.valueOf(i), racunSingle);
 
@@ -122,7 +124,9 @@ public class UserRacun {
       double pdv = 0.00;
       double stopaPDV = rcnTmp.getDouble("stopaPDV");
       int kolicina = rcnTmp.getInt("kolicina");
+      String jMere = rcnTmp.getString("jMere");
       double osnovica = cena * kolicina;
+      double vrednostBezPDV=  osnovica;
       double ukupno;
 
       popust = valueToPercent.getDiffValue(osnovica, stopaPopust);
@@ -136,12 +140,14 @@ public class UserRacun {
       JSONObject tmp = new JSONObject();
       tmp.put("nazivUsluge", nazivUsluge);
       tmp.put("kolicina", kolicina);
+      tmp.put("jMere", jMere);
       tmp.put("cena", Double.valueOf(df.format(cena)));
       tmp.put("popust", Double.valueOf(df.format(stopaPopust)));
       tmp.put("osnovica", Double.valueOf(df.format(osnovica)));
       tmp.put("pdv", Double.valueOf(df.format(pdv)));
       tmp.put("stopaPDV", Double.valueOf(df.format(stopaPDV)));
       tmp.put("ukupno", Double.valueOf(df.format(ukupno)));
+      tmp.put("vrednostBezPDV", Double.valueOf(df.format(vrednostBezPDV)));
       racunNew.put(String.valueOf(i), tmp);
 
     }
@@ -152,35 +158,42 @@ public class UserRacun {
   private JSONObject calculateDuplicateRacun(JSONObject racun) {
     JSONObject racunTmp = new JSONObject();
     for (int i = 0; i < racun.length(); i++) {
-      int kolicina = 1;
 
       for (int z = i + 1; z < racun.length(); z++) {
-        JSONObject racunI = racun.getJSONObject(String.valueOf(i));
-        JSONObject racunZ = racun.getJSONObject(String.valueOf(z));
-        if (
-            racunI.getDouble("cena") == racunZ.getDouble("cena") &&
-                racunI.getDouble("stopaPDV") == racunZ.getDouble("stopaPDV") &&
-                racunI.getDouble("stopaPopust") == racunZ.getDouble("stopaPopust") &&
-                racunI.getString("nazivUsluge").equals(racunZ.getString("nazivUsluge"))
-            ) {
-          kolicina++;
-          racun.getJSONObject(String.valueOf(i)).remove("kolicina");
-          racun.getJSONObject(String.valueOf(i)).put("kolicina", kolicina);
-          racun.remove(String.valueOf(z));
+        int kolicina = 0;
+        {
+          JSONObject racunI = racun.getJSONObject(String.valueOf(i));
+          JSONObject racunZ = racun.getJSONObject(String.valueOf(z));
+          if (
+              racunI.getDouble("cena") == racunZ.getDouble("cena") &&
+                  racunI.getDouble("stopaPDV") == racunZ.getDouble("stopaPDV") &&
+                  racunI.getDouble("stopaPopust") == racunZ.getDouble("stopaPopust") &&
+                  racunI.getString("nazivUsluge").equals(racunZ.getString("nazivUsluge")) &&
+                  racunI.getString("jMere").equals(racunZ.getString("jMere"))
+              ) {
+            kolicina = racunI.getInt("kolicina") + racunZ.getInt("kolicina");
+            racun.getJSONObject(String.valueOf(i)).remove("kolicina");
+            racun.getJSONObject(String.valueOf(i)).put("kolicina", kolicina);
+            racun.remove(String.valueOf(z));
+            racun = sortJSON(racun);
+          }
+          kolicina = 0;
 
         }
       }
     }
+    return racun;
+  }
 
-    //sortinig keyset
-    Set<String> string = racun.keySet();
+  private JSONObject sortJSON(JSONObject racun) {
+    JSONObject tmp = new JSONObject();
     int i = 0;
-    for (String str : string) {
-      racunTmp.put(String.valueOf(i), racun.getJSONObject(str));
+    for (String ket : racun.keySet()) {
+      tmp.put(String.valueOf(i), racun.getJSONObject(ket));
       i++;
-    }
 
-    return racunTmp;
+    }
+    return tmp;
   }
 
 
@@ -228,7 +241,6 @@ public class UserRacun {
 
     return prethodniDug;
   }
-
 
   public JSONObject getData() {
     return this.racun;

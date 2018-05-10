@@ -334,6 +334,7 @@ public class ClientWorker implements Runnable {
           jObj.put("maticniBroj", rs.getString("maticniBroj"));
           jObj.put("fax", rs.getString("fax"));
           jObj.put("adresaFirme", rs.getString("adresaFirme"));
+          jObj.put("email", rs.getString("email"));
 
         } else {
           jObj.put("Message", "NO_SUCH_USER");
@@ -1165,6 +1166,7 @@ public class ClientWorker implements Runnable {
             userDebt.put("popust", rs.getDouble("popust"));
             userDebt.put("paketType", rs.getString("paketType"));
             userDebt.put("cena", rs.getDouble("cena"));
+            userDebt.put("kolicina", rs.getInt("kolicina"));
             userDebt.put("dug", rs.getDouble("dug"));
             userDebt.put("paketType", rs.getString("paketType"));
             userDebt.put("identification",
@@ -1536,9 +1538,9 @@ public class ClientWorker implements Runnable {
 
         query =
             "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust,"
-                + " paketType, cena, uplaceno, dug, zaduzenOd, zaMesec, PDV)"
+                + " paketType, cena, uplaceno, dug, zaduzenOd, zaMesec, PDV, kolicina, jMere)"
                 + " VALUES"
-                + " (?,?,?,?,?,?,?,?,?,?,?,?)";
+                + " (?,?,?,?,?,?,?,?,?,?,?,?,? ,?)";
         try {
           ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
           ps.setNull(1, Types.INTEGER);
@@ -1554,15 +1556,12 @@ public class ClientWorker implements Runnable {
           ps.setString(6, rLine.getString("paketType"));
           ps.setDouble(7, rLine.getDouble("cena"));
           ps.setDouble(8, 0.00);
-          ps.setDouble(9,
-              Double.parseDouble(
-                  df.format(
-                      (rLine.getDouble("cena") +
-                          valueToPercent.getDiffValue(
-                              rLine.getDouble("cena"), rLine.getDouble("pdv")))
-                          / rate)
-              )
-          );
+          Double _DUG = (rLine.getDouble("cena") * rLine.getInt("kolicina")) +
+              valueToPercent.getDiffValue(
+                  rLine.getDouble("cena") * rLine.getInt("kolicina") , rLine.getDouble("pdv"))
+                          / rate;
+          ps.setDouble(9,_DUG);
+
           ps.setString(10, getOperName());
           //calRate.add(Calendar.MONTH, month);
           calrate = calrate.plusMonths(month);
@@ -1571,6 +1570,8 @@ public class ClientWorker implements Runnable {
           }
           ps.setString(11, calrate.format(DateTimeFormatter.ofPattern("yyyy-MM")).toString());
           ps.setDouble(12, rLine.getDouble("pdv"));
+          ps.setInt(13, rLine.getInt("kolicina"));
+          ps.setString(14, rLine.getString("jMere"));
           ps.executeUpdate();
           rs = ps.getGeneratedKeys();
           int id = 0;
@@ -2127,7 +2128,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getMesta")) {
 
-      query = "SELECT * FROM mesta";
+      query = "SELECT * FROM mesta ORDER BY 'nazivMesta'";
       try {
         ps = db.conn.prepareStatement(query);
         rs = ps.executeQuery();
@@ -2251,7 +2252,7 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("getAllAdrese")) {
-      query = "SELECT * FROM adrese";
+      query = "SELECT * FROM adrese ORDER BY nazivAdrese";
       jObj = new JSONObject();
 
       try {
@@ -2287,7 +2288,7 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("getAdrese")) {
-      query = "SELECT * FROM adrese WHERE brojMesta = ?";
+      query = "SELECT * FROM adrese WHERE brojMesta = ? ";
       jObj = new JSONObject();
 
       try {
@@ -4130,7 +4131,7 @@ public class ClientWorker implements Runnable {
         + "mestoRacuna = ?, jAdresaBroj=?, jAdresa = ?, jMesto=?, jBroj=?, "
         + "komentar = ?, firma=?, nazivFirme=?, kontaktOsoba=?, kontaktOsobaTel=?, kodBanke=?, tekuciRacun=?, PIB=?, maticniBroj = ?, "
         +
-        "fax=?, adresaFirme=? WHERE id = ? ";
+        "fax=?, adresaFirme=?, email=? WHERE id = ? ";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -4162,7 +4163,8 @@ public class ClientWorker implements Runnable {
       ps.setString(24, jObju.getString("maticniBroj"));
       ps.setString(25, jObju.getString("fax"));
       ps.setString(26, jObju.getString("adresaFirme"));
-      ps.setInt(27, userID);
+      ps.setString(27, jObju.getString("email"));
+      ps.setInt(28, userID);
       ps.executeUpdate();
       jObj.put("Message", String.format("USER: %s UPDATED", userID));
       ps.close();

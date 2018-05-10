@@ -87,7 +87,7 @@ public class FaktureFunct {
       ps.setString(2, String.format("%s - %s", rs.getString("nazivPaketa"),
           getMonthName(this.zaGodinu.format(DateTimeFormatter.ofPattern("MM")))));
       ps.setString(3, "kom.");
-      ps.setDouble(4, 1);
+      ps.setDouble(4, rs.getInt("kolicina"));
       ps.setDouble(5, rs.getDouble("dug"));
       ps.setDouble(6, rs.getDouble("PDV"));
       ps.setString(7, operName);

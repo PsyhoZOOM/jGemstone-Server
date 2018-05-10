@@ -7,7 +7,6 @@ import java.text.DecimalFormat;
  */
 public class valueToPercent {
 
-  static DecimalFormat df = new DecimalFormat("0.00");
 
   public static Double getValue(Double value, double percentage) {
     double percent = value - (value * percentage / 100);
@@ -28,11 +27,11 @@ public class valueToPercent {
 
   public static Double getValueOfPercentAdd(double value, double perc) {
     double result = (perc / 100 + 1) * value - value;
-    return Double.valueOf(df.format(result));
+    return result;
   }
 
   public static Double getValueOfPercentSub(double value, double perc) {
     double result = value - (value / (perc / 100 + 1));
-    return Double.valueOf(df.format(result));
+    return result;
   }
 }
