@@ -1527,7 +1527,7 @@ public class ClientWorker implements Runnable {
 			*/
 
       LocalDate cal = LocalDate.now();
-      LocalDate calrate = LocalDate.now();
+      LocalDate calrate;
       //	calRate.setTime(formatMonthDate.parse(rLine.getString("zaMesec")));
       calrate = LocalDate
           .parse(rLine.getString("zaMesec") + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -4043,6 +4043,7 @@ public class ClientWorker implements Runnable {
         ps.close();
         rs.close();
       } catch (SQLException e) {
+        jObj.put("ERROR", e.getMessage());
         e.printStackTrace();
       }
       send_object(jObj);

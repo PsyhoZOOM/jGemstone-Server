@@ -1,0 +1,54 @@
+apply plugin : 'java'
+apply plugin : 'application'
+apply plugin : 'java-library'
+
+mainClassName = 'net.yuvideo.jgemstone.server.Server'
+
+repositories {
+             mavenCentral()
+}
+
+
+dependencies {
+             compile group: 'com.sun.jersey.samples', name: 'jacksonjsonprovider', version: '1.19.4'
+             compile group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.27'
+             compile group: 'javax.ws.rs', name: 'javax.ws.rs-api', version: '2.1'
+             compile group: 'net.sourceforge.javacsv', name: 'javacsv', version: '2.0'
+             compile group: 'org.json', name: 'json', version: '20180130'
+             compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.46'
+
+
+             }
+
+sourceSets {
+        main {
+                java {
+                        srcDirs= ["src/main/java"]
+                }
+                resources {
+                        srcDirs= ["src/main/resources"]
+                        includes = ["ssl/*.*"]
+                }
+        }
+}
+
+task getDeps (type: Copy) {
+     from sourceSets.main.runtimeClasspath
+     into 'runtime/'
+}
+
+jar {
+    manifest {
+	attributes "Main-Class": "$mainClassName"
+    }
+}
+
+task fatJar(type: Jar) {
+    manifest.from jar.manifest
+    classifier = 'all'
+    baseName = project.name + '-all'
+    from {
+	configuration.runtime.collect { it.isDirectory() ? it : zipTree(it) }
+	}
+	with jar
+}
