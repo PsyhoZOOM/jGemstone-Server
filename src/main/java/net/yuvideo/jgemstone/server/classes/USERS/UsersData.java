@@ -54,13 +54,14 @@ public class UsersData {
         user.put("firma", rs.getBoolean("firma"));
         user.put("nazivFirme", rs.getString("nazivFirme"));
         user.put("kontaktOsoba", rs.getString("kontaktOsoba"));
-        user.put("konetaktOsobaTel", rs.getString("kontaktOsobaTel"));
+        user.put("kontaktOsobaTel", rs.getString("kontaktOsobaTel"));
         user.put("kodBanke", rs.getString("kodBanke"));
         user.put("PIB", rs.getString("PIB"));
         user.put("tekuciRacun", rs.getString("tekuciRacun"));
         user.put("maticniBroj", rs.getString("maticniBroj"));
         user.put("fax", rs.getString("fax"));
         user.put("adresaFirme", rs.getString("adresaFirme"));
+        user.put("mestoFirme",  rs.getString("mestoFirme"));
 
       }
     } catch (SQLException e) {

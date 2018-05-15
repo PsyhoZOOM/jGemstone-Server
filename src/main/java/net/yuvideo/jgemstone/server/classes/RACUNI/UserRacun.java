@@ -11,14 +11,22 @@ import org.json.JSONObject;
 
 public class UserRacun {
 
-  private final String mestoRacuna;
+  private String mestoRacuna;
+  private String adresaFirme;
+  private String mestoFirme;
   private database db;
   private String zaMesec;
   private String imePrezime;
+  private String nazivFirme;
   private String adresaRacuna;
   private String sifraKorisnika;
   private String datumZaduzenja;
   private String adresaKorisnka;
+  private String PIB;
+  private String maticniBroj;
+  private String kontaktOsobaTel;
+  private String fax;
+  private String tekuciRacun;
 
   private double zaduzenjeZaObrPeriod = 0.00;
   private double ukupnoOsnovica = 0.00;
@@ -39,6 +47,14 @@ public class UserRacun {
     this.adresaKorisnka = userData.getString("adresa");
     this.sifraKorisnika = userData.getString("jBroj");
     this.zaMesec = rLine.getString("zaMesec");
+    this.nazivFirme = userData.getString("nazivFirme");
+    this.adresaFirme = userData.getString("adresaFirme");
+    this.mestoFirme = userData.getString("mestoFirme");
+    this.PIB = userData.getString("PIB");
+    this.maticniBroj = userData.getString("maticniBroj");
+    this.kontaktOsobaTel = userData.getString("kontaktOsobaTel");
+    this.fax = userData.getString("fax");
+    this.tekuciRacun = userData.getString("tekuciRacun");
 
     getDataZaMesec(rLine.getInt("userID"), rLine.getString("zaMesec"));
 
@@ -94,6 +110,14 @@ public class UserRacun {
       finalRacun.put("imePrezime", imePrezime);
       finalRacun.put("adresaKorisnika", adresaKorisnka);
       finalRacun.put("sifraKorisnika", sifraKorisnika);
+      finalRacun.put("nazivFirme", nazivFirme);
+      finalRacun.put("adresaFirme", adresaFirme);
+      finalRacun.put("mestoFirme", mestoFirme);
+      finalRacun.put("PIB", PIB);
+      finalRacun.put("fax", fax);
+      finalRacun.put("tekuciRacun", tekuciRacun);
+      finalRacun.put("maticniBroj", maticniBroj);
+      finalRacun.put("kontaktOsobaTel", kontaktOsobaTel);
       finalRacun.put("zaMesec", zaMesec);
       finalRacun.put("zaPeriod", zaMesec);
       finalRacun.put("adresaRacuna", adresaRacuna);

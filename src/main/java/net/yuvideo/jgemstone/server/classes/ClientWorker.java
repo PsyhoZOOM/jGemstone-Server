@@ -266,6 +266,7 @@ public class ClientWorker implements Runnable {
             jObj.put("tekuciRacun", rs.getString("tekuciRacun"));
             jObj.put("fax", rs.getString("fax"));
             jObj.put("adresaFirme", rs.getString("adresaFirme"));
+            jObj.put("mestoFirme", rs.getString("mestoFirme"));
             jUsers.put(String.valueOf(i), jObj);
             i++;
           } catch (SQLException e) {
@@ -334,6 +335,7 @@ public class ClientWorker implements Runnable {
           jObj.put("maticniBroj", rs.getString("maticniBroj"));
           jObj.put("fax", rs.getString("fax"));
           jObj.put("adresaFirme", rs.getString("adresaFirme"));
+          jObj.put("mestoFirme", rs.getString("mestoFirme"));
           jObj.put("email", rs.getString("email"));
 
         } else {
@@ -3961,19 +3963,6 @@ public class ClientWorker implements Runnable {
       }
 
       obj = rLine;
-      //UNOS NOVIH PODATAKA ILI IZMENA
-      String FIRMA_NAZIV = obj.getString("FIRMA_NAZIV");
-      String FIRMA_ADRESA = obj.getString("FIRMA_ADRESA");
-      String FIRMA_PIB = obj.getString("FIRMA_PIB");
-      String FIRMA_MBR = obj.getString("FIRMA_MBR");
-      String FIRMA_TEKUCIRACUN = obj.getString("FIRMA_TEKUCIRACUN");
-      String FIRMA_TELEFON = obj.getString("FIRMA_TELEFON");
-      String FIRMA_FAX = obj.getString("FIRMA_FAX");
-      String FIRMA_SERVIS_TELEFON = obj.getString("FIRMA_SERVIS_TELEFON");
-      String FIRMA_SERVIS_EMAIL = obj.getString("FIRMA_SERVIS_EMAIL");
-      String FIRMA_WEBPAGE = obj.getString("FIRMA_WEBPAGE");
-      String FIRMA_PEPDV = obj.getString("FIRMA_FAKTURA_PEPDV");
-
       query = "INSERT INTO settings (settings, value) VALUES (?,?)";
 
       try {
@@ -4036,6 +4025,21 @@ public class ClientWorker implements Runnable {
             }
             if(rs.getString("settings").equals("FIRMA_PIB")){
               jObj.put("FIRMA_PIB", rs.getString("value"));
+            }
+            if(rs.getString("settings").equals("FIRMA_MESTO_IZDAVANJA_RACUNA")){
+              jObj.put("FIRMA_MESTO_IZDAVANJA_RACUNA", rs.getString("value"));
+            }
+            if(rs.getString("settings").equals("FIRMA_MESTO_PROMETA_DOBARA")){
+              jObj.put("FIRMA_MESTO_PROMETA_DOBARA", rs.getString("value"));
+            }
+            if(rs.getString("settings").equals("FIRMA_NACIN_PLACANJA_FAKTURA")){
+              jObj.put("FIRMA_NACIN_PLACANJA_FAKTURA", rs.getString("value"));
+            }
+            if(rs.getString("settings").equals("FIRMA_ROK_PLACANJA_RACUN")){
+              jObj.put("FIRMA_ROK_PLACANJA_RACUN", rs.getString("value"));
+            }
+            if(rs.getString("settings").equals("FIRMA_ROK_PLACANJA_FAKTURA")){
+              jObj.put("FIRMA_ROK_PLACANJA_FAKTURA", rs.getString("value"));
             }
           }
 
@@ -4132,7 +4136,7 @@ public class ClientWorker implements Runnable {
         + "mestoRacuna = ?, jAdresaBroj=?, jAdresa = ?, jMesto=?, jBroj=?, "
         + "komentar = ?, firma=?, nazivFirme=?, kontaktOsoba=?, kontaktOsobaTel=?, kodBanke=?, tekuciRacun=?, PIB=?, maticniBroj = ?, "
         +
-        "fax=?, adresaFirme=?, email=? WHERE id = ? ";
+        "fax=?, adresaFirme=?, mestoFirme=?, email=? WHERE id = ? ";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -4164,8 +4168,9 @@ public class ClientWorker implements Runnable {
       ps.setString(24, jObju.getString("maticniBroj"));
       ps.setString(25, jObju.getString("fax"));
       ps.setString(26, jObju.getString("adresaFirme"));
-      ps.setString(27, jObju.getString("email"));
-      ps.setInt(28, userID);
+      ps.setString(27, jObju.getString("mestoFirme"));
+      ps.setString(28, jObju.getString("email"));
+      ps.setInt(29, userID);
       ps.executeUpdate();
       jObj.put("Message", String.format("USER: %s UPDATED", userID));
       ps.close();
