@@ -3,7 +3,6 @@ package net.yuvideo.jgemstone.server.classes.RACUNI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
@@ -33,7 +32,6 @@ public class UserRacun {
   private double ukupnoPDV = 0.00;
   private UsersData user;
 
-  private DecimalFormat df = new DecimalFormat("0.00");
   private JSONObject racun;
 
 
@@ -122,11 +120,11 @@ public class UserRacun {
       finalRacun.put("zaPeriod", zaMesec);
       finalRacun.put("adresaRacuna", adresaRacuna);
       finalRacun.put("mestoRacuna", mestoRacuna);
-      finalRacun.put("ukupnoOsnovica", Double.valueOf(df.format(ukupnoOsnovica)));
-      finalRacun.put("ukupnoPDV", Double.valueOf(df.format(ukupnoPDV)));
-      finalRacun.put("zaduzenjeZaObrPeriod", Double.valueOf(df.format(zaduzenjeZaObrPeriod)));
-      finalRacun.put("prethodniDug", Double.valueOf(df.format(prethodniDug)));
-      finalRacun.put("ukupnoZaUplatu", Double.valueOf(df.format(ukupnoZaUplatu)));
+      finalRacun.put("ukupnoOsnovica", ukupnoOsnovica);
+      finalRacun.put("ukupnoPDV", ukupnoPDV);
+      finalRacun.put("zaduzenjeZaObrPeriod", zaduzenjeZaObrPeriod);
+      finalRacun.put("prethodniDug", prethodniDug);
+      finalRacun.put("ukupnoZaUplatu", ukupnoZaUplatu);
 
       racun.put(String.valueOf(u), finalRacun);
 
@@ -165,13 +163,13 @@ public class UserRacun {
       tmp.put("nazivUsluge", nazivUsluge);
       tmp.put("kolicina", kolicina);
       tmp.put("jMere", jMere);
-      tmp.put("cena", Double.valueOf(df.format(cena)));
-      tmp.put("popust", Double.valueOf(df.format(stopaPopust)));
-      tmp.put("osnovica", Double.valueOf(df.format(osnovica)));
-      tmp.put("pdv", Double.valueOf(df.format(pdv)));
-      tmp.put("stopaPDV", Double.valueOf(df.format(stopaPDV)));
-      tmp.put("ukupno", Double.valueOf(df.format(ukupno)));
-      tmp.put("vrednostBezPDV", Double.valueOf(df.format(vrednostBezPDV)));
+      tmp.put("cena", cena);
+      tmp.put("popust", stopaPopust);
+      tmp.put("osnovica", osnovica);
+      tmp.put("pdv", pdv);
+      tmp.put("stopaPDV", stopaPDV);
+      tmp.put("ukupno", ukupno);
+      tmp.put("vrednostBezPDV", vrednostBezPDV);
       racunNew.put(String.valueOf(i), tmp);
 
     }

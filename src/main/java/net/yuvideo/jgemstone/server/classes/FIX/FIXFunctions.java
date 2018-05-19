@@ -3,7 +3,6 @@ package net.yuvideo.jgemstone.server.classes.FIX;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.database;
@@ -15,7 +14,6 @@ import org.json.JSONObject;
  */
 public class FIXFunctions {
 
-  private static DecimalFormat df = new DecimalFormat("#,##0.00");
 
   public static Boolean check_TELBr_bussy(String fix_tel, database db) {
     PreparedStatement ps;
@@ -134,7 +132,6 @@ public class FIXFunctions {
       String operName, database db) {
     PreparedStatement ps;
     ResultSet rs = null;
-    DecimalFormat df = new DecimalFormat("0.00");
     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     //String query = "INSERT INTO FIX_Debts (zaMesec, dug, account, operName, datumZaduzenja) " +
     //        "VALUES (?,?,?,?,?)";
@@ -178,10 +175,10 @@ public class FIXFunctions {
       ps.setInt(4, rs.getInt("userID"));
       ps.setDouble(5, rs.getDouble("popust"));
       ps.setString(6, "FIX_SAOBRACAJ");
-      ps.setDouble(7, Double.valueOf(df.format(cena)));
+      ps.setDouble(7, cena);
       ps.setDouble(8, 0.00);
       ps.setString(9, "1000-01-01 00:00:00");
-      ps.setDouble(10, Double.valueOf(df.format(dug)));
+      ps.setDouble(10, dug);
       ps.setString(11, "");
       ps.setString(12, "SYSTEM");
       ps.setString(13, zaMesec);

@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -31,7 +30,6 @@ public class ServicesFunctions {
       .ofPattern("yyyy-MM-dd'T'HH:mm:ss");
   private static DateTimeFormatter dtfMesecZaduzenja = DateTimeFormatter.ofPattern("yyyy-MM");
   private static DateTimeFormatter dtfIPTV = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private static DecimalFormat df = new DecimalFormat("#.##");
 
   private boolean haveError = false;
   private String errorMessage = "";
@@ -668,7 +666,7 @@ public class ServicesFunctions {
       dug = dug + valueToPercent.getDiffValue(dug, pdv);
       ps.setDouble(7, cena);
       ps.setDouble(8, 0.00);
-      ps.setDouble(9, Double.parseDouble(df.format(dug)));
+      ps.setDouble(9, dug);
       ps.setString(10, operName);
       ps.setString(11, calZaMesec.format(dtfMesecZaduzenja));
       ps.setDouble(12, rLine.getDouble("pdv"));
@@ -787,7 +785,7 @@ public class ServicesFunctions {
       ps.setInt(4, rs.getInt("userID"));
       ps.setString(5, rs.getString("paketType"));
       ps.setDouble(6, cenaServiceOrig);
-      ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
+      ps.setDouble(7, zaUplatu);
       ps.setDouble(8, rs.getDouble("popust"));
       ps.setString(9, operName);
       ps.setString(10, LocalDate.now().format(dtfMesecZaduzenja));
@@ -877,7 +875,7 @@ public class ServicesFunctions {
         ps.setInt(4, rs.getInt("userID"));
         ps.setString(5, rs.getString("paketType"));
         ps.setDouble(6, cenaServiceOrig);
-        ps.setDouble(7, Double.parseDouble(df.format(zaUplatu)));
+        ps.setDouble(7, zaUplatu);
         ps.setDouble(8, rs.getDouble("popust"));
         ps.setString(9, operName);
         ps.setString(10, LocalDate.now().format(dtfMesecZaduzenja));

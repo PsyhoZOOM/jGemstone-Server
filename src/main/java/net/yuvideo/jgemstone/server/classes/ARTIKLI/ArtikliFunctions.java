@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
@@ -22,7 +21,6 @@ public class ArtikliFunctions {
   private boolean haveError = false;
   private String error = "";
   private JSONObject artikli;
-  private DecimalFormat df = new DecimalFormat("0.00");
 
   public ArtikliFunctions(database db, String operName) {
     this.operName = operName;
@@ -48,7 +46,7 @@ public class ArtikliFunctions {
       ps.setString(6, rLine.getString("mac"));
       ps.setString(7, rLine.getString("dobavljac"));
       ps.setString(8, rLine.getString("brDokumenta"));
-      ps.setDouble(9, Double.valueOf(df.format(rLine.getDouble("nabavnaCena"))));
+      ps.setDouble(9, rLine.getDouble("nabavnaCena"));
       ps.setString(10, rLine.getString("jMere"));
       ps.setInt(11, rLine.getInt("kolicina"));
       ps.setString(12, rLine.getString("opis"));

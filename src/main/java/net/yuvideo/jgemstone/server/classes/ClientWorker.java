@@ -14,7 +14,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.text.DecimalFormat;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -46,7 +45,6 @@ import org.json.JSONObject;
  */
 public class ClientWorker implements Runnable {
 
-  private static final DecimalFormat df = new DecimalFormat("0.00");
   private static final Logger LOGGER = Logger.getLogger("CLIENT");
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -254,7 +252,8 @@ public class ClientWorker implements Runnable {
             jObj.put("mestoUsluge", mestaFuncitons.getNazivMesta(rs.getString("jMesto")));
 
             //DUG
-            jObj.put("dug", df.format(get_userDebt(rs.getInt("id"))));
+            jObj.put("dug", get_userDebt(rs.getInt("id")));
+
             //FIRMA
             jObj.put("firma", rs.getBoolean("firma"));
             jObj.put("nazivFirme", rs.getString("nazivFirme"));
@@ -1235,7 +1234,7 @@ public class ClientWorker implements Runnable {
 
       ukupanDug = dug - uplaceno;
 
-      jObj.put("ukupanDug", Double.valueOf(df.format(ukupanDug)));
+      jObj.put("ukupanDug", ukupanDug);
       send_object(jObj);
       return;
     }
@@ -1415,7 +1414,7 @@ public class ClientWorker implements Runnable {
         query = "UPDATE userDebts set uplaceno = ? where id=?";
         try {
           ps = db.conn.prepareStatement(query);
-          ps.setDouble(1, Double.parseDouble(df.format(zaUplatuPaket)));
+          ps.setDouble(1, zaUplatuPaket);
           ps.setInt(2, idFixPaket);
           ps.executeUpdate();
           ps.close();
@@ -1427,7 +1426,7 @@ public class ClientWorker implements Runnable {
         query = "UPDATE userDebts set uplaceno =? where id=?";
         try {
           ps = db.conn.prepareStatement(query);
-          ps.setDouble(1, Double.parseDouble(df.format(zaUplatuSaobracaj)));
+          ps.setDouble(1, zaUplatuSaobracaj);
           ps.setInt(2, idFixSaobracaj);
           ps.executeUpdate();
         } catch (SQLException e) {
@@ -1457,7 +1456,7 @@ public class ClientWorker implements Runnable {
 
         try {
           ps = db.conn.prepareStatement(query);
-          ps.setDouble(1, Double.valueOf(df.format(zaUplatu)));
+          ps.setDouble(1, zaUplatu);
           ps.setString(2, date_format_full.format(Calendar.getInstance().getTime()));
           ps.setString(3, getOperName());
           ps.setInt(4, rLine.getInt("id"));
@@ -3639,8 +3638,8 @@ public class ClientWorker implements Runnable {
             JSONObject obj = new JSONObject();
             obj.put("id", rs.getInt("id"));
             obj.put("naziv", rs.getString("naziv"));
-            obj.put("cena", Double.valueOf(df.format(rs.getDouble("cena"))));
-            obj.put("pdv", Double.valueOf(df.format(rs.getDouble("pdv"))));
+            obj.put("cena", Double.valueOf(rs.getDouble("cena")));
+            obj.put("pdv", Double.valueOf(rs.getDouble("pdv")));
             obj.put("cenaPDV", Double.valueOf(rs.getDouble("cena") + valueToPercent
                 .getValueOfPercentAdd(rs.getDouble("cena"), rs.getDouble("pdv"))));
             obj.put("opis", rs.getString("opis"));

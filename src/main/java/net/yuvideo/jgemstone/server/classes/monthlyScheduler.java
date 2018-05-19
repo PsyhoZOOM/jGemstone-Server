@@ -3,7 +3,6 @@ package net.yuvideo.jgemstone.server.classes;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -24,7 +23,6 @@ public class monthlyScheduler {
   private SimpleDateFormat forma_normal_date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
   private SimpleDateFormat format_date = new SimpleDateFormat("yyyy-MM-dd");
   private DateTimeFormatter format_month = DateTimeFormatter.ofPattern("yyyy-MM");
-  private DecimalFormat df = new DecimalFormat("0.##");
   private Users users;
   private ArrayList<Users> usersArrayList = new ArrayList<>();
   private PreparedStatement ps;
@@ -69,7 +67,7 @@ public class monthlyScheduler {
           dug = dug + valueToPercent.getDiffValue(dug, pdv);
           psUpdateDebts.setDouble(7, cena);
           //cena+pdv-popust=dug
-          psUpdateDebts.setDouble(8, Double.parseDouble(df.format(dug)));
+          psUpdateDebts.setDouble(8, dug);
           psUpdateDebts.setString(9, date.format(format_month));
           psUpdateDebts.setDouble(10, rs.getDouble("pdv"));
           if (!rs.getBoolean("newService")) {

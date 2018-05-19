@@ -3,7 +3,6 @@ package net.yuvideo.jgemstone.server.classes.OBRACUNI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
@@ -16,7 +15,6 @@ public class MesecniObracun {
   public boolean hasError = false;
   public String errorMessage = "";
   public JSONObject mesecniObracunObject;
-  DecimalFormat df = new DecimalFormat("0.00");
   DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM");
   DateTimeFormatter dtfNormal = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private String operName;
@@ -45,9 +43,9 @@ public class MesecniObracun {
           Double popust = rs.getDouble("popust");
           Double pdv = rs.getDouble("pdv");
           Double cenaSaPopustom = Double
-              .valueOf(df.format(cena - valueToPercent.getDiffValue(cena, popust)));
+              .valueOf(cena - valueToPercent.getDiffValue(cena, popust));
           Double pdvCena = Double
-              .valueOf(df.format(valueToPercent.getValueOfPercentAdd(cenaSaPopustom, pdv)));
+              .valueOf(valueToPercent.getValueOfPercentAdd(cenaSaPopustom, pdv));
           UsersData user = new UsersData(db, operName);
           JSONObject userObj = user.getUserData(rs.getInt("userID"));
           String imePrezime = userObj.getString("ime");
@@ -56,11 +54,11 @@ public class MesecniObracun {
           mesec.put("id", rs.getInt("id"));
           mesec.put("imePrezime", imePrezime);
           mesec.put("jBroj", jBroj);
-          mesec.put("cena", (Double.valueOf(df.format(cenaSaPopustom))));
-          mesec.put("popust", Double.valueOf(df.format(popust)));
-          mesec.put("pdv", Double.valueOf(df.format(pdv)));
-          mesec.put("pdvCena", Double.valueOf(df.format(pdvCena)));
-          mesec.put("ukupno", Double.valueOf(df.format(cenaSaPopustom + pdvCena)));
+          mesec.put("cena", (cenaSaPopustom));
+          mesec.put("popust", popust);
+          mesec.put("pdv",pdv);
+          mesec.put("pdvCena", pdvCena);
+          mesec.put("ukupno", cenaSaPopustom + pdvCena);
           mesecniObracunObject.put(String.valueOf(i), mesec);
           i++;
         }
