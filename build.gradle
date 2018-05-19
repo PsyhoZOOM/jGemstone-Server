@@ -49,7 +49,7 @@ task fatJar(type: Jar) {
     classifier = 'all'
     baseName = project.name + '-all'
     from {
-	configuration.runtime.collect { it.isDirectory() ? it : zipTree(it) }
+	configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
 	}
 	with jar
 }
