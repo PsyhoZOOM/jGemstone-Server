@@ -1557,10 +1557,11 @@ public class ClientWorker implements Runnable {
           ps.setString(6, rLine.getString("paketType"));
           ps.setDouble(7, rLine.getDouble("cena"));
           ps.setDouble(8, 0.00);
-          Double _DUG = (rLine.getDouble("cena") * rLine.getInt("kolicina")) +
-              valueToPercent.getPDVOfValue(
-                  rLine.getDouble("cena") * rLine.getInt("kolicina") , rLine.getDouble("pdv"))
-                          / rate;
+          double cena = rLine.getDouble("cena");
+          double kolicina = rLine.getInt("kolicina");
+          double ukupno = kolicina * cena;
+          double dug = ukupno /rate;
+          double _DUG = dug + valueToPercent.getPDVOfValue(dug, rLine.getDouble("pdv"));
           ps.setDouble(9,_DUG);
 
           ps.setString(10, getOperName());
