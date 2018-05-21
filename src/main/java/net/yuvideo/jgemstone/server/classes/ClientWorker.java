@@ -1558,7 +1558,7 @@ public class ClientWorker implements Runnable {
           ps.setDouble(7, rLine.getDouble("cena"));
           ps.setDouble(8, 0.00);
           Double _DUG = (rLine.getDouble("cena") * rLine.getInt("kolicina")) +
-              valueToPercent.getDiffValue(
+              valueToPercent.getPDVOfValue(
                   rLine.getDouble("cena") * rLine.getInt("kolicina") , rLine.getDouble("pdv"))
                           / rate;
           ps.setDouble(9,_DUG);
@@ -1968,7 +1968,7 @@ public class ClientWorker implements Runnable {
             faktureData.put("pdv", rs.getDouble("pdv"));
             double cena = rs.getDouble("cenaBezPDV");
             double pdv = rs.getDouble("pdv");
-            double iznosPDV = +valueToPercent.getDiffValue(cena, pdv);
+            double iznosPDV = +valueToPercent.getPDVOfValue(cena, pdv);
             double iznosSaPDV = cena + iznosPDV;
             faktureData.put("VrednostSaPDV", iznosSaPDV);
             faktureData.put("iznosPDV", iznosPDV);
@@ -3641,7 +3641,7 @@ public class ClientWorker implements Runnable {
             obj.put("cena", Double.valueOf(rs.getDouble("cena")));
             obj.put("pdv", Double.valueOf(rs.getDouble("pdv")));
             obj.put("cenaPDV", Double.valueOf(rs.getDouble("cena") + valueToPercent
-                .getValueOfPercentAdd(rs.getDouble("cena"), rs.getDouble("pdv"))));
+                .getPDVOfValue(rs.getDouble("cena"), rs.getDouble("pdv"))));
             obj.put("opis", rs.getString("opis"));
             jObj.put(String.valueOf(i), obj);
             i++;

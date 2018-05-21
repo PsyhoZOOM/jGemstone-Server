@@ -151,9 +151,9 @@ public class UserRacun {
       double vrednostBezPDV=  osnovica;
       double ukupno;
 
-      popust = valueToPercent.getDiffValue(osnovica, stopaPopust);
+      popust = valueToPercent.getPDVOfSum(osnovica, stopaPopust);
       osnovica -= popust;
-      pdv = valueToPercent.getDiffValue(osnovica, stopaPDV);
+      pdv = valueToPercent.getPDVOfValue(osnovica, stopaPDV);
       ukupno = osnovica + pdv;
       zaduzenjeZaObrPeriod += osnovica + pdv;
       ukupnoPDV += pdv;
@@ -248,8 +248,8 @@ public class UserRacun {
           double popust = rs.getDouble("popust");
           double cena = rs.getDouble("cena");
           double pdv = rs.getDouble("pdv");
-          double iznos = cena - valueToPercent.getValueOfPercentSub(cena, popust);
-          prethodniDug += iznos + valueToPercent.getValueOfPercentAdd(iznos, pdv);
+          double iznos = cena - valueToPercent.getPDVOfSum(cena, popust);
+          prethodniDug += iznos + valueToPercent.getPDVOfValue(iznos, pdv);
 
         }
       }

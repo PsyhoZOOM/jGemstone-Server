@@ -63,8 +63,8 @@ public class monthlyScheduler {
           double cena = rs.getDouble("cena");
           double pdv = rs.getDouble("pdv");
           double popust = rs.getDouble("popust");
-          double dug = cena - valueToPercent.getDiffValue(cena, popust);
-          dug = dug + valueToPercent.getDiffValue(dug, pdv);
+          double dug = cena - valueToPercent.getPDVOfSum(cena, popust);
+          dug = dug + valueToPercent.getPDVOfValue(dug, pdv);
           psUpdateDebts.setDouble(7, cena);
           //cena+pdv-popust=dug
           psUpdateDebts.setDouble(8, dug);

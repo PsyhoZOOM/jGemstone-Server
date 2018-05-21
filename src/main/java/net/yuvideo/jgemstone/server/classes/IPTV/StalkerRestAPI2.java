@@ -1,5 +1,12 @@
 package net.yuvideo.jgemstone.server.classes.IPTV;
 
+import com.sun.java.swing.plaf.motif.MotifEditorPaneUI;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.json.JSONConfiguration;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
@@ -14,18 +21,10 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import net.yuvideo.jgemstone.server.classes.database;
-import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -37,10 +36,8 @@ public class StalkerRestAPI2 {
   public String hostMessage;
   Client apiClient;
   ClientConfig clientConfig;
-  Response response;
-  WebTarget target;
-  Invocation.Builder builder;
-  HttpAuthenticationFeature hhtpAuthFeature;
+  ClientResponse response;
+  WebResource webResource;
   private database db;
   private String username;
   private String pass;
@@ -85,62 +82,73 @@ public class StalkerRestAPI2 {
     AuthString = username + ":" + pass;
     AuthStringENC = Base64.getEncoder().encodeToString(AuthString.getBytes());
 
-    hhtpAuthFeature = HttpAuthenticationFeature.basic(username, pass);
-    clientConfig = new ClientConfig();
-    clientConfig.register(hhtpAuthFeature);
-    clientConfig.register(JacksonJsonProvider.class);
-    apiClient = ClientBuilder.newClient(clientConfig);
-    target = apiClient.target(url);
+    clientConfig = new DefaultClientConfig();
+    clientConfig.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
 
-    checkIsHostAlive();
+    apiClient = Client.create(clientConfig);
+    webResource =  apiClient.resource(url).path("itv");
+    response = webResource.accept("application/json")
+        .header("Authorization","Basic "+ AuthStringENC)
+        .get(ClientResponse.class);
+    System.out.println(response.getEntity(String.class));
+    if(response.getStatus() != 200 ){
+      isHostAlive  = false;
+      return;
+    }else {
+      isHostAlive = true;
+    }
+
+
   }
 
   public JSONObject getPakets_ALL() {
     JSONObject jsonObject = null;
     JSONArray jsonArray;
+    String a = null;
 
-    target = target.path("tariffs");
-    builder = target.request(MediaType.APPLICATION_JSON);
+    setupAPI();
 
-    response = builder.get();
+    webResource = apiClient.resource(url).path("tariffs");
+    response = webResource.accept("application/json")
+        .header("Authorization", "Basic " + this.AuthStringENC)
+        .get(ClientResponse.class);
+
+
 
     if (response.getStatus() != 200) {
       jsonObject = new JSONObject();
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
-      String a = response.readEntity(String.class);
-      jsonArray = new JSONObject(a).getJSONArray("results");
-      jsonObject = new JSONObject();
+      try {
+        a = response.getEntity(String.class);
+        hostMessage = a;
 
-      for (int i = 0; i < jsonArray.length(); i++) {
-        jsonObject.put(String.valueOf(i), jsonArray.get(i));
+      }catch (JSONException e){
+        System.out.println(e.getMessage());
       }
+      jsonObject = new JSONObject(a);
+
     }
+    System.out.println(a);
 
-    return jsonObject;
-  }
+    JSONObject jsonTariffs =new JSONObject();
 
-  public JSONObject getUsersData(int accounID) {
-    JSONObject jsonObject = new JSONObject();
-    target = target.path("accounts");
-    builder = target.request(MediaType.APPLICATION_JSON);
-    response = builder.get();
-
-    if (response.getStatus() != 200) {
-      jsonObject.put("ERROR", response.getStatusInfo());
-    } else {
-      JSONArray jsonArr = new JSONObject(response.readEntity(String.class)).getJSONArray("results");
-      for (int i = 0; i < jsonArr.length(); i++) {
-        jsonObject.put(String.valueOf(i), jsonArr.get(i));
+    for(String key : jsonObject.keySet()){
+      System.out.println(String.format("Key %s: %s",key, jsonObject.get(key)));
+      if(key.equals("results")){
+        JSONArray obj = jsonObject.getJSONArray("results");
+        for(int i =0; i<obj.length();i++){
+          jsonTariffs.put(String.valueOf(i), obj.getJSONObject(i));
+        }
       }
 
     }
-
-    return jsonObject;
+    return jsonTariffs;
   }
+
 
   public JSONObject saveUSER(JSONObject rLine) {
-    checkIsHostAlive();
+    setupAPI();
     if (!isHostAlive) {
       JSONObject jsonObject = new JSONObject();
       jsonObject.put("ERROR",
@@ -150,7 +158,7 @@ public class StalkerRestAPI2 {
 
     }
     JSONObject jsonObject = new JSONObject();
-    target = target.path("accounts");
+    webResource = apiClient.resource(url).path("accounts");
 
     JSONObject jobj = new JSONObject();
     jobj
@@ -176,32 +184,38 @@ public class StalkerRestAPI2 {
       postStr += key + "=" + stringObjectMap.get(key) + "&";
     }
 
-    response = target.request(MediaType.APPLICATION_JSON)
-        .post(Entity.entity(postStr, MediaType.APPLICATION_JSON), Response.class);
+
+    response = webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic "+this.AuthStringENC)
+        .post(ClientResponse.class, postStr);
+
 
     if (response.getStatus() != 200) {
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
-      jsonObject.put("MESSAGE", response.readEntity(String.class));
+      jsonObject.put("MESSAGE", response.getEntity(String.class));
       System.out.println(jsonObject.get("MESSAGE"));
     }
+
 
     return jsonObject;
   }
 
   public JSONObject setEndDate(String STB_MAC, String endDate) {
     JSONObject jsonObject = new JSONObject();
-    target = target.path("accounts")
-        .path(STB_MAC);
+    setupAPI();
     JSONObject jendDate = new JSONObject();
-    jendDate.put("end_date", endDate);
 
-    response = target.request(MediaType.APPLICATION_JSON).put(Entity.json("end_date=" + endDate));
+
+    webResource = apiClient.resource(url).path("accounts").path(STB_MAC);
+    response = webResource.accept(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic "+AuthStringENC)
+        .put(ClientResponse.class, "&end_date="+endDate);
 
     if (response.getStatus() != 200) {
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
-      jsonObject = new JSONObject(response.readEntity(String.class));
+      jsonObject = new JSONObject(response.getEntity(String.class));
     }
 
     return jsonObject;
@@ -209,16 +223,16 @@ public class StalkerRestAPI2 {
 
   public JSONObject getAccInfo(String stb_mac) {
     JSONObject jsonObject = new JSONObject();
-    target = target.path("accounts");
-    target = target.path(stb_mac);
+    setupAPI();
 
-    builder = target.request(MediaType.APPLICATION_JSON);
-    response = builder.get();
-
+    webResource = apiClient.resource(url).path("accounts").path(stb_mac);
+    response = webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic "+AuthStringENC)
+        .get(ClientResponse.class);
     if (response.getStatus() != 200) {
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
-      jsonObject = new JSONObject(response.readEntity(String.class));
+      jsonObject = new JSONObject(response.getEntity(String.class));
     }
 
     return jsonObject;
@@ -226,41 +240,39 @@ public class StalkerRestAPI2 {
 
   public JSONObject deleteAccount(String stb_mac) {
     JSONObject jsonObject = new JSONObject();
+    setupAPI();
     if (stb_mac == null) {
       jsonObject.put("ERROR", "MISSING_MAC");
       return jsonObject;
     }
 
-    target = target.path("accounts")
-        .path(stb_mac);
-    builder = target.request(MediaType.APPLICATION_JSON);
-    response = builder.delete();
 
-    if (response.getStatus() != 200) {
-      jsonObject.put("ERROR", response.getStatusInfo());
-    } else {
-      jsonObject = new JSONObject(response.readEntity(String.class));
-    }
+    webResource = apiClient.resource(url).path("accounts").path(stb_mac);
+    webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic "+AuthStringENC)
+        .delete();
+
 
     return jsonObject;
   }
 
   public JSONObject changeMac(int acc, String stb_mac) {
     JSONObject jsonObject = new JSONObject();
+    setupAPI();
     if (acc <= 0 || stb_mac == null) {
       jsonObject.put("ERROR", "ACCOUNT_OR_MAC_EMPTY");
       return jsonObject;
     }
-    target = target.path("accounts");
-    target = target.path(String.valueOf(acc));
 
-    response = target.request(MediaType.APPLICATION_JSON)
-        .put(Entity.entity("stb_mac=" + stb_mac, MediaType.APPLICATION_JSON));
+    webResource = apiClient.resource(url).path("accounts").path(String.valueOf(acc));
+    response = webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic "+AuthStringENC)
+        .put(ClientResponse.class, "stb_mac="+stb_mac);
 
     if (response.getStatus() != 200) {
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
-      jsonObject = new JSONObject(response.readEntity(String.class));
+      jsonObject = new JSONObject(response.getEntity(String.class));
       System.out.println("IPTV_ACCOUNT_CHANGE_MAC:  " + jsonObject.toString());
     }
 
@@ -269,17 +281,17 @@ public class StalkerRestAPI2 {
 
   public boolean checkUser(String stb_mac) {
     boolean userExist = true;
+    setupAPI();
     JSONObject jsonObject = new JSONObject();
-    target = target.path("accounts");
-    target = target.path(stb_mac);
-
-    builder = target.request(MediaType.APPLICATION_JSON);
-    response = builder.get();
+    webResource = apiClient.resource(url).path("accounts").path(stb_mac);
+    response = webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic "+AuthStringENC)
+        .get(ClientResponse.class);
 
     if (response.getStatus() != 200) {
       userExist = true;
     } else {
-      jsonObject = new JSONObject(response.readEntity(String.class));
+      jsonObject = new JSONObject(response.getEntity(String.class));
 
       userExist = !jsonObject.has("error");
     }
@@ -287,45 +299,49 @@ public class StalkerRestAPI2 {
     return userExist;
   }
 
-  public void activateStatus(boolean status, String stb_mac) {
+  public JSONObject activateStatus(boolean status, String stb_mac) {
     JSONObject jsonObject = new JSONObject();
+    setupAPI();
+    if(!isHostAlive){
+     jsonObject.put("ERROR", "GRESKA: "+hostMessage);
+     return jsonObject;
+    }
     int statusInt = 0;
     if (status) {
       statusInt = 1;
     }
-    target = target.path("accounts");
-    target = target.path(stb_mac);
 
-    jsonObject.put("status", statusInt);
-    response = target.request(MediaType.APPLICATION_JSON)
-        .put(Entity.entity("status=" + statusInt, MediaType.APPLICATION_JSON));
+    webResource = apiClient.resource(url).path("accounts").path(stb_mac);
+    response = webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic "+this.AuthStringENC)
+        .put(ClientResponse.class, "&status="+statusInt);
 
     if (response.getStatus() != 200) {
       jsonObject = new JSONObject();
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
-      jsonObject = new JSONObject(response.readEntity(String.class));
-
-      System.out.println(jsonObject);
+      jsonObject = new JSONObject(response.getEntity(String.class));
     }
 
     System.out.println("AKTIVATE_STATUS: " + jsonObject);
+    return  jsonObject;
 
   }
 
   public String get_end_date(String STB_MAC) {
     JSONObject jsonObject = new JSONObject();
+    setupAPI();
     String end_date = "0000-00-00";
-    target = target.path("accounts");
-    target = target.path(STB_MAC);
-    builder = target.request(MediaType.APPLICATION_JSON);
-    response = builder.get();
+    webResource = apiClient.resource(url).path("accounts").path(STB_MAC);
+    response = webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic "+AuthStringENC)
+        .get(ClientResponse.class);
 
     if (response.getStatus() != 200) {
       jsonObject = new JSONObject();
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
-      jsonObject = new JSONObject(response.readEntity(String.class));
+      jsonObject = new JSONObject(response.getEntity(String.class));
 
       JSONArray jsonarr = jsonObject.getJSONArray("results");
       for (int i = 0; i < jsonarr.length(); i++) {
@@ -341,33 +357,5 @@ public class StalkerRestAPI2 {
     return end_date;
   }
 
-  private void checkIsHostAlive() {
-    try {
-      URL urlSite = new URL(this.url);
-      HttpURLConnection connection = (HttpURLConnection) urlSite.openConnection();
-      connection.setRequestMethod("GET");
-      try {
-        connection.connect();
-
-      } catch (ConnectException e) {
-        e.getMessage();
-      } finally {
-        this.isHostAlive = false;
-      }
-
-      int code = connection.getResponseCode();
-      if (code == 200) {
-        this.isHostAlive = true;
-
-      }
-
-    } catch (MalformedURLException ex) {
-      Logger.getLogger(StalkerRestAPI2.class.getName()).log(Level.SEVERE, null, ex);
-    } catch (IOException ex) {
-      this.hostMessage = ex.getMessage();
-      Logger.getLogger(StalkerRestAPI2.class.getName()).log(Level.SEVERE, null, ex);
-    }
-
-  }
 
 }

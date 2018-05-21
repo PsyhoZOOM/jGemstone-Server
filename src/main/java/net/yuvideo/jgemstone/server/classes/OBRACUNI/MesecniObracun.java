@@ -43,9 +43,9 @@ public class MesecniObracun {
           Double popust = rs.getDouble("popust");
           Double pdv = rs.getDouble("pdv");
           Double cenaSaPopustom = Double
-              .valueOf(cena - valueToPercent.getDiffValue(cena, popust));
+              .valueOf(cena - valueToPercent.getPDVOfValue(cena, popust));
           Double pdvCena = Double
-              .valueOf(valueToPercent.getValueOfPercentAdd(cenaSaPopustom, pdv));
+              .valueOf(cena + valueToPercent.getPDVOfValue(cenaSaPopustom, pdv));
           UsersData user = new UsersData(db, operName);
           JSONObject userObj = user.getUserData(rs.getInt("userID"));
           String imePrezime = userObj.getString("ime");

@@ -662,8 +662,8 @@ public class ServicesFunctions {
       double cena = rLine.getDouble("cena");
       double pdv = rLine.getDouble("pdv");
       double popust = rLine.getDouble("popust");
-      double dug = cena - valueToPercent.getDiffValue(cena, popust);
-      dug = dug + valueToPercent.getDiffValue(dug, pdv);
+      double dug = cena - valueToPercent.getPDVOfSum(cena, popust);
+      dug = dug + valueToPercent.getPDVOfValue(dug, pdv);
       ps.setDouble(7, cena);
       ps.setDouble(8, 0.00);
       ps.setDouble(9, dug);
@@ -740,9 +740,9 @@ public class ServicesFunctions {
       cenaServiceOrig = cenaService;
       pdv = rs.getDouble("PDV");
       popust = rs.getDouble("popust");
-      cenaService = cenaService + valueToPercent.getDiffValue(cenaService, pdv);
-      cenaService = cenaService - valueToPercent.getDiffValue(cenaService, popust);
-      cenaServiceOrig = cenaServiceOrig - valueToPercent.getDiffValue(cenaServiceOrig, popust);
+      cenaService = cenaService + valueToPercent.getPDVOfValue(cenaService, pdv);
+      cenaService = cenaService - valueToPercent.getPDVOfSum(cenaService, popust);
+      cenaServiceOrig = cenaServiceOrig - valueToPercent.getPDVOfSum(cenaServiceOrig, popust);
 
     } catch (SQLException e) {
       e.printStackTrace();
@@ -846,8 +846,8 @@ public class ServicesFunctions {
         Double zaUplatu = 0.00;
         Double cenaZaDan = 0.00;
         Double cenaZaDaOrig = 0.00;
-        cenaService = cenaService + valueToPercent.getDiffValue(cenaService, pdv);
-        cenaService = cenaService - valueToPercent.getDiffValue(cenaService, popust);
+        cenaService = cenaService - valueToPercent.getPDVOfSum(cenaService, popust);
+        cenaService = cenaService + valueToPercent.getPDVOfValue(cenaService, pdv);
 
         if (rs.getBoolean("newService")) {
           daysInMonth = date.getMonth().length(LocalDate.now().isLeapYear());

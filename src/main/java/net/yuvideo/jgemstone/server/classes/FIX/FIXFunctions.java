@@ -165,8 +165,8 @@ public class FIXFunctions {
       double popust = rs.getDouble("popust");
       double pdv = rs.getDouble("PDV");
 
-      double dug = cena - valueToPercent.getDiffValue(cena, popust);
-      dug = dug + valueToPercent.getDiffValue(cena, pdv);
+      double dug = cena - valueToPercent.getPDVOfValue(cena, popust);
+      dug = dug + valueToPercent.getPDVOfSum(cena, pdv);
 
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, rs.getInt("id"));
@@ -229,8 +229,8 @@ public class FIXFunctions {
         double cena = rs.getDouble("cena");
         double pdv = rs.getDouble("PDV");
         double popust = rs.getDouble("popust");
-        double ukupno = cena - valueToPercent.getDiffValue(cena, popust);
-        ukupno = ukupno + valueToPercent.getDiffValue(ukupno, pdv);
+        double ukupno = cena - valueToPercent.getPDVOfSum(cena, popust);
+        ukupno = ukupno + valueToPercent.getPDVOfValue(ukupno, pdv);
 
         jsonObject.put("popust", popust);
         jsonObject.put("paketType", rs.getString("paketType"));
