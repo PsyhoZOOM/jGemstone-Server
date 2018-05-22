@@ -542,7 +542,6 @@ public class ServicesFunctions {
     }
 
     //brisanje IPTV tarife RESTAPIjem
-    System.out.println("MAC ZA BRSIANJ:" + mac);
     StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
     stalkerRestAPI2.deleteAccount(mac);
 
@@ -717,8 +716,19 @@ public class ServicesFunctions {
       if (resultSet.isBeforeFirst()) {
         while (resultSet.next()) {
           produziService(resultSet.getInt("id"), operName, false, db);
+          //status on STALKER
+          try {
+            if (resultSet.getString("paketType").equals("IPTV") || resultSet.getString("paketType")
+                .equals("LINKED_IPTV")) {
+              StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+              stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
+            }
+          } catch (SQLException e) {
+            e.printStackTrace();
+          }
         }
       }
+      resultSet.close();
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -752,16 +762,7 @@ public class ServicesFunctions {
     Double cenaZaDanOrig = 0.00;
     LocalDateTime date = LocalDateTime.now();
 
-    //status on STALKER
-    try {
-      if (rs.getString("paketType").equals("IPTV") || rs.getString("paketType")
-          .equals("LINKED_IPTV")) {
-        StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
-        stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
-      }
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
+
 
     try {
       if (rs.getBoolean("newService")) {
@@ -1067,7 +1068,6 @@ public class ServicesFunctions {
     String eDate = LocalDateTime.of(endDate, LocalTime.of(00, 00, 00)).format(dtfIPTV);
     StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
     stalkerRestAPI2.setEndDate(STB_MAC, eDate);
-    System.out.println("ENDATE IPTV: " + STB_MAC + " " + eDate);
   }
 
   public static String getIdentify(int id_servicesUser, database db) {
