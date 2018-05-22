@@ -79,10 +79,14 @@ public class UserRacun {
           JSONObject racunSingle = new JSONObject();
           nazivUsluge = rs.getString("nazivPaketa");
           datumZaduzenja = rs.getString("datumZaduzenja");
-          double cena = rs.getDouble("cena");
+ //         double cena = rs.getDouble("cena");
           double stopaPopust = rs.getDouble("popust");
           double stopaPDV = rs.getDouble("PDV");
           int kolicina = rs.getInt("kolicina");
+          double cena = rs.getDouble("dug");
+
+          cena = cena - valueToPercent.getPDVOfSum(cena, stopaPDV);
+          cena = cena + valueToPercent.getPDVOfValue(cena , stopaPopust);
           String jMere = rs.getString("jMere");
 
           racunSingle.put("nazivUsluge", nazivUsluge);
