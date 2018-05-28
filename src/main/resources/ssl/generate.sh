@@ -7,3 +7,6 @@ keytool -importcert -keystore serverpub.jks -alias serverpub -file serverpub.cer
 echo "Export the client public certificate and create a seperate keystore">/dev/null
 keytool -exportcert -alias plainclientkeys -file clientpub.cer -keystore plainclient.jks -storepass jgemstone
 keytool -importcert -keystore clientpub.jks -alias clientpub -file clientpub.cer -storepass jgemstone
+
+
+keytool -importcert -v -trustcacerts -file "clientpub.cer" -alias clientPub -keystore "clientpub.bks" -provider org.bouncycastle.jce.provider.BouncyCastleProvider -providerpath "bcprov-jdk15on-159.jar" -storetype BKS -storepass jgemstone

@@ -21,6 +21,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 import net.yuvideo.jgemstone.server.classes.ClientWorker;
 import net.yuvideo.jgemstone.server.classes.EMMServer;
+import net.yuvideo.jgemstone.server.classes.GPSReceiver;
 import net.yuvideo.jgemstone.server.classes.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.database;
 
@@ -135,6 +136,11 @@ public class Server {
     emmServer.DEBUG = DEBUG;
     Thread emmThread = new Thread(emmServer);
     emmThread.start();
+
+    GPSReceiver gpsReceiver = new GPSReceiver();
+    gpsReceiver.setDatabase(db);
+    Thread gpsTH = new Thread(gpsReceiver);
+    gpsTH.start();
 
     System.out.println("Server started");
     while (true) {

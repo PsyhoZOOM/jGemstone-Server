@@ -31,7 +31,7 @@ import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
-import net.yuvideo.jgemstone.server.classes.LOCATION.LocationUpdateClients;
+import net.yuvideo.jgemstone.server.classes.LOCATION.LocationsClients;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
@@ -171,11 +171,7 @@ public class ClientWorker implements Runnable {
       }
     }
 
-    if (rLine.get("action").equals("GPS_UPDATE")) {
 
-      LocationUpdateClients.updateClient(rLine, db);
-      return;
-    }
 
     if (rLine.get("action").equals("login")) {
       LOGGER.info("LOGIN CRED: " + rLine);
@@ -4058,6 +4054,12 @@ public class ClientWorker implements Runnable {
         e.printStackTrace();
       }
       send_object(jObj);
+    }
+
+    if (rLine.getString("action").equals("getAllClientsLocations")) {
+      LocationsClients locationsClients = new LocationsClients();
+      JSONObject object = locationsClients.getAll(db);
+      send_object(object);
     }
   }
 
