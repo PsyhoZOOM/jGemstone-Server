@@ -22,6 +22,7 @@ import javax.net.ssl.TrustManagerFactory;
 import net.yuvideo.jgemstone.server.classes.ClientWorker;
 import net.yuvideo.jgemstone.server.classes.EMMServer;
 import net.yuvideo.jgemstone.server.classes.GPSReceiver;
+import net.yuvideo.jgemstone.server.classes.HELPERS.convertOldUsers;
 import net.yuvideo.jgemstone.server.classes.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.database;
 
@@ -87,6 +88,11 @@ public class Server {
 
     // ONLINE OPERS OFFLINE
     db = new database();
+
+    //   System.out.println("COPYING DATABASES:");
+//convertOldUsers convert = new convertOldUsers(db);
+
+
     query = "UPDATE onlineOperaters SET online=?";
     try {
       ps = db.conn.prepareStatement(query);

@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import javafx.concurrent.Task;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
@@ -27,7 +29,7 @@ public class LocationsClients {
       ps.setString(1, object.getString("identification"));
       ps.setDouble(2, object.getDouble("lat"));
       ps.setDouble(3, object.getDouble("long"));
-      ps.setString(4, LocalDate.now().toString());
+      ps.setString(4, LocalDateTime.now().toString());
       if (exist) {
         ps.setString(5, object.getString("identification"));
       }
@@ -82,6 +84,7 @@ public class LocationsClients {
           object.put("longitude", rs.getDouble("longitude"));
           object.put("lastUpdateTime", rs.getString("lastUpdateTime"));
           jsonObject.put(String.valueOf(i), object);
+          i++;
         }
       }
     } catch (SQLException e) {
@@ -90,4 +93,6 @@ public class LocationsClients {
 
     return jsonObject;
   }
+
+
 }

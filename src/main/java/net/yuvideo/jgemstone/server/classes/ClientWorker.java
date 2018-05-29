@@ -28,6 +28,7 @@ import net.yuvideo.jgemstone.server.classes.ARTIKLI.ArtikliFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.addBoxService;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
+import net.yuvideo.jgemstone.server.classes.HELPERS.convertOldUsers;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;

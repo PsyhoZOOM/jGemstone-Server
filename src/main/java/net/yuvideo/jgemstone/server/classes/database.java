@@ -19,12 +19,14 @@ public class database {
   public String query;
   public Connection conn;
   public Connection connRad;
+  public Connection connRad2;
   public Connection connIPTV;
   //public Connection connCSV;
   public PreparedStatement ps;
   private String JDBC_DRIVER = "com.mysql.jdbc.Driver";
   private String DB_URL = "jdbc:mysql://127.0.0.1/jgemstone?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
   private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
+  private String DB_URL_RADIUS2 = "jdbc:mysql://127.0.01/radius2?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
   private String DB_URL_IPTV = "jdbc:mysql://127.0.0.1/stalker_db?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
   private String DV_URL_CSV = "jdbc:mysql://127.0.0.1/CSV?useUnicode=true&characterEncoding=UTF-8&autoreconnect=true";
   private String UserName = "jgemstone";
@@ -48,6 +50,7 @@ public class database {
       System.out.println("Connecting to database...");
       conn = DriverManager.getConnection(DB_URL, UserName, Password);
       connRad = DriverManager.getConnection(DB_URL_RADIUS, UserName, Password);
+      //     connRad2 = DriverManager.getConnection(DB_URL_RADIUS2, UserName, Password);
       //connIPTV = DriverManager.getConnection(DB_URL_IPTV, UserName, Password);
       //connCSV = DriverManager.getConnection(DV_URL_CSV, UserName, Password);
       stmt = conn.createStatement();
