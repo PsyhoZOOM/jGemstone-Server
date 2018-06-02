@@ -105,11 +105,7 @@ public class monthlyScheduler {
       if (rs.isBeforeFirst()) {
         while (rs.next()) {
           FaktureFunct faktureFunct = new FaktureFunct(rs.getInt("userID"), godina, operater, db);
-          System.out.println(
-              "FAKTURE DA LI POSTJI: " + faktureFunct.hasFirma + " userID: " + rs.getInt("userID"));
           if (faktureFunct.hasFirma) {
-            System.out
-                .println("userFIRMA: " + faktureFunct.hasFirma + "userID: " + rs.getInt("userID"));
             faktureFunct.createFakturu(rs);
           }
         }

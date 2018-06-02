@@ -1,17 +1,11 @@
 package net.yuvideo.jgemstone.server.classes.IPTV;
 
-import com.sun.java.swing.plaf.motif.MotifEditorPaneUI;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.json.JSONConfiguration;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,8 +13,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ws.rs.core.MediaType;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONArray;
@@ -61,7 +53,6 @@ public class StalkerRestAPI2 {
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         while (rs.next()) {
-          System.out.println(rs.getString("settings"));
           if (rs.getString("settings").equals("IPTV_API2_URL")) {
             this.url = rs.getString("value");
           }
@@ -73,7 +64,6 @@ public class StalkerRestAPI2 {
           }
         }
       }
-      System.out.println(ps.toString());
       rs.close();
     } catch (SQLException e) {
       e.printStackTrace();
@@ -90,7 +80,6 @@ public class StalkerRestAPI2 {
     response = webResource.accept("application/json")
         .header("Authorization","Basic "+ AuthStringENC)
         .get(ClientResponse.class);
-    System.out.println(response.getEntity(String.class));
     if(response.getStatus() != 200 ){
       isHostAlive  = false;
       return;
@@ -124,17 +113,15 @@ public class StalkerRestAPI2 {
         hostMessage = a;
 
       }catch (JSONException e){
-        System.out.println(e.getMessage());
+        e.printStackTrace();
       }
       jsonObject = new JSONObject(a);
 
     }
-    System.out.println(a);
 
     JSONObject jsonTariffs =new JSONObject();
 
     for(String key : jsonObject.keySet()){
-      System.out.println(String.format("Key %s: %s",key, jsonObject.get(key)));
       if(key.equals("results")){
         JSONArray obj = jsonObject.getJSONArray("results");
         for(int i =0; i<obj.length();i++){
@@ -194,7 +181,6 @@ public class StalkerRestAPI2 {
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
       jsonObject.put("MESSAGE", response.getEntity(String.class));
-      System.out.println(jsonObject.get("MESSAGE"));
     }
 
 
@@ -273,7 +259,6 @@ public class StalkerRestAPI2 {
       jsonObject.put("ERROR", response.getStatusInfo());
     } else {
       jsonObject = new JSONObject(response.getEntity(String.class));
-      System.out.println("IPTV_ACCOUNT_CHANGE_MAC:  " + jsonObject.toString());
     }
 
     return jsonObject;
@@ -323,7 +308,6 @@ public class StalkerRestAPI2 {
       jsonObject = new JSONObject(response.getEntity(String.class));
     }
 
-    System.out.println("AKTIVATE_STATUS: " + jsonObject);
     return  jsonObject;
 
   }
@@ -345,7 +329,6 @@ public class StalkerRestAPI2 {
 
       JSONArray jsonarr = jsonObject.getJSONArray("results");
       for (int i = 0; i < jsonarr.length(); i++) {
-        System.out.println(jsonarr.get(i));
         jsonObject = jsonarr.getJSONObject(i);
         if (jsonObject.has("end_date")) {
           end_date = jsonObject.getString("end_date");

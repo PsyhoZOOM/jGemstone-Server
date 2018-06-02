@@ -19,15 +19,14 @@ public class GPSReceiver implements Runnable {
 
   @Override
   public void run() {
+    recvData = new byte[128];
+
     try {
       serverSock = new DatagramSocket((8544));
     } catch (SocketException e) {
       e.printStackTrace();
     }
-    while (true) {
-      recvData = new byte[128];
-
-      DatagramPacket datagramPacket = new DatagramPacket(recvData, recvData.length);
+    DatagramPacket datagramPacket = new DatagramPacket(recvData, recvData.length);
       try {
         System.out.println("RECEIVING UDP DATA: \n");
         serverSock.receive(datagramPacket);
@@ -46,7 +45,6 @@ public class GPSReceiver implements Runnable {
       }
 
     }
-  }
 
   public void setDatabase(database database) {
     this.db = database;

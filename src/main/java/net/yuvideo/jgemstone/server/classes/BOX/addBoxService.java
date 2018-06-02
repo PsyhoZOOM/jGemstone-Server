@@ -34,10 +34,10 @@ public class addBoxService {
     query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, "
             +
-            "cena, obracun, brojUgovora, aktivan, produzenje, newService, idDTVCard, username, GroupName, IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType, PDV)"
+            "cena, obracun, brojUgovora, aktivan, produzenje, newService, idDTVCard, username, GroupName, IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType, PDV, opis)"
             +
             "VALUES " +
-            "(?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?)";
+            "(?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
@@ -83,6 +83,7 @@ public class addBoxService {
       ps.setBoolean(19, true);
       ps.setString(20, "BOX");
       ps.setDouble(21, rLine.getDouble("pdv"));
+      ps.setString(22, rLine.getString("opis"));
 
       ps.executeUpdate();
       ResultSet rsBoxId = ps.getGeneratedKeys();

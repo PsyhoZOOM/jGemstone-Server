@@ -217,7 +217,6 @@ public class FIXFunctions {
       ps.setString(1, "Saobraćaj-" + account);
       ps.setString(2, zaMesec);
       rs = ps.executeQuery();
-      System.out.printf(ps.toString());
       if (rs.isBeforeFirst()) {
         rs.next();
         jsonObject.put("id", rs.getInt("id"));

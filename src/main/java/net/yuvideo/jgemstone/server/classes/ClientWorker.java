@@ -111,7 +111,6 @@ public class ClientWorker implements Runnable {
       try {
 
         String A = Bfr.readLine();
-        System.out.println("TEST11");
 
         if (A == null) {
           client.close();
@@ -207,7 +206,7 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.get("action").equals("get_users")) {
-      query = "SELECT * FROM users WHERE  ime LIKE ? or id LIKE ? or jBroj LIKE ? or nazivFirme LIKE ? ";
+      query = "SELECT * FROM users WHERE  ime LIKE ? or id LIKE ? or jBroj LIKE ? or nazivFirme LIKE ? or mesto LIKE ? ";
       String userSearch;
       if (!rLine.has("username")) {
         userSearch = "%";
@@ -220,6 +219,7 @@ public class ClientWorker implements Runnable {
         ps.setString(2, userSearch);
         ps.setString(3, userSearch);
         ps.setString(4, userSearch);
+        ps.setString(5, userSearch);
         rs = ps.executeQuery();
       } catch (SQLException e) {
         e.printStackTrace();
@@ -908,7 +908,8 @@ public class ClientWorker implements Runnable {
         datumIsteka = "KORISNIK NEMA SERVIS";
       }
       jObj.put("datumIsteka", datumIsteka);
-      System.out.println(jObj);
+      if (DEBUG > 1)
+        System.out.println(jObj);
       send_object(jObj);
       return;
 
@@ -1074,14 +1075,10 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
       JSONObject delObj;
 
-      System.out.println("DUZINA: " + rLine.length());
       //rline.lenght -2 becouse 1 = action 2 = userid
       for (int i = 0; i < rLine.length() - 2; i++) {
         delObj = (JSONObject) rLine.get(String.valueOf(i));
-        System.out.println(delObj);
 
-        System.out.println("DELETE paketType: " + delObj.getString("paketType"));
-        System.out.println("DELETE ID: " + delObj.getInt("id"));
         if (delObj.getString("paketType").equals("DTV")
             || delObj.getString("paketType").equals("LINKED_DTV")) {
           ServicesFunctions.deleteServiceDTV(delObj, getOperName(), db);
@@ -3415,7 +3412,8 @@ public class ClientWorker implements Runnable {
 
       //stalkerRestAPI2.activateStatus(true, UserObj.getString("STB_MAC"));
       //String a = stalkerRestAPI2.get_end_date(UserObj.getString("STB_MAC"));
-      System.out.println("STLKER_API_RESPONSE: " + jObj.toString());
+      if (DEBUG > 1)
+        System.out.println("STLKER_API_RESPONSE: " + jObj.toString());
       jObj = new JSONObject();
       send_object(jObj);
       return;
@@ -3971,7 +3969,6 @@ public class ClientWorker implements Runnable {
 
       try {
         for (String t : rLine.keySet()) {
-          System.out.println(t);
           if(t.equals("action")) continue;
           ps = db.conn.prepareStatement(query);
           ps.setString(1, t);

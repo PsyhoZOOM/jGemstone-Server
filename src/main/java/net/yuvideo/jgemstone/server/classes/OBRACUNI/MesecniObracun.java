@@ -34,7 +34,6 @@ public class MesecniObracun {
       ps.setInt(3, userOd);
       ps.setInt(4, userDo);
       rs = ps.executeQuery();
-      System.out.println(ps.toString());
       if (rs.isBeforeFirst()) {
         int i = 0;
         while (rs.next()) {
