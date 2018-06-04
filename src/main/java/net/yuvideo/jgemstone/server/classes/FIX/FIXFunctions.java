@@ -14,6 +14,15 @@ import org.json.JSONObject;
  */
 public class FIXFunctions {
 
+  static database db;
+  public static String error;
+
+  public FIXFunctions() {
+  }
+
+  public FIXFunctions(database db) {
+    this.db = db;
+  }
 
   public static Boolean check_TELBr_bussy(String fix_tel, database db) {
     PreparedStatement ps;
@@ -255,7 +264,22 @@ public class FIXFunctions {
   }
 
 
-  public static void uplati() {
+  public static boolean deleteFixPaket(int id) {
+    boolean deleted = false;
+    PreparedStatement ps;
+    String query = "DELETE FROM FIX_paketi WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, id);
+      ps.executeUpdate();
+      deleted = true;
+      ps.close();
+    } catch (SQLException e) {
+      error = e.getMessage();
+      e.printStackTrace();
+    }
+    return deleted;
+
 
   }
 

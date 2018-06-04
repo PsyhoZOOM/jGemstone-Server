@@ -25,10 +25,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 import net.yuvideo.jgemstone.server.classes.ARTIKLI.ArtikliFunctions;
+import net.yuvideo.jgemstone.server.classes.BOX.BoxFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.addBoxService;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
+import net.yuvideo.jgemstone.server.classes.DTV.DTVPaketFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.HELPERS.convertOldUsers;
+import net.yuvideo.jgemstone.server.classes.INTERNET.InternetPaket;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
@@ -1037,6 +1040,20 @@ public class ClientWorker implements Runnable {
 
       send_object(jObj);
       return;
+    }
+
+    if (rLine.getString("action").equals("delete_box_paket")) {
+      JSONObject obj = new JSONObject();
+      BoxFunctions boxFunctions = new BoxFunctions(db);
+      boolean deleted = boxFunctions.deleteBoxPaket(rLine.getInt("id"));
+      if (deleted) {
+        obj.put("MESSAGE", "DELETED");
+      } else {
+        obj.put("ERROR", boxFunctions.error);
+      }
+
+      send_object(obj);
+
     }
 
     if (rLine.getString("action").equals("add_service_to_user_DTV")) {
@@ -2953,6 +2970,20 @@ public class ClientWorker implements Runnable {
 
     }
 
+    if (rLine.getString("action").equals("delete_internet_paket")) {
+      JSONObject obj = new JSONObject();
+      InternetPaket internetPaket = new InternetPaket(db);
+      boolean deleted = internetPaket.deleteInternetPaket(rLine.getInt("id"));
+      if (deleted) {
+        obj.put("MESSAGE", "DELETED");
+      } else {
+        obj.put("ERROR", internetPaket.error);
+      }
+
+      send_object(obj);
+
+    }
+
     if (rLine.get("action").equals("getDigitalTVPaketi")) {
       jObj = new JSONObject();
       query = "SELECT * FROM  digitalniTVPaketi";
@@ -3034,6 +3065,19 @@ public class ClientWorker implements Runnable {
 
       send_object(jObj);
       return;
+
+    }
+
+    if (rLine.getString("action").equals("delete_dtv_paket")) {
+      JSONObject obj = new JSONObject();
+      DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db);
+      boolean deleted = dtvPaketFunctions.deleteDTVPaket(rLine.getInt("id"));
+      if (deleted) {
+        obj.put("MESSAGE", "DELETED");
+      } else {
+        obj.put("ERROR", dtvPaketFunctions.error);
+      }
+      send_object(obj);
 
     }
 
@@ -3208,22 +3252,16 @@ public class ClientWorker implements Runnable {
       return;
     }
 
-    if (rLine.get("action").equals("del_fixTel_paket")) {
-      jObj = new JSONObject();
-      String query = "DELETE FROM FIX_paketi WHERE id=?";
-
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("id"));
-        ps.executeUpdate();
-        ps.close();
-        jObj.put("Message", "PAKET_DELETED");
-
-      } catch (SQLException e) {
-        jObj.put("Error", e.getMessage());
-        e.printStackTrace();
+    if (rLine.get("action").equals("delete_fiksna_paket")) {
+      JSONObject obj = new JSONObject();
+      FIXFunctions fixFunctions = new FIXFunctions(db);
+      boolean delete = fixFunctions.deleteFixPaket(rLine.getInt("id"));
+      if (delete) {
+        obj.put("MESSAGE", "DELETED");
+      } else {
+        obj.put("ERROR", fixFunctions.error);
       }
-      send_object(jObj);
+      send_object(obj);
       return;
     }
 
@@ -3657,6 +3695,22 @@ public class ClientWorker implements Runnable {
       send_object(jObj);
       return;
     }
+
+    if (rLine.getString("action").equals("delete_IPTV_paket")) {
+      JSONObject obj = new JSONObject();
+      IPTVFunctions iptvFunctions = new IPTVFunctions(db);
+      boolean deleted = iptvFunctions.deletePaket(rLine.getInt("id"));
+      if (deleted) {
+        obj.put("MESSAGE", "DELETED");
+      } else {
+        obj.put("ERROR", iptvFunctions.error);
+      }
+      send_object(obj);
+      return;
+    }
+
+
+
     if (rLine.getString("action").equals("updateOstaleUslugu")) {
       PreparedStatement ps;
       JSONObject jsonObject = new JSONObject();
@@ -3711,6 +3765,22 @@ public class ClientWorker implements Runnable {
       }
 
       send_object(jObj);
+      return;
+    }
+
+    if (rLine.getString("action").equals("delete_OstaleUsluge_paket")) {
+      JSONObject obj = new JSONObject();
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      boolean deleted = servicesFunctions.deletePaketOstalo(rLine.getInt("id"));
+      if (deleted) {
+        obj.put("MESSAGE", "DELETED");
+      } else {
+        obj.put("ERROR", servicesFunctions.getErrorMessage());
+      }
+
+      send_object(obj);
+      return;
+
     }
 
     if (rLine.getString("action").equals("addArtikal")) {

@@ -23,6 +23,8 @@ import org.json.JSONObject;
  */
 public class ServicesFunctions {
 
+  private database db;
+
   private static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss");
   private static DateTimeFormatter dtfNormalDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private static DateTimeFormatter dtfRadCheck = DateTimeFormatter.ofPattern("dd MMM yyyy");
@@ -33,6 +35,13 @@ public class ServicesFunctions {
 
   private boolean haveError = false;
   private String errorMessage = "";
+
+  public ServicesFunctions(database db) {
+    this.db = db;
+  }
+
+  public ServicesFunctions() {
+  }
 
   public static void addServiceLinked(JSONObject rLine, String opername, database db) {
     ResultSet rs;
@@ -1220,5 +1229,25 @@ public class ServicesFunctions {
 
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+  }
+
+
+  public boolean deletePaketOstalo(int id) {
+    JSONObject obj = new JSONObject();
+    boolean delete = false;
+    PreparedStatement ps;
+    String queru = "DELETE FROM ostaleUsluge WHERE id=?";
+
+    try {
+      ps = db.conn.prepareStatement(queru);
+      ps.setInt(1, id);
+      ps.executeUpdate();
+      delete = true;
+      ps.close();
+    } catch (SQLException e) {
+      setErrorMessage(e.getMessage());
+      e.printStackTrace();
+    }
+    return delete;
   }
 }
