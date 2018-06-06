@@ -49,17 +49,17 @@ public class StalkerRestAPI2 {
 
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setString(1, "IPTV%");
+      ps.setString(1, "MINISTRA%");
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         while (rs.next()) {
-          if (rs.getString("settings").equals("IPTV_API2_URL")) {
+          if (rs.getString("settings").equals("MINISTRA_API_URL")) {
             this.url = rs.getString("value");
           }
-          if (rs.getString("settings").equals("IPTV_API2_USERNAME")) {
+          if (rs.getString("settings").equals("MINISTRA_API_USER")) {
             this.username = rs.getString("value");
           }
-          if (rs.getString("settings").equals("IPTV_API2_PASSWORD")) {
+          if (rs.getString("settings").equals("MINISTRA_API_PASS")) {
             this.pass = rs.getString("value");
           }
         }
@@ -76,10 +76,24 @@ public class StalkerRestAPI2 {
     clientConfig.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
 
     apiClient = Client.create(clientConfig);
-    webResource =  apiClient.resource(url).path("itv");
-    response = webResource.accept("application/json")
-        .header("Authorization","Basic "+ AuthStringENC)
-        .get(ClientResponse.class);
+    try {
+
+      webResource = apiClient.resource(url).path("itv");
+
+      response = webResource.accept("application/json")
+          .header("Authorization","Basic "+ AuthStringENC)
+          .get(ClientResponse.class);
+    } catch (NullPointerException e) {
+      e.printStackTrace();
+    } finally {
+      if (webResource == null) {
+        isHostAlive = false;
+        return;
+
+      } else {
+        System.out.println(response.getStatus());
+      }
+    }
     if(response.getStatus() != 200 ){
       isHostAlive  = false;
       return;

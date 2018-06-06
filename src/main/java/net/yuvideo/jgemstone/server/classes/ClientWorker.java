@@ -1175,6 +1175,15 @@ public class ClientWorker implements Runnable {
           JSONObject userDebt;
           int i = 0;
           while (rs.next()) {
+            double cena = rs.getDouble("cena");
+            double popust = rs.getDouble("popust");
+            double pdv = rs.getDouble("pdv");
+            int kolicina = rs.getInt("kolicina");
+            double osnovica = cena * kolicina;
+            double zaUplatu = osnovica - valueToPercent.getPDVOfValue(osnovica, popust);
+            double uplaceno = rs.getDouble("uplaceno");
+
+            zaUplatu = zaUplatu + valueToPercent.getPDVOfValue(zaUplatu, pdv);
 
             userDebt = new JSONObject();
             userDebt.put("id", rs.getInt("id"));
@@ -1182,18 +1191,19 @@ public class ClientWorker implements Runnable {
             userDebt.put("nazivPaketa", rs.getString("nazivPaketa"));
             userDebt.put("datumZaduzenja", rs.getDate("datumZaduzenja"));
             userDebt.put("userID", rs.getInt("userID"));
-            userDebt.put("popust", rs.getDouble("popust"));
+            userDebt.put("popust", popust);
             userDebt.put("paketType", rs.getString("paketType"));
-            userDebt.put("cena", rs.getDouble("cena"));
-            userDebt.put("kolicina", rs.getInt("kolicina"));
-            userDebt.put("dug", rs.getDouble("dug"));
+            userDebt.put("cena", cena);
+            userDebt.put("kolicina", kolicina);
+            userDebt.put("dug", zaUplatu);
+            userDebt.put("zaUplatu", zaUplatu);
             userDebt.put("paketType", rs.getString("paketType"));
             userDebt.put("identification",
                 ServicesFunctions.getIdentify(rs.getInt("id_ServiceUser"), db));
-            userDebt.put("cena", rs.getDouble("cena"));
-            userDebt.put("pdv", rs.getDouble("PDV"));
-            userDebt.put("popust", rs.getDouble("popust"));
-            userDebt.put("uplaceno", rs.getDouble("uplaceno"));
+            userDebt.put("pdv", pdv);
+            userDebt.put("popust", popust);
+            userDebt.put("osnovica", osnovica);
+            userDebt.put("uplaceno", uplaceno);
             userDebt.put("datumUplate", rs.getString("datumUplate"));
             userDebt.put("operater", rs.getString("operater"));
             userDebt.put("zaduzenOd", rs.getString("zaduzenOd"));
@@ -1224,14 +1234,28 @@ public class ClientWorker implements Runnable {
       double dug = 0;
       double uplaceno = 0;
       double ukupanDug = 0;
-      String query = "SELECT sum(dug) as dug FROM userDebts WHERE userID=?";
+      double cena;
+      double pdv;
+      double popust;
+      int kolicina;
+      double osnovica;
+      double dugBezPdv;
+      String query = "SELECT * FROM userDebts WHERE userID=?";
       try {
         ps = db.conn.prepareStatement(query);
         ps.setInt(1, rLine.getInt("userID"));
         rs = ps.executeQuery();
         if (rs.isBeforeFirst()) {
-          rs.next();
-          dug = rs.getDouble("dug");
+
+          while (rs.next()) {
+            cena = rs.getDouble("cena");
+            kolicina = rs.getInt("kolicina");
+            osnovica = cena * kolicina;
+            popust = rs.getDouble("popust");
+            pdv = rs.getDouble("pdv");
+            dugBezPdv = osnovica - valueToPercent.getPDVOfValue(osnovica, popust);
+            dug += dugBezPdv + valueToPercent.getPDVOfValue(dugBezPdv, pdv);
+          }
 
         }
         rs.close();
@@ -2148,7 +2172,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getMesta")) {
 
-      query = "SELECT * FROM mesta ORDER BY 'nazivMesta'";
+      query = "SELECT * FROM mesta ORDER BY naziv";
       try {
         ps = db.conn.prepareStatement(query);
         rs = ps.executeQuery();
@@ -2308,7 +2332,7 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("getAdrese")) {
-      query = "SELECT * FROM adrese WHERE brojMesta = ? ";
+      query = "SELECT * FROM adrese WHERE brojMesta = ? order by naziv";
       jObj = new JSONObject();
 
       try {
@@ -4017,17 +4041,16 @@ public class ClientWorker implements Runnable {
       send_object(userRacun.getData());
     }
 
-    if (rLine.getString("action").equals("FIRMA_OPTIONS_SAVE")) {
+    if (rLine.getString("action").equals("OPTIONS_SAVE")) {
       JSONObject obj = new JSONObject();
       JSONObject retObj = new JSONObject();
       PreparedStatement ps = null;
       String query;
 
       //BRISANJE PODATAKA FIRME
-      query = "DELETE  FROM settings WHERE settings LIKE ? ";
+      query = "DELETE  FROM settings  ";
       try {
         ps = db.conn.prepareStatement(query);
-        ps.setString(1, "FIRMA%");
         ps.executeUpdate();
         ps.close();
       } catch (SQLException e) {
@@ -4054,7 +4077,7 @@ public class ClientWorker implements Runnable {
       send_object(retObj);
     }
 
-    if(rLine.getString("action").equals("get_FIRMA_OPTIONS")){
+    if (rLine.getString("action").equals("GET_OPTIONS")) {
       JSONObject jObj = new JSONObject();
       PreparedStatement ps;
       ResultSet rs;
@@ -4112,6 +4135,24 @@ public class ClientWorker implements Runnable {
             if(rs.getString("settings").equals("FIRMA_ROK_PLACANJA_FAKTURA")){
               jObj.put("FIRMA_ROK_PLACANJA_FAKTURA", rs.getString("value"));
             }
+            if (rs.getString("settings").equals("MINISTRA_API_URL")) {
+              jObj.put("MINISTRA_API_URL", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("MINISTRA_API_USER")) {
+              jObj.put("MINISTRA_API_USER", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("MINISTRA_API_PASS")) {
+              jObj.put("MINISTRA_API_PASS", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("DTV_EMM_HOST")) {
+              jObj.put("DTV_EMM_HOST", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("DTV_EMM_PORT")) {
+              jObj.put("DTV_EMM_PORT", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("DTV_UDP_TIMEOUT")) {
+              jObj.put("DTV_UDP_TIMEOUT", rs.getString("value"));
+            }
           }
 
         }
@@ -4147,20 +4188,50 @@ public class ClientWorker implements Runnable {
   private Double get_userDebt(int userID) {
     PreparedStatement ps;
     ResultSet rs;
-    String query = "SELECT dug, uplaceno FROM userDebts WHERE userID=? ";
-    double dug = 0.00;
+    String query = "SELECT * FROM userDebts WHERE userID=? ";
+    double dug = 0;
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, userID);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
+        double cena;
+        double popust;
+        double pdv;
+        double ukupno;
+        double osnovica;
+        int kolicina = 0;
         while (rs.next()) {
-          dug += (rs.getDouble("dug") - rs.getDouble("uplaceno"));
+          cena = rs.getDouble("cena");
+          popust = rs.getDouble("popust");
+          pdv = rs.getDouble("PDV");
+          kolicina = rs.getInt("kolicina");
+          osnovica = cena * kolicina;
+          osnovica = osnovica - valueToPercent.getPDVOfValue(osnovica, popust);
+          dug += osnovica + valueToPercent.getPDVOfValue(osnovica, pdv);
+
         }
       }
+      rs.close();
     } catch (SQLException e) {
       e.printStackTrace();
     }
+
+    query = "SELECT SUM(uplaceno) as uplaceno FROM uplate WHERE userID=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        dug = dug - rs.getDouble("uplaceno");
+      }
+      rs.close();
+      ps.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
     return dug;
   }
 

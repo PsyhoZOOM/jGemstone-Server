@@ -79,14 +79,14 @@ public class UserRacun {
           JSONObject racunSingle = new JSONObject();
           nazivUsluge = rs.getString("nazivPaketa");
           datumZaduzenja = rs.getString("datumZaduzenja");
- //         double cena = rs.getDouble("cena");
+          double cena = rs.getDouble("cena");
           double stopaPopust = rs.getDouble("popust");
           double stopaPDV = rs.getDouble("PDV");
           int kolicina = rs.getInt("kolicina");
-          double cena = rs.getDouble("dug");
+          double osnovica = cena * kolicina;
+          double zaUplatu = osnovica - valueToPercent.getPDVOfValue(osnovica, stopaPopust);
+          zaUplatu = zaUplatu + valueToPercent.getPDVOfValue(zaUplatu, stopaPDV);
 
-          cena = cena - valueToPercent.getPDVOfSum(cena, stopaPDV);
-          cena = cena + valueToPercent.getPDVOfValue(cena , stopaPopust);
           String jMere = rs.getString("jMere");
 
           racunSingle.put("nazivUsluge", nazivUsluge);
@@ -95,6 +95,8 @@ public class UserRacun {
           racunSingle.put("stopaPDV", stopaPDV);
           racunSingle.put("kolicina", kolicina);
           racunSingle.put("jMere", jMere);
+          racunSingle.put("osnovica", osnovica);
+          racunSingle.put("zaUplatu", zaUplatu);
           racunSingle.put("index", i);
           racun.put(String.valueOf(i), racunSingle);
 
@@ -187,6 +189,8 @@ public class UserRacun {
 
       for (int z = i + 1; z < racun.length(); z++) {
         int kolicina = 0;
+        double osnovica = 0;
+        double zaUplatu = 0;
         {
           JSONObject racunI = racun.getJSONObject(String.valueOf(i));
           JSONObject racunZ = racun.getJSONObject(String.valueOf(z));
@@ -197,13 +201,26 @@ public class UserRacun {
                   racunI.getString("nazivUsluge").equals(racunZ.getString("nazivUsluge")) &&
                   racunI.getString("jMere").equals(racunZ.getString("jMere"))
               ) {
+
             kolicina = racunI.getInt("kolicina") + racunZ.getInt("kolicina");
+            osnovica = racunI.getDouble("osnovica") + racunZ.getDouble("osnovica");
+            zaUplatu = racunI.getDouble("zaUplatu") + racunZ.getDouble("zaUplatu");
+
             racun.getJSONObject(String.valueOf(i)).remove("kolicina");
             racun.getJSONObject(String.valueOf(i)).put("kolicina", kolicina);
+
+            racun.getJSONObject(String.valueOf(i)).remove("osnovica");
+            racun.getJSONObject(String.valueOf(i)).put("osonvica", osnovica);
+
+            racun.getJSONObject(String.valueOf(i)).remove("zaUlatu");
+            racun.getJSONObject(String.valueOf(i)).put("zaUplatu", zaUplatu);
+
             racun.remove(String.valueOf(z));
             racun = sortJSON(racun);
           }
           kolicina = 0;
+          zaUplatu = 0;
+          osnovica = 0;
 
         }
       }
@@ -251,9 +268,12 @@ public class UserRacun {
         while (rs.next()) {
           double popust = rs.getDouble("popust");
           double cena = rs.getDouble("cena");
+          int kolicina = rs.getInt("kolicina");
           double pdv = rs.getDouble("pdv");
-          double iznos = cena - valueToPercent.getPDVOfSum(cena, popust);
-          prethodniDug += iznos + valueToPercent.getPDVOfValue(iznos, pdv);
+          double osnovica = cena * kolicina;
+          osnovica = osnovica - valueToPercent.getPDVOfValue(osnovica, popust);
+          double iznos = osnovica + valueToPercent.getPDVOfValue(osnovica, pdv);
+          prethodniDug += iznos;
 
         }
       }
