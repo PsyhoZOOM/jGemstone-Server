@@ -273,6 +273,9 @@ public class ClientWorker implements Runnable {
             jObj.put("fax", rs.getString("fax"));
             jObj.put("adresaFirme", rs.getString("adresaFirme"));
             jObj.put("mestoFirme", rs.getString("mestoFirme"));
+            jObj.put("email", rs.getString("email"));
+            jObj.put("datumKreiranja", rs.getString("datumKreiranja"));
+
             jUsers.put(String.valueOf(i), jObj);
             i++;
           } catch (SQLException e) {
