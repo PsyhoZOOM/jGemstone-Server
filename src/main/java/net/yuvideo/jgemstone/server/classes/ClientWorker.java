@@ -4172,6 +4172,33 @@ public class ClientWorker implements Runnable {
       LocationsClients locationsClients = new LocationsClients();
       JSONObject object = locationsClients.getAll(db);
       send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getAllNetworkDevices")) {
+      NetworkDevices networkDevices = new NetworkDevices(db);
+      JSONObject allDevices = networkDevices.getAllDevices();
+      if (networkDevices.isError()) {
+        allDevices.put("ERROR", networkDevices.getErrorMsgp());
+      }
+      send_object(allDevices);
+      return;
+    }
+
+    if (rLine.getString("action").equals("addNetworkDevice")) {
+      JSONObject obj = new JSONObject();
+      NetworkDevices networkDevices = new NetworkDevices(db);
+      networkDevices.addDevice(rLine);
+      if (networkDevices.isError()) {
+        obj.put("ERROR", networkDevices.getErrorMsgp());
+      }
+      send_object(obj);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getOnlineUsers")) {
+      JSONObject jsonObject = new JSONObject();
+
     }
   }
 
