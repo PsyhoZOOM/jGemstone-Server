@@ -37,7 +37,9 @@ import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
 import net.yuvideo.jgemstone.server.classes.LOCATION.LocationsClients;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
+import net.yuvideo.jgemstone.server.classes.MIKROTIK_API.MikrotikAPI;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
+import net.yuvideo.jgemstone.server.classes.NAS.NASOnlineUsers;
 import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
@@ -216,16 +218,25 @@ public class ClientWorker implements Runnable {
       } else {
         userSearch = "%" + rLine.getString("username") + "%";
       }
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setString(1, userSearch);
-        ps.setString(2, userSearch);
-        ps.setString(3, userSearch);
-        ps.setString(4, userSearch);
-        ps.setString(5, userSearch);
-        rs = ps.executeQuery();
-      } catch (SQLException e) {
-        e.printStackTrace();
+      if (rLine.has("advancedSearch")) {
+        try {
+          ps = db.conn.prepareStatement(rLine.getString("advancedSearch"));
+          rs = ps.executeQuery();
+        } catch (SQLException e) {
+          e.printStackTrace();
+        }
+      } else {
+        try {
+          ps = db.conn.prepareStatement(query);
+          ps.setString(1, userSearch);
+          ps.setString(2, userSearch);
+          ps.setString(3, userSearch);
+          ps.setString(4, userSearch);
+          ps.setString(5, userSearch);
+          rs = ps.executeQuery();
+        } catch (SQLException e) {
+          e.printStackTrace();
+        }
       }
       LOGGER.info(ps.toString());
       jUsers = new JSONObject();
@@ -4198,6 +4209,21 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getOnlineUsers")) {
       JSONObject jsonObject = new JSONObject();
+      NASOnlineUsers nasOnlineUsers = new NASOnlineUsers(db);
+      JSONObject onlineUsers = nasOnlineUsers.getOnlineUsers("10.1.20.2");
+
+      send_object(onlineUsers);
+      return;
+
+    }
+
+    if (rLine.getString("action").equals("getUsersOnlineStat")) {
+      JSONObject object = new JSONObject();
+      MikrotikAPI mikrotikAPI = new MikrotikAPI();
+      object = mikrotikAPI
+          .getUserStats(rLine.getString("ip"), "apiUser", "apiPass", rLine.getString("nasIP"));
+      send_object(object);
+      return;
 
     }
   }
