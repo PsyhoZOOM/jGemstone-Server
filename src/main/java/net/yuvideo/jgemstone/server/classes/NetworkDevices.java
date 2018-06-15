@@ -75,12 +75,12 @@ public class NetworkDevices {
     String query;
     if (rLine.has("pass")) {
       query =
-          "INSERT into networkDevices (name, ip, hostName, type, url, opis, nas, accessType, pass) VALUES "
+          "INSERT into networkDevices (name, ip, hostName, type, url, opis, nas, accessType, userName, pass) VALUES "
               + "(?,?,?,?,?,?,?,?,?)";
     } else {
       query =
-          "INSERT INTO networkDevices(name, ip, hostName, type, url, opis, nas, accessType) VALUES "
-              + "(?,?,?,?,?,?,?,?)";
+          "INSERT INTO networkDevices(name, ip, hostName, type, url, opis, nas, accessType, userName) VALUES "
+              + "(?,?,?,?,?,?,?,?,?)";
     }
     try {
       ps = db.conn.prepareStatement(query);
@@ -92,8 +92,9 @@ public class NetworkDevices {
       ps.setString(6, rLine.getString("opis"));
       ps.setBoolean(7, rLine.getBoolean("nas"));
       ps.setString(8, rLine.getString("accessType"));
+      ps.setString(9, rLine.getString("userName"));
       if (rLine.has("pass")) {
-        ps.setString(9, rLine.getString("pass"));
+        ps.setString(10, rLine.getString("pass"));
       }
 
       ps.executeUpdate();
@@ -136,5 +137,26 @@ public class NetworkDevices {
       e.printStackTrace();
     }
     return NASDevices;
+  }
+
+  public String getName(String ipAddress) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String nasName = ipAddress;
+    String query = "SELECT name FROM networkDevices WHERE ip=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, ipAddress);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        nasName = rs.getString("name");
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return nasName;
   }
 }

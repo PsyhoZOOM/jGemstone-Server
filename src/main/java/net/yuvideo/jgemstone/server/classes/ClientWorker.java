@@ -30,7 +30,6 @@ import net.yuvideo.jgemstone.server.classes.BOX.addBoxService;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVPaketFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
-import net.yuvideo.jgemstone.server.classes.HELPERS.convertOldUsers;
 import net.yuvideo.jgemstone.server.classes.INTERNET.InternetPaket;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
@@ -80,9 +79,10 @@ public class ClientWorker implements Runnable {
   private JSONObject jUsers;
   private int operID;
 
-  public ClientWorker(SSLSocket client) {
+  public ClientWorker(SSLSocket client, database db) {
     //this.client = client;
     this.client = client;
+    this.db = db;
   }
 
   public Socket get_socket() {
@@ -92,7 +92,6 @@ public class ClientWorker implements Runnable {
   @Override
   public void run() {
 
-    db = new database();
     db.DEBUG = DEBUG;
 
     LOGGER.log(Level.INFO, String.valueOf(DEBUG));
@@ -186,9 +185,17 @@ public class ClientWorker implements Runnable {
         jObj = new JSONObject();
         jObj.put("Message", "LOGIN_OK");
         send_object(jObj);
+        try {
+          client.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
         return;
       }
     }
+
+    client_authenticated = check_Login(rLine.getString("userNameLogin"),
+        rLine.getString("userPassLogin"));
 
     if (!client_authenticated) {
 
@@ -201,7 +208,10 @@ public class ClientWorker implements Runnable {
       } catch (IOException e) {
         e.printStackTrace();
       }
+      return;
     }
+    rLine.remove("userNameLogin");
+    rLine.remove("userPassLogin");
 
     if (rLine.get("action").equals("checkPing")) {
       jObj = new JSONObject();
@@ -4210,7 +4220,7 @@ public class ClientWorker implements Runnable {
     if (rLine.getString("action").equals("getOnlineUsers")) {
       JSONObject jsonObject = new JSONObject();
       NASOnlineUsers nasOnlineUsers = new NASOnlineUsers(db);
-      JSONObject onlineUsers = nasOnlineUsers.getOnlineUsers("10.1.20.2");
+      JSONObject onlineUsers = nasOnlineUsers.getOnlineUsers();
 
       send_object(onlineUsers);
       return;
@@ -4224,7 +4234,15 @@ public class ClientWorker implements Runnable {
           .getUserStats(rLine.getString("ip"), "apiUser", "apiPass", rLine.getString("nasIP"));
       send_object(object);
       return;
+    }
 
+    if (rLine.getString("action").equals("customMTAPICommand")) {
+      JSONObject object;
+      MikrotikAPI mikrotikAPI = new MikrotikAPI();
+      object = mikrotikAPI.customCommand(rLine.getString("cmd"), rLine.getString("nasIP"),
+          rLine.getString("user"), rLine.getString("pass"));
+      send_object(object);
+      return;
     }
   }
 
@@ -4470,6 +4488,24 @@ public class ClientWorker implements Runnable {
     } catch (Exception e) {
       e.printStackTrace();
     }
+
+    try {
+      client.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    if (client.isClosed()) {
+      System.out.println("DISCONNECTED");
+      try {
+        Bfr.close();
+        Bfw.close();
+        get_socket().close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
 
   }
 

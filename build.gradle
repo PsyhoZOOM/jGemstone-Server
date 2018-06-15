@@ -16,7 +16,7 @@ dependencies {
     compile group: 'net.sourceforge.javacsv', name: 'javacsv', version: '2.0'
     compile group: 'org.json', name: 'json', version: '20180130'
     compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.46'
-
+    compile group: 'me.legrange', name: 'mikrotik', version: '3.0.4'
 
 
 }

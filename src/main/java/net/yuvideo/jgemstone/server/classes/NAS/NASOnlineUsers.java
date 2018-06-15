@@ -1,8 +1,5 @@
 package net.yuvideo.jgemstone.server.classes.NAS;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import net.yuvideo.jgemstone.server.classes.MIKROTIK_API.MikrotikAPI;
 import net.yuvideo.jgemstone.server.classes.NetworkDevices;
 import net.yuvideo.jgemstone.server.classes.database;
@@ -17,14 +14,20 @@ public class NASOnlineUsers {
     this.db = db;
   }
 
-  public JSONObject getOnlineUsers(String nasIP) {
+  public JSONObject getOnlineUsers() {
     NetworkDevices networkDevices = new NetworkDevices(db);
     JSONObject nasDevices = networkDevices.getNASDevices();
     MikrotikAPI mikrotikAPI = new MikrotikAPI();
     for (int i = 0; i < nasDevices.length(); i++) {
       JSONObject onlineUsers = mikrotikAPI
-          .getOnlineUser("apiUser", "apiPass", nasDevices.getJSONObject(
-              String.valueOf(i)).getString("ip"));
+          .getOnlineUser(
+              nasDevices.getJSONObject(String.valueOf(i)).getString("userName"),
+              nasDevices.getJSONObject(String.valueOf(i)).getString("pass"),
+              nasDevices.getJSONObject(String.valueOf(i)).getString("ip"),
+              nasDevices.getJSONObject(String.valueOf(i)).getString("name"));
+      if (onlineUsers == null) {
+        continue;
+      }
       addToOnline(onlineUsers, i);
     }
     mergeOnlineUsers();

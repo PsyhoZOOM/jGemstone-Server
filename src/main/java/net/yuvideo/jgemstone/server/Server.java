@@ -1,6 +1,5 @@
 package net.yuvideo.jgemstone.server;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -13,6 +12,7 @@ import java.security.cert.CertificateException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -22,7 +22,6 @@ import javax.net.ssl.TrustManagerFactory;
 import net.yuvideo.jgemstone.server.classes.ClientWorker;
 import net.yuvideo.jgemstone.server.classes.EMMServer;
 import net.yuvideo.jgemstone.server.classes.GPSReceiver;
-import net.yuvideo.jgemstone.server.classes.HELPERS.convertOldUsers;
 import net.yuvideo.jgemstone.server.classes.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.database;
 
@@ -35,7 +34,7 @@ public class Server {
 
   public static void main(String[] args) {
 
-    SSLServerSocket serverSock = null;
+    SSLServerSocket serverSocket = null;
     int DEBUG = 0;
     String query;
     PreparedStatement ps;
@@ -47,13 +46,13 @@ public class Server {
       }
     }
 
-    DEBUG =1;
+    DEBUG = 1;
     database db;
 
     // SSL SOCKET INIT
     try {
+
       KeyStore serverKeys = KeyStore.getInstance("JKS");
-      FileInputStream fin;
       serverKeys.load(
           ClassLoader.getSystemResourceAsStream("ssl/plainserver.jks"), "jgemstone".toCharArray());
       KeyManagerFactory serverKeyManager = KeyManagerFactory.getInstance("SunX509");
@@ -68,7 +67,14 @@ public class Server {
           serverKeyManager.getKeyManagers(),
           trustManager.getTrustManagers(),
           SecureRandom.getInstance("SHA1PRNG"));
-      serverSock = (SSLServerSocket) ssl.getServerSocketFactory().createServerSocket(portNumber);
+      serverSocket = (SSLServerSocket) ssl.getServerSocketFactory().createServerSocket(portNumber);
+
+      System.out.println("PROTOCOLS: " + Arrays.toString(serverSocket.getEnabledProtocols()));
+      System.out.println("CIPHER: " + Arrays.toString(serverSocket.getEnabledCipherSuites()));
+
+
+
+
 
     } catch (KeyStoreException e) {
       e.printStackTrace();
@@ -86,12 +92,34 @@ public class Server {
       e.printStackTrace();
     }
 
+
+      /*
+      SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+      SSLServerSocket serverSocket = (SSLServerSocket) ssf.createServerSocket(portNumber);
+      serverSocket.setEnabledCipherSuites(serverSocket.getSupportedCipherSuites());
+      serverSocket.setEnabledCipherSuites(new String[]{"TLS_DH_anon_WITH_AES_256_GCM_SHA384"});
+      String[] supportedCipherSuites = serverSocket.getSupportedCipherSuites();
+
+
+      String[] a;
+
+      for (int i = 0; i< supportedCipherSuites.length;i++){
+        if(!supportedCipherSuites[i].contains("anon")){
+        }
+      }
+
+      serverSocket.setEnabledCipherSuites(supportedCipherSuites);
+      System.out.println(Arrays.toString(serverSocket.getSupportedCipherSuites()));
+      System.out.println(Arrays.toString(serverSocket.getEnabledCipherSuites()));
+   //   serverSocket.setEnabledProtocols(new String[]{"TLSv1.2"});
+      System.out.println(Arrays.toString(serverSocket.getSupportedProtocols()));
+      System.out.println(Arrays.toString(serverSocket.getEnabledProtocols()));
+*/
     // ONLINE OPERS OFFLINE
     db = new database();
 
     //   System.out.println("COPYING DATABASES:");
 //convertOldUsers convert = new convertOldUsers(db);
-
 
     query = "UPDATE onlineOperaters SET online=?";
     try {
@@ -153,7 +181,8 @@ public class Server {
       ClientWorker cw;
       try {
         // Scheduler tasks timout in minutes
-        cw = new ClientWorker((SSLSocket) serverSock.accept());
+        //       cw = new ClientWorker((SSLSocket) serverSock.accept());
+        cw = new ClientWorker((SSLSocket) serverSocket.accept(), db);
         cw.DEBUG = DEBUG;
         Thread th = new Thread(cw);
         th.start();
