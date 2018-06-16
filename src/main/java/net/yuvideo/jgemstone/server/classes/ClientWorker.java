@@ -41,6 +41,7 @@ import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.NAS.NASOnlineUsers;
 import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
+import net.yuvideo.jgemstone.server.classes.RADIUS.RadReplyUsers;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
@@ -4218,7 +4219,6 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("getOnlineUsers")) {
-      JSONObject jsonObject = new JSONObject();
       NASOnlineUsers nasOnlineUsers = new NASOnlineUsers(db);
       JSONObject onlineUsers = nasOnlineUsers.getOnlineUsers();
 
@@ -4242,6 +4242,13 @@ public class ClientWorker implements Runnable {
       object = mikrotikAPI.customCommand(rLine.getString("cmd"), rLine.getString("nasIP"),
           rLine.getString("user"), rLine.getString("pass"));
       send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getRadReplyUsers")) {
+      RadReplyUsers radReplyUsers = new RadReplyUsers();
+      JSONObject userSearch = radReplyUsers.getUsers(rLine.getString("userSearch"), db);
+      send_object(userSearch);
       return;
     }
   }
