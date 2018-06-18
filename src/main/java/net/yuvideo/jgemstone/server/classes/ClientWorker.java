@@ -79,6 +79,7 @@ public class ClientWorker implements Runnable {
   //JSON Users
   private JSONObject jUsers;
   private int operID;
+  private boolean keepAlive;
 
   public ClientWorker(SSLSocket client, database db) {
     //this.client = client;
@@ -181,13 +182,21 @@ public class ClientWorker implements Runnable {
     if (rLine.get("action").equals("login")) {
       LOGGER.info("LOGIN CRED: " + rLine);
       client_authenticated = check_Login(rLine.getString("username"), rLine.getString("password"));
+      if (rLine.has("keepAlive")) {
+        if (rLine.getBoolean("keepAlive")) {
+          this.keepAlive = true;
+        } else {
+          this.keepAlive = false;
+        }
+      }
       this.operName = rLine.get("username").toString();
       if (client_authenticated) {
         jObj = new JSONObject();
         jObj.put("Message", "LOGIN_OK");
         send_object(jObj);
         try {
-          client.close();
+          if (keepAlive == false)
+            client.close();
         } catch (IOException e) {
           e.printStackTrace();
         }
@@ -4497,7 +4506,8 @@ public class ClientWorker implements Runnable {
     }
 
     try {
-      client.close();
+      if (keepAlive == false)
+        client.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
