@@ -223,6 +223,7 @@ public class ClientWorker implements Runnable {
     }
     rLine.remove("userNameLogin");
     rLine.remove("userPassLogin");
+    rLine.remove("keepAlive");
 
     if (rLine.get("action").equals("checkPing")) {
       jObj = new JSONObject();
@@ -3363,7 +3364,7 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
       for (String key : rLine.keySet()) {
         try {
-          csvReader = new CsvReader(new StringReader((String) rLine.get(key)));
+          csvReader = new CsvReader(new StringReader((String) rLine.getString(key)));
           csvReader.setDelimiter(',');
           csvReader.readHeaders();
           ps = db.conn.prepareStatement(query);
