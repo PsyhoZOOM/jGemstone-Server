@@ -195,8 +195,9 @@ public class ClientWorker implements Runnable {
         jObj.put("Message", "LOGIN_OK");
         send_object(jObj);
         try {
-          if (keepAlive == false)
+          if (keepAlive == false) {
             client.close();
+          }
         } catch (IOException e) {
           e.printStackTrace();
         }
@@ -769,6 +770,7 @@ public class ClientWorker implements Runnable {
           while (rs.next()) {
             service = new JSONObject();
             service.put("id", rs.getInt("id"));
+            service.put("userID", rs.getString("userID"));
             service.put("brojUgovora", rs.getString("brojUgovora"));
             service.put("cena", rs.getDouble("cena"));
             service.put("popust", rs.getDouble("popust"));
@@ -776,6 +778,7 @@ public class ClientWorker implements Runnable {
             service.put("operName", rs.getString("operName"));
             service.put("date_added", rs.getString("date_added"));
             service.put("nazivPaketa", rs.getString("nazivPaketa"));
+            service.put("naziv", rs.getString("nazivPaketa"));
             if (rs.getString("idDTVCard") != null) {
               service.put("idUniqueName", rs.getString("idDTVCard"));
             }
@@ -786,7 +789,6 @@ public class ClientWorker implements Runnable {
               service.put("idUniqueName", rs.getString("IPTV_MAC"));
               service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
               service.put("STB_MAC", rs.getString("IPTV_MAC"));
-              service.put("external_id", rs.getString("IPTV_EXT_ID"));
             }
             service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
             service.put("obracun", rs.getBoolean("obracun"));
@@ -839,6 +841,7 @@ public class ClientWorker implements Runnable {
             service.put("id_service", rs2.getInt("id_service"));
             service.put("box_ID", rs2.getInt("box_id"));
             service.put("nazivPaketa", rs2.getString("nazivPaketa"));
+            service.put("naziv", rs2.getString("nazivPaketa"));
             service.put("produzenje", rs2.getInt("produzenje"));
             service.put("groupName", rs2.getString("GroupName"));
             service.put("userName", rs2.getString("UserName"));
@@ -853,23 +856,6 @@ public class ClientWorker implements Runnable {
             service.put("aktivan", rs2.getBoolean("aktivan"));
             service.put("endDate", rs2.getString("endDate"));
             service.put("paketType", rs2.getString("paketType"));
-                        /*
-                        if (rs2.getString("GroupName") != null) {
-                            service.put("paketType", "NET");
-                        }
-                        if (rs2.getString("idDTVCard") != null) {
-                            service.put("paketType", "DTV");
-                        }
-                        if (rs2.getString("DTVPaket") != null) {
-                            service.put("paketType", "DTV");
-                        }
-                        if (rs2.getString("FIKSNA_TEL") != null) {
-                            service.put("paketType", "FIX");
-                        }
-                        if (rs2.getString("IPTV_MAC") != null) {
-                            service.put("paketType", "IPTV");
-                        }
-                        */
             service.put("newService", rs2.getBoolean("newService"));
 
             jObj2.put(String.valueOf(i), service);
@@ -4506,8 +4492,9 @@ public class ClientWorker implements Runnable {
     }
 
     try {
-      if (keepAlive == false)
+      if (keepAlive == false) {
         client.close();
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }

@@ -76,7 +76,7 @@ public class NetworkDevices {
     if (rLine.has("pass")) {
       query =
           "INSERT into networkDevices (name, ip, hostName, type, url, opis, nas, accessType, userName, pass) VALUES "
-              + "(?,?,?,?,?,?,?,?,?)";
+              + "(?,?,?,?,?,?,?,?,?,?)";
     } else {
       query =
           "INSERT INTO networkDevices(name, ip, hostName, type, url, opis, nas, accessType, userName) VALUES "
