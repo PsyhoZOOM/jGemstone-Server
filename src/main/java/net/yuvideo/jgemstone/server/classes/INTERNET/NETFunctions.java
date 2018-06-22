@@ -104,7 +104,7 @@ public class NETFunctions {
     try {
       ps = db.connRad.prepareStatement(query);
       ps.setString(1, rLine.getString("userName"));
-      ps.setString(2, "WISPR-Session-Terminate-time");
+      ps.setString(2, "WISPR-Session-Terminate-Time");
       ps.setString(3, "=");
       ps.setString(4, "1970-1-1T23:59:59");
       ps.executeUpdate();
@@ -177,7 +177,7 @@ public class NETFunctions {
         e.printStackTrace();
       }
 
-      query = "UPDATE radreply SET value=? WHERE username=? AND attribute='WISPR-Session-Terminate-time'";
+      query = "UPDATE radreply SET value=? WHERE username=? AND attribute='WISPR-Session-Terminate-Time'";
       calendar.add(Calendar.MINUTE, -1);
 
       try {

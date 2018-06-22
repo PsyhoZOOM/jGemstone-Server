@@ -1032,7 +1032,7 @@ public class ServicesFunctions {
     String query;
 
     try {
-      query = "UPDATE radreply SET value=? WHERE username=? AND attribute='WISPR-Session-Terminate-time'";
+      query = "UPDATE radreply SET value=? WHERE username=? AND attribute='WISPR-Session-Terminate-Time'";
       ps = db.connRad.prepareStatement(query);
       ps.setString(1, eDateRadReply);
       ps.setString(2, username);
@@ -1249,5 +1249,189 @@ public class ServicesFunctions {
       e.printStackTrace();
     }
     return delete;
+  }
+
+
+  public JSONObject getServiceDetail(int serviceID) {
+    JSONObject object = new JSONObject();
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM servicesUser WHERE id = ?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, serviceID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        object.put("id", rs.getString("id"));
+        object.put("nazivPaketa", rs.getString("nazivPaketa"));
+        object.put("endDateService", rs.getString("endDate"));
+        object.put("paketType", rs.getString("paketType"));
+        String paketType = rs.getString("paketType");
+        if (paketType.contains("DTV")) {
+          object.put("identification", rs.getString("idDTVCard"));
+          object.put("DTVPaket", rs.getString("DTVPaket"));
+          object.put("endDate", getEndDateDTVCard(rs.getString("idDTVCard")));
+
+        }
+        if (paketType.contains("NET")) {
+
+        }
+        if (paketType.contains("FIX")) {
+          object.put("FIKSNA_TEL", rs.getString("FIKSNA_TEL"));
+        }
+        if (paketType.contains("IPTV")) {
+          StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+          JSONObject iptv_acc_info = stalkerRestAPI2.getAccInfo(rs.getString("IPTV_MAC"));
+          object.put("IPTV_MAC", rs.getString("IPTV_MAC"));
+          object.put("userName", iptv_acc_info);
+        }
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      object.put("ERROR", e.getMessage());
+      e.printStackTrace();
+    }
+
+    return object;
+
+  }
+
+
+  private String getEndDateDTVCard(String idDTVCard) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT endDate from DTVKartice WHERE idKartica = ?";
+    String endDate = null;
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, Integer.valueOf(idDTVCard));
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        endDate = rs.getString("endDate");
+      }
+      ps.close();
+      rs.close();
+
+
+    } catch (SQLException e) {
+      endDate = endDate + e.getMessage();
+      e.printStackTrace();
+    }
+    return endDate;
+  }
+
+  public JSONObject changeDTVCard(JSONObject rLine) {
+    JSONObject resp = new JSONObject();
+    String query;
+    PreparedStatement ps;
+
+    //check if card exist
+    query = "SELECT  idKartica FROM DTVKartice WHERE idKartica=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, rLine.getInt("DTVCardNew"));
+      ResultSet rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        resp.put("ERROR", String.format("Kartica %d postoji", rLine.getInt("DTVCardNew")));
+        ps.close();
+        rs.close();
+        return resp;
+      }
+
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    query = "UPDATE servicesUser set idDTVCard = ? WHERE id =? ";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, rLine.getString("DTVCardNew"));
+      ps.setInt(2, rLine.getInt("serviceID"));
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      resp.put("ERROR", e.getMessage());
+      e.printStackTrace();
+    }
+
+    query = "UPDATE DTVKartice set idKartica = ? WHERE idKartica = ?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, rLine.getString("DTVCardNew"));
+      ps.setString(2, rLine.getString("DTVCardCurrent"));
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      resp.put("ERROR", e.getMessage());
+      e.printStackTrace();
+    }
+
+    return resp;
+  }
+
+  public JSONObject changeDTVEndDate(JSONObject rLine) {
+    JSONObject object = new JSONObject();
+    PreparedStatement ps;
+    String query = "UPDATE servicesUser set endDate =? WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, rLine.getString("endDate"));
+      ps.setInt(2, rLine.getInt("serviceID"));
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      object.put("ERROR", e.getMessage());
+      e.printStackTrace();
+    }
+
+    query = "UPDATE DTVKartice set endDate = ? WHERE idKartica = ? ";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, rLine.getString("endDate"));
+      ps.setInt(2, rLine.getInt("DTVCard"));
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      object.put("ERROR", e.getMessage());
+      e.printStackTrace();
+    }
+
+    return object;
+  }
+
+
+  public void changeServiceComment(int servieID, String komentar) {
+    PreparedStatement ps;
+    String query = "UPDATE servicesUser SET komentar = ? WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, komentar);
+      ps.setInt(2, servieID);
+      ps.executeUpdate();
+    } catch (SQLException e) {
+      this.errorMessage = e.getMessage();
+      setHaveError(true);
+      e.printStackTrace();
+    }
+  }
+
+  public void setEndDate(int serviceID, String endDate) {
+    PreparedStatement ps;
+    String query = "UPDATE servicesUser set endDate = ? WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, endDate);
+      ps.setInt(2, serviceID);
+      ps.executeUpdate();
+      ps.close();
+      setHaveError(false);
+    } catch (SQLException e) {
+      setHaveError(true);
+      setErrorMessage(e.getMessage());
+      e.printStackTrace();
+    }
   }
 }

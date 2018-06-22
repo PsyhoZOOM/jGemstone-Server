@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
@@ -53,30 +52,18 @@ public class addBoxService {
       ps.setBoolean(10, false);
       ps.setInt(11, rLine.getInt("produzenje"));
       ps.setBoolean(12, true);
-      if (rLine.has("DTVKartica")) {
-        ps.setInt(13, rLine.getInt("DTVKartica"));
+      ps.setInt(13, rLine.getInt("DTVKartica"));
+      ps.setString(14, rLine.getString("userName"));
+      ps.setString(15, rLine.getString("groupName"));
+      if (rLine.has("IPTV_MAC")) {
+        ps.setString(16, rLine.getString("IPTV_MAC"));
       } else {
-        ps.setNull(13, Types.VARCHAR);
-      }
-      if (rLine.has("userName")) {
-        ps.setString(14, rLine.getString("userName"));
-      } else {
-        ps.setNull(14, Types.VARCHAR);
-      }
-      if (rLine.has("groupName")) {
-        ps.setString(15, rLine.getString("groupName"));
-      } else {
-        ps.setNull(15, Types.VARCHAR);
-      }
-      if (rLine.has("STB_MAC")) {
-        ps.setString(16, rLine.getString("STB_MAC"));
-      } else {
-        ps.setNull(16, Types.VARCHAR);
+        ps.setString(16, "");
       }
       if (rLine.has("FIX_TEL")) {
         ps.setString(17, rLine.getString("FIX_TEL"));
       } else {
-        ps.setNull(17, Types.VARCHAR);
+        ps.setString(17, "");
       }
 
       ps.setBoolean(18, false);

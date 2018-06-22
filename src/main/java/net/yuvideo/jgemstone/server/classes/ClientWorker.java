@@ -41,7 +41,7 @@ import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.NAS.NASOnlineUsers;
 import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
-import net.yuvideo.jgemstone.server.classes.RADIUS.RadReplyUsers;
+import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
@@ -107,6 +107,7 @@ public class ClientWorker implements Runnable {
           Isr = new InputStreamReader(client.getInputStream());
           Bfr = new BufferedReader(Isr);
         } catch (IOException e) {
+          System.out.println(e.getMessage());
           e.printStackTrace();
         }
       }
@@ -120,6 +121,9 @@ public class ClientWorker implements Runnable {
 
         if (A == null) {
           client.close();
+          System.out.println(String
+              .format("Client %s %s disconnected", client.getRemoteSocketAddress().toString(),
+                  getOperName()));
           break;
         }
 
@@ -791,6 +795,7 @@ public class ClientWorker implements Runnable {
               service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
               service.put("STB_MAC", rs.getString("IPTV_MAC"));
             }
+            service.put("userName", rs.getString("UserName"));
             service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
             service.put("obracun", rs.getBoolean("obracun"));
             service.put("aktivan", rs.getBoolean("aktivan"));
@@ -805,6 +810,8 @@ public class ClientWorker implements Runnable {
             service.put("idDTVCard", rs.getString("idDTVCard"));
             service.put("DTVPaketID", rs.getInt("DTVPaket"));
             service.put("endDate", rs.getString("endDate"));
+            service.put("komentar", rs.getString("komentar"));
+            service.put("opis", rs.getString("opis"));
 
             jObj.put(String.valueOf(i), service);
             i++;
@@ -858,7 +865,20 @@ public class ClientWorker implements Runnable {
             service.put("endDate", rs2.getString("endDate"));
             service.put("paketType", rs2.getString("paketType"));
             service.put("newService", rs2.getBoolean("newService"));
+            service.put("komentar", rs2.getString("komentar"));
+            service.put("opis", rs2.getString("opis"));
 
+            if (rs2.getString("idDTVCard") != null) {
+              service.put("idUniqueName", rs2.getString("idDTVCard"));
+            }
+            if (rs2.getString("UserName") != null) {
+              service.put("idUniqueName", rs2.getString("UserName"));
+            }
+            if (rs2.getString("IPTV_MAC") != null) {
+              service.put("idUniqueName", rs2.getString("IPTV_MAC"));
+              service.put("IPTV_MAC", rs2.getString("IPTV_MAC"));
+              service.put("STB_MAC", rs2.getString("IPTV_MAC"));
+            }
             jObj2.put(String.valueOf(i), service);
             i++;
           }
@@ -871,6 +891,71 @@ public class ClientWorker implements Runnable {
       }
 
       send_object(jObj2);
+      return;
+
+    }
+
+    if (rLine.getString("action").equals("getServiceDetail")) {
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      JSONObject serviceDetail = servicesFunctions.getServiceDetail(rLine.getInt("serviceID"));
+      send_object(serviceDetail);
+      return;
+    }
+
+    if (rLine.getString("action").equals("changeServiceDTVCard")) {
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      JSONObject object = servicesFunctions.changeDTVCard(rLine);
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("changeServiceDTVEndDate")) {
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      JSONObject object = servicesFunctions.changeDTVEndDate(rLine);
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getRadiusServiceData")) {
+
+      Radius radius = new Radius(db);
+      JSONObject data = radius.getRadReplyData(rLine.getString("username"));
+
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      JSONObject serviceDetail = servicesFunctions.getServiceDetail(rLine.getInt("serviceID"));
+      data.put("nazivPaketa", serviceDetail.getString("nazivPaketa"));
+      data.put("paketType", serviceDetail.getString("paketType"));
+      data.put("endDateService", serviceDetail.getString("endDateService"));
+
+      send_object(data);
+      return;
+    }
+
+    if (rLine.getString("action").equals("changeRadiusPass")) {
+      JSONObject object = new JSONObject();
+      Radius radius = new Radius(db);
+      object = radius.changeUserPass(rLine.getString("username"), rLine.getString("pass"));
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("changeRadiusData")) {
+      JSONObject object = new JSONObject();
+      Radius radius = new Radius(db);
+      object = radius.changeRadReplyData(rLine);
+      if (radius.isError()) {
+        object.put("ERROR", radius.getErrorMSG());
+        send_object(object);
+        return;
+      }
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      servicesFunctions
+          .changeServiceComment(rLine.getInt("serviceID"), rLine.getString("komentar"));
+      servicesFunctions.setEndDate(rLine.getInt("serviceID"), rLine.getString("endDate"));
+      if (servicesFunctions.isHaveError()) {
+        object.put("ERROR", servicesFunctions.getErrorMessage());
+      }
+      send_object(object);
       return;
 
     }
@@ -4242,8 +4327,8 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("getRadReplyUsers")) {
-      RadReplyUsers radReplyUsers = new RadReplyUsers();
-      JSONObject userSearch = radReplyUsers.getUsers(rLine.getString("userSearch"), db);
+      Radius radReplyUsers = new Radius(db);
+      JSONObject userSearch = radReplyUsers.getUsers(rLine.getString("userSearch"));
       send_object(userSearch);
       return;
     }
