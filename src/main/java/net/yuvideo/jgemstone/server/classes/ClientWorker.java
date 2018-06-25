@@ -53,6 +53,8 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   private static final Logger LOGGER = Logger.getLogger("CLIENT");
+  private static final String S_VERSION = "0.100";
+  private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat normalDate = new SimpleDateFormat("yyyy-MM-dd");
@@ -183,6 +185,29 @@ public class ClientWorker implements Runnable {
 
 
 
+    if(rLine.has("C_VERSION")){
+      this.C_VERSION = rLine.getString("C_VERSION");
+      if(!C_VERSION.equals(this.S_VERSION)){
+        jObj = new JSONObject();
+        jObj.put("Message", "WRONG_VERSION");
+        send_object(jObj);
+        try {
+          client.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+
+      }
+    }else{
+      try {
+        client.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+    }
+
+
     if (rLine.get("action").equals("login")) {
       LOGGER.info("LOGIN CRED: " + rLine);
       client_authenticated = check_Login(rLine.getString("username"), rLine.getString("password"));
@@ -193,6 +218,8 @@ public class ClientWorker implements Runnable {
           this.keepAlive = false;
         }
       }
+
+
       this.operName = rLine.get("username").toString();
       if (client_authenticated) {
         jObj = new JSONObject();
@@ -212,6 +239,10 @@ public class ClientWorker implements Runnable {
     client_authenticated = check_Login(rLine.getString("userNameLogin"),
         rLine.getString("userPassLogin"));
 
+
+
+
+
     if (!client_authenticated) {
 
       jObj = new JSONObject();
@@ -228,6 +259,7 @@ public class ClientWorker implements Runnable {
     rLine.remove("userNameLogin");
     rLine.remove("userPassLogin");
     rLine.remove("keepAlive");
+    rLine.remove("C_VERSION");
 
     if (rLine.get("action").equals("checkPing")) {
       jObj = new JSONObject();

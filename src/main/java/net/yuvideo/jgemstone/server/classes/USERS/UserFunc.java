@@ -28,7 +28,7 @@ public class UserFunc {
     }
 
     //delete from Services_user
-    query = "DELETE FROM Services_User, user_debts,  WHERE  userID=?";
+    query = "DELETE FROM servicesUser  WHERE  userID=?";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -38,6 +38,16 @@ public class UserFunc {
     } catch (SQLException e) {
 
       deleted = false;
+      e.printStackTrace();
+    }
+
+    query = "DELETE FROM userDebts WHERE userID=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userId);
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
       e.printStackTrace();
     }
 

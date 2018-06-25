@@ -15,8 +15,19 @@ import org.json.JSONObject;
  * Created by zoom on 2/27/17.
  */
 public class DTVFunctions {
+  database db;
 
   private static SimpleDateFormat normalDate = new SimpleDateFormat("yyyy-MM-dd");
+  private boolean error;
+  private String errorMSG;
+
+
+  public DTVFunctions(database db) {
+    this.db = db;
+  }
+
+  public DTVFunctions() {
+  }
 
   public static Boolean check_card_busy(int cardID, database db) {
     PreparedStatement ps;
@@ -103,11 +114,36 @@ public class DTVFunctions {
         ps.setString(1, normalDate.format(calendar.getTime()));
         ps.setString(2, rLine.getString("idUniqueName"));
         ps.executeUpdate();
+        ps.close();
       } catch (SQLException e) {
         e.printStackTrace();
       }
 
       //add_user_debt_first_time(rLine);
     }
+  }
+
+  public String getEndDate(int DTVCardID){
+    PreparedStatement ps;
+    ResultSet rs;
+    String endDate = null;
+    String query = "SELECT endDate FROM DTVKartice WHERE idKartica = ?";
+    try {
+      ps =  db.conn.prepareStatement(query);
+      ps.setInt(1, DTVCardID);
+      rs = ps.executeQuery();
+      if(rs.isBeforeFirst()) {
+        rs.next();
+        endDate = rs.getString("endDate");
+      }
+      ps.close();
+      rs.close();
+
+    } catch (SQLException e) {
+      this.error = true;
+      this.errorMSG = e.getMessage();
+      e.printStackTrace();
+    }
+    return  endDate;
   }
 }

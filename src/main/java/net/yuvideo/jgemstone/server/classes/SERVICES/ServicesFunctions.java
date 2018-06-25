@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
+import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.FaktureFunct;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
@@ -1285,6 +1286,11 @@ public class ServicesFunctions {
           JSONObject iptv_acc_info = stalkerRestAPI2.getAccInfo(rs.getString("IPTV_MAC"));
           object.put("IPTV_MAC", rs.getString("IPTV_MAC"));
           object.put("userName", iptv_acc_info);
+        }
+        if(paketType.contains("DTV")){
+          DTVFunctions dtvFunctions = new DTVFunctions(db);
+          String endDate = dtvFunctions.getEndDate(rs.getInt("idDTVCard"));
+          object.put("endDate", endDate);
         }
       }
       ps.close();
