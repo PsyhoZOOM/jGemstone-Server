@@ -18,6 +18,8 @@ public class NASOnlineUsers {
     NetworkDevices networkDevices = new NetworkDevices(db);
     JSONObject nasDevices = networkDevices.getNASDevices();
     MikrotikAPI mikrotikAPI = new MikrotikAPI();
+
+    int nasNo = 0;
     for (int i = 0; i < nasDevices.length(); i++) {
       JSONObject onlineUsers = mikrotikAPI
           .getOnlineUser(
@@ -25,10 +27,11 @@ public class NASOnlineUsers {
               nasDevices.getJSONObject(String.valueOf(i)).getString("pass"),
               nasDevices.getJSONObject(String.valueOf(i)).getString("ip"),
               nasDevices.getJSONObject(String.valueOf(i)).getString("name"));
-      if (onlineUsers == null) {
-        continue;
+      if (onlineUsers != null) {
+        addToOnline(onlineUsers, nasNo);
+        nasNo++;
       }
-      addToOnline(onlineUsers, i);
+
     }
     mergeOnlineUsers();
 
@@ -40,6 +43,7 @@ public class NASOnlineUsers {
     JSONObject onl = new JSONObject();
     int numOnline = 0;
     for (int i = 0; i < online.length(); i++) {
+      System.out.println(online);
       JSONObject object = online.getJSONObject(String.valueOf(i));
       for (int z = 0; z < object.length(); z++) {
         onl.put(String.valueOf(numOnline), object.getJSONObject(String.valueOf(z)));

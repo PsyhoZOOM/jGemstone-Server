@@ -24,7 +24,7 @@ import org.json.JSONObject;
  */
 public class StalkerRestAPI2 {
 
-  public boolean isHostAlive = false;
+  private boolean isHostAlive;
   public String hostMessage;
   Client apiClient;
   ClientConfig clientConfig;
@@ -85,6 +85,8 @@ public class StalkerRestAPI2 {
           .get(ClientResponse.class);
     } catch (NullPointerException e) {
       e.printStackTrace();
+      isHostAlive = false;
+      hostMessage = e.getMessage();
     } finally {
       if (webResource == null) {
         isHostAlive = false;
@@ -96,6 +98,7 @@ public class StalkerRestAPI2 {
     }
     if(response.getStatus() != 200 ){
       isHostAlive  = false;
+      hostMessage = String.valueOf("ERROR: " + response.getStatus());
       return;
     }else {
       isHostAlive = true;
@@ -355,4 +358,30 @@ public class StalkerRestAPI2 {
   }
 
 
+  public JSONObject checkHost() {
+    JSONObject pakets_all = getPakets_ALL();
+    JSONObject object = new JSONObject();
+    if (pakets_all.has("ERROR")) {
+      object.put("ERROR", pakets_all.getString("ERROR"));
+    }
+    return object;
+
+  }
+
+
+  public boolean isHostAlive() {
+    return isHostAlive;
+  }
+
+  public void setHostAlive(boolean hostAlive) {
+    isHostAlive = hostAlive;
+  }
+
+  public String getHostMessage() {
+    return hostMessage;
+  }
+
+  public void setHostMessage(String hostMessage) {
+    this.hostMessage = hostMessage;
+  }
 }

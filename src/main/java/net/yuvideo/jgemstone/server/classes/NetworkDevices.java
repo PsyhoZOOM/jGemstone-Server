@@ -106,6 +106,36 @@ public class NetworkDevices {
     }
   }
 
+  public JSONObject editDevice(JSONObject rLine) {
+    JSONObject object = new JSONObject();
+    PreparedStatement ps;
+    String query = "UPDATE networkDevices set name=?, ip=?, hostName=?, type=?, userName=?, pass=?,"
+        + "url=?, opis=?, nas=?, accessType=? WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, rLine.getString("name"));
+      ps.setString(2, rLine.getString("ip"));
+      ps.setString(3, rLine.getString("hostName"));
+      ps.setString(4, rLine.getString("type"));
+      ps.setString(5, rLine.getString("userName"));
+      ps.setString(6, rLine.getString("pass"));
+      ps.setString(7, rLine.getString("url"));
+      ps.setString(8, rLine.getString("opis"));
+      ps.setBoolean(9, rLine.getBoolean("nas"));
+      ps.setString(10, rLine.getString("accessType"));
+      ps.setInt(11, rLine.getInt("id"));
+      ps.executeUpdate();
+      ps.close();
+
+    } catch (SQLException e) {
+      object.put("ERROR", e.getMessage());
+      setError(true);
+      setErrorMsgp(e.getMessage());
+      e.printStackTrace();
+    }
+    return object;
+  }
+
   public JSONObject getNASDevices() {
     JSONObject NASDevices = new JSONObject();
     PreparedStatement ps;

@@ -21,11 +21,13 @@ public class MikrotikAPI {
           .connect(SocketFactory.getDefault(), ip, ApiConnection.DEFAULT_PORT,
               ApiConnection.DEFAULT_CONNECTION_TIMEOUT);
       con.login(login, pass);
+      if (!con.isConnected()) {
+        return null;
+      }
       List<Map<String, String>> execute = con.execute("/ppp/active/print detail");
       con.close();
       int i = 0;
       for (Map<String, String> res : execute) {
-        System.out.println(res);
         JSONObject user = new JSONObject();
         user.put("name", res.get("name"));
         user.put("ip", res.get("address"));
@@ -45,6 +47,7 @@ public class MikrotikAPI {
     } catch (MikrotikApiException e) {
 
       e.printStackTrace();
+      onlineUsers.put("ERROR", e.getMessage());
       return null;
     }
     return onlineUsers;
@@ -62,16 +65,13 @@ public class MikrotikAPI {
 
       String cmd;
       cmd = String.format("/ip/address/print where network=%s", ip);
-      System.out.println(cmd);
       List<Map<String, String>> execute = con.execute(cmd);
       String anInterface = "";
       for (Map<String, String> sr : execute) {
-        System.out.println(sr);
         anInterface = sr.get("interface");
       }
 
       cmd = String.format("/interface/print detail ", anInterface);
-      System.out.println(cmd);
       execute = con.execute(cmd);
       con.close();
 
@@ -79,7 +79,6 @@ public class MikrotikAPI {
         if (!res.get("name").equals(anInterface)) {
           continue;
         }
-        System.out.println(res);
         userStat.put("name", res.get("name"));
         userStat.put("linkUp", res.get("last-link-up-time"));
         userStat.put("rxByte", res.get("rx-byte"));
@@ -102,7 +101,6 @@ public class MikrotikAPI {
   }
 
   public JSONObject customCommand(String cmd, String nasIP, String user, String pass) {
-    System.out.println(cmd);
     JSONObject object = new JSONObject();
     try {
       ApiConnection apiConnection = ApiConnection
@@ -115,7 +113,6 @@ public class MikrotikAPI {
             @Override
             public void receive(Map<String, String> result) {
 
-              System.out.println(result);
               JSONObject keys = new JSONObject();
               int i = 0;
               for (String key : result.keySet()) {
@@ -134,7 +131,7 @@ public class MikrotikAPI {
 
             @Override
             public void completed() {
-              System.out.println("COMPLETE");
+
             }
           });
 

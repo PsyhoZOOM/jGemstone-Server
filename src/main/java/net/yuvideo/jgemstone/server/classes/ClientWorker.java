@@ -21,8 +21,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 import net.yuvideo.jgemstone.server.classes.ARTIKLI.ArtikliFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.BoxFunctions;
@@ -45,6 +43,7 @@ import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
 /**
@@ -52,8 +51,8 @@ import org.json.JSONObject;
  */
 public class ClientWorker implements Runnable {
 
-  private static final Logger LOGGER = Logger.getLogger("CLIENT");
-  private static final String S_VERSION = "0.100";
+  public Logger LOGGER;
+  private static final String S_VERSION = "0.102";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -87,6 +86,7 @@ public class ClientWorker implements Runnable {
     //this.client = client;
     this.client = client;
     this.db = db;
+
   }
 
   public Socket get_socket() {
@@ -98,10 +98,13 @@ public class ClientWorker implements Runnable {
 
     db.DEBUG = DEBUG;
 
-    LOGGER.log(Level.INFO, String.valueOf(DEBUG));
+
 
     System.out.println(String.format("Client connected: %s", this.client
         .getRemoteSocketAddress()));
+
+    LOGGER.info(String.format("Client connected: %s", client.getRemoteSocketAddress()));
+
     while (!client.isClosed()) {
 
       if (Isr == null) {
@@ -110,12 +113,13 @@ public class ClientWorker implements Runnable {
           Bfr = new BufferedReader(Isr);
         } catch (IOException e) {
           System.out.println(e.getMessage());
-          e.printStackTrace();
         }
       }
 
+
       if (DEBUG > 1) {
         System.out.println("Waitin for client data..");
+
       }
       try {
 
@@ -123,7 +127,7 @@ public class ClientWorker implements Runnable {
 
         if (A == null) {
           client.close();
-          System.out.println(String
+          LOGGER.info(String
               .format("Client %s %s disconnected", client.getRemoteSocketAddress().toString(),
                   getOperName()));
           break;
@@ -143,7 +147,8 @@ public class ClientWorker implements Runnable {
       }
 
       if (DEBUG > 0) {
-        System.out.println("Reading Bfr.readline()" + jObj);
+        LOGGER.info(String.format("Reading IP: %s Operater: %s DATA: %s",
+            client.getRemoteSocketAddress().toString(), getOperName(), jObj.toString()));
       }
       object_worker(jObj);
 
@@ -209,7 +214,6 @@ public class ClientWorker implements Runnable {
 
 
     if (rLine.get("action").equals("login")) {
-      LOGGER.info("LOGIN CRED: " + rLine);
       client_authenticated = check_Login(rLine.getString("username"), rLine.getString("password"));
       if (rLine.has("keepAlive")) {
         if (rLine.getBoolean("keepAlive")) {
@@ -296,7 +300,6 @@ public class ClientWorker implements Runnable {
           e.printStackTrace();
         }
       }
-      LOGGER.info(ps.toString());
       jUsers = new JSONObject();
 
       int i = 0;
@@ -694,7 +697,7 @@ public class ClientWorker implements Runnable {
         ps.close();
       } catch (SQLException ex) {
         jObj.put("ERROR", ex.getMessage());
-        Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
+        ex.printStackTrace();
       }
 
       query = "UPDATE users SET firma=?  WHERE userID=?";
@@ -708,7 +711,6 @@ public class ClientWorker implements Runnable {
 
       } catch (SQLException ex) {
         jObj.put("ERROR", ex.getMessage());
-        Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
       }
 
       query = "DELETE FROM faktureData WHERE userID=?";
@@ -870,7 +872,6 @@ public class ClientWorker implements Runnable {
         ps2.setInt(3, rLine.getInt("userID"));
         ResultSet rs2 = ps2.executeQuery();
 
-        LOGGER.info(ps2.toString());
         if (rs2.isBeforeFirst()) {
           JSONObject service;
           int i = 0;
@@ -1196,6 +1197,12 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("add_service_to_user_DTV")) {
       jObj = new JSONObject();
+      if (DTVFunctions.check_card_busy(rLine.getInt("DTVKarticaID"), db)) {
+        jObj.put("ERROR",
+            String.format("Kartica sa brojem %d je zauzeta", rLine.getInt("DTVKarticaID")));
+        send_object(jObj);
+        return;
+      }
 
       String serviceAdded = ServicesFunctions
           .addServiceDTV(rLine.getInt("id"), rLine.getString("nazivPaketa"),
@@ -1215,6 +1222,12 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("add_service_to_user_NET")) {
       jObj = new JSONObject();
+      if (NETFunctions.check_userName_busy(rLine.getString("userName"), db)) {
+        jObj.put("ERROR",
+            String.format("Korisničko ime %s je zauzeto", rLine.getString("userName")));
+        send_object(jObj);
+        return;
+      }
       String userAdded = ServicesFunctions.addServiceNET(rLine, getOperName(), this.db);
       if (userAdded.equals("USER_EXIST")) {
         jObj.put("Error", "USER_EXIST");
@@ -1419,6 +1432,24 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("DELETE_USER_DEBT")) {
+      JSONObject object = new JSONObject();
+      PreparedStatement ps;
+      String query = "DELETE FROM userDebts WHERE id=?";
+      try {
+        ps = db.conn.prepareStatement(query);
+        ps.setInt(1, rLine.getInt("idDebt"));
+        ps.executeUpdate();
+        ps.close();
+      } catch (SQLException e) {
+        object.put("ERROR", e.getMessage());
+        e.printStackTrace();
+
+      }
+      send_object(object);
+      return;
+    }
+
     if (rLine.getString("action").equals("getUserUplate")) {
       JSONObject jsonObject = new JSONObject();
       PreparedStatement ps;
@@ -1480,7 +1511,7 @@ public class ClientWorker implements Runnable {
         }
       } catch (SQLException ex) {
         jObj.put("ERROR", ex.getMessage());
-        Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
+        ex.printStackTrace();
       }
       jObj.put("ident", ident);
       send_object(jObj);
@@ -1670,7 +1701,7 @@ public class ClientWorker implements Runnable {
 
         }
       } catch (SQLException ex) {
-        Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
+        ex.printStackTrace();
       }
 
       try {
@@ -1778,7 +1809,6 @@ public class ClientWorker implements Runnable {
             }
           }
 
-          LOGGER.info(ps.toString());
         } catch (SQLException e) {
           jObj.put("Error", e.getMessage());
           e.printStackTrace();
@@ -1837,7 +1867,6 @@ public class ClientWorker implements Runnable {
       query = "INSERT INTO ugovori_types "
           + "(naziv,  text_ugovor)"
           + " VALUES (?,?)";
-      LOGGER.info(query + rLine.getString("nazivUgovora"));
 
       try {
         db.ps = db.conn.prepareStatement(query);
@@ -2251,7 +2280,6 @@ public class ClientWorker implements Runnable {
         db.ps.setString(7, rLine.getString("godina"));
         db.ps.setInt(8, rLine.getInt("userId"));
         db.ps.setString(9, formatter.format(date));
-        LOGGER.info("QUYERY: " + db.ps.toString());
         db.ps.executeUpdate();
 
       } catch (SQLException e) {
@@ -3463,6 +3491,11 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("addFixUslugu")) {
       jObj = new JSONObject();
+      if (FIXFunctions.check_TELBr_bussy(rLine.getString("brojTel"), db)) {
+        jObj.put("ERROR", String.format("Broj telefona %s je zauzet", rLine.getString("brojTel")));
+        send_object(jObj);
+        return;
+      }
       String message = ServicesFunctions.addServiceFIX(rLine, getOperName(), db);
       jObj.put("Message", message);
       send_object(jObj);
@@ -3587,6 +3620,18 @@ public class ClientWorker implements Runnable {
     //END FIKSNA TELEFONIJA PAKETI
     //IPTV
     //test
+
+    if (rLine.getString("action").equals("check_iptv_is_alive")) {
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      JSONObject object = new JSONObject();
+
+      if (!stalkerRestAPI2.isHostAlive()) {
+        object.put("ERROR", stalkerRestAPI2.getHostMessage());
+      }
+      send_object(object);
+      return;
+    }
+
     if (rLine.getString("action").equals("test_REST_API")) {
       StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
       //stalkerRestAPI2.changeMac(1, "00:1A:79:00:39:EE");
@@ -3728,8 +3773,13 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("save_IPTV_USER")) {
-      JSONObject jObj;
+      JSONObject jObj = new JSONObject();
       StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
+      if (stAPI2.checkUser(rLine.getString("STB_MAC"))) {
+        jObj.put("ERROR", String.format("MAC Adresa %s je zauzeta", rLine.getString("STB_MAC")));
+        send_object(jObj);
+        return;
+      }
       jObj = stAPI2.saveUSER(rLine);
       if (!jObj.has("ERROR")) {
         ServicesFunctions.addServiceIPTV(rLine, operName, db);
@@ -4331,6 +4381,17 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("editNetworkDevice")) {
+      JSONObject object = new JSONObject();
+      NetworkDevices networkDevices = new NetworkDevices(db);
+      networkDevices.editDevice(rLine);
+      if (networkDevices.isError()) {
+        object.put("ERROR", networkDevices.getErrorMsgp());
+      }
+      send_object(object);
+      return;
+    }
+
     if (rLine.getString("action").equals("getOnlineUsers")) {
       NASOnlineUsers nasOnlineUsers = new NASOnlineUsers(db);
       JSONObject onlineUsers = nasOnlineUsers.getOnlineUsers();
@@ -4534,7 +4595,7 @@ public class ClientWorker implements Runnable {
     String userName = null;
     String passWord = null;
     boolean aktivan = false;
-    this.setOperName(userName);
+    this.setOperName(username);
 
     try {
       ps = db.conn.prepareStatement(
@@ -4566,7 +4627,7 @@ public class ClientWorker implements Runnable {
         this.operName = userName;
       }
     } else {
-      LOGGER.info(String.format("Login Error, User: %s  Pass: "
+      LOGGER.warn(String.format("Login Error, User: %s  Pass: "
           + "%s Client: ", username, password, client
           .getRemoteSocketAddress()));
       client_authenticated = false;
@@ -4586,7 +4647,7 @@ public class ClientWorker implements Runnable {
 
   public void send_object(JSONObject obj) {
     if (DEBUG > 0) {
-      LOGGER.info("Sending Object: " + obj.toString());
+      //  LOGGER.info("Sending Object: " + obj.toString());
     }
 
     if (client.isClosed()) {

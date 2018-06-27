@@ -13,7 +13,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -24,13 +23,13 @@ import net.yuvideo.jgemstone.server.classes.EMMServer;
 import net.yuvideo.jgemstone.server.classes.GPSReceiver;
 import net.yuvideo.jgemstone.server.classes.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.database;
+import org.apache.log4j.PropertyConfigurator;
 
 /**
  * Created by zoom on 8/8/16.
  */
 public class Server {
 
-  Logger LOGGER = Logger.getLogger("MAIN");
 
   public static void main(String[] args) {
 
@@ -177,6 +176,7 @@ public class Server {
     gpsTH.start();
 
     System.out.println("Server started");
+    PropertyConfigurator.configure(ClassLoader.getSystemResource("log4j.properties"));
     while (true) {
       ClientWorker cw;
       try {
@@ -184,6 +184,7 @@ public class Server {
         //       cw = new ClientWorker((SSLSocket) serverSock.accept());
         cw = new ClientWorker((SSLSocket) serverSocket.accept(), db);
         cw.DEBUG = DEBUG;
+        cw.LOGGER = org.apache.log4j.Logger.getLogger("SERVER");
         Thread th = new Thread(cw);
         th.start();
         st.add_client(cw);

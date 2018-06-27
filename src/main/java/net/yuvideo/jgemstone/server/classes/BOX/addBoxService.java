@@ -78,7 +78,7 @@ public class addBoxService {
       BOX_Service_ID = rsBoxId.getInt(1);
 
       StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
-      if (!stalkerRestAPI2.isHostAlive) {
+      if (!stalkerRestAPI2.isHostAlive()) {
         return "IPTV Server nije u funkciji.\n Probajte kasnije ili se obratite tehnickoj podrsci!";
       }
       if (rLine.has("STB_MAC")) {
