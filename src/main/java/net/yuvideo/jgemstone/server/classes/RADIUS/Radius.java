@@ -200,6 +200,9 @@ public class Radius {
   }
 
   private boolean setBadwidthLimit(String username, String rateLimit) {
+    if (rateLimit.isEmpty()) {
+      return false;
+    }
     PreparedStatement ps;
     String query = "DELETE FROM radreply WHERE username=? and attribute='Mikrotik-Rate-Limit'";
     try {
@@ -235,6 +238,9 @@ public class Radius {
   }
 
   private boolean changeUserFilterID(String username, String filterID) {
+    if (filterID.isEmpty()) {
+      return false;
+    }
     PreparedStatement ps;
     String query = "DELETE FROM radreply where username=? and attribute=?";
     try {
@@ -269,6 +275,9 @@ public class Radius {
   }
 
   private boolean changeUserIPPool(String username, String pool) {
+    if (pool.isEmpty()) {
+      return false;
+    }
     PreparedStatement ps;
     String query = "DELETE FROM radreply where username=? and attribute= ?";
     try {
@@ -305,6 +314,9 @@ public class Radius {
   }
 
   private boolean changeUserIPAddress(String username, String ipAddress) {
+    if (ipAddress.isEmpty()) {
+      return false;
+    }
     PreparedStatement ps;
     String query = "DELETE FROM radreply where username=? and attribute =?";
     try {
@@ -400,7 +412,7 @@ public class Radius {
     try {
       ps = db.connRad.prepareStatement(query);
       ps.setString(1, username);
-      ps.setString(2, "WISPR-Session-Terminate-Time'");
+      ps.setString(2, "WISPR-Session-Terminate-Time");
       ps.setString(3, "=");
       ps.setString(4, LocalDateTime.parse(endDateFormated).minusSeconds(1).format(dtfRadreply));
       ps.executeUpdate();

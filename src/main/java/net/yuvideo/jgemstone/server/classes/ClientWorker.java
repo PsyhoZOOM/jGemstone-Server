@@ -1,13 +1,10 @@
 package net.yuvideo.jgemstone.server.classes;
 
-import com.csvreader.CsvReader;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.StringReader;
 import java.net.Socket;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,6 +24,7 @@ import net.yuvideo.jgemstone.server.classes.BOX.BoxFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.addBoxService;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVPaketFunctions;
+import net.yuvideo.jgemstone.server.classes.FIX.CSVIzvestajImport;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.INTERNET.InternetPaket;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
@@ -3504,75 +3502,13 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.get("action").equals("add_CSV_FIX_Telefonija")) {
-      CsvReader csvReader = null;
-      PreparedStatement ps = null;
-      String query =
-          "INSERT INTO csv (account,  `from`, `to`, country, description, connectTime, chargedTimeMS, "
-              + "chargedTimeS, chargedAmountRSD, serviceName, chargedQuantity, serviceUnit, customerID, fileName)"
-              + "VALUES"
-              + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-      jObj = new JSONObject();
-      for (String key : rLine.keySet()) {
-        try {
-          csvReader = new CsvReader(new StringReader((String) rLine.getString(key)));
-          csvReader.setDelimiter(',');
-          csvReader.readHeaders();
-          ps = db.conn.prepareStatement(query);
-
-          while (csvReader.readRecord()) {
-            //ako je csv fajl  na kraju prekinuti import
-            if (csvReader.get("Account").equals("SUBTOTAL") || csvReader.get("Account").isEmpty()
-                || csvReader.get("Service Name").equals("Payments")) {
-              break;
-            }
-            if (Double.parseDouble(csvReader.get("Charged Amount, RSD")) < 0) {
-              continue;
-            }
-            String filename = key;
-            String customerID = key.substring(key.lastIndexOf("-"));
-            customerID = customerID.replace("-customer", "");
-            customerID = customerID.replace(".csv", "");
-
-            ps.setString(1, csvReader.get("Account"));
-            ps.setString(2, csvReader.get("From"));
-            ps.setString(3, csvReader.get("To"));
-            if (csvReader.get("Country").isEmpty()) {
-              ps.setString(4, "Lokalni poziv");
-            } else {
-              ps.setString(4, csvReader.get("Country"));
-            }
-            ps.setString(5, csvReader.get("Description"));
-            ps.setString(6, csvReader.get("Connect Time"));
-            ps.setString(7, csvReader.get("Charged Time, min:sec"));
-            ps.setInt(8, Integer.parseInt(csvReader.get("Charged Time, sec.")));
-            ps.setDouble(9, Double.parseDouble(csvReader.get("Charged Amount, RSD")));
-            ps.setString(10, csvReader.get("Service Name"));
-            ps.setInt(11, Integer.parseInt(csvReader.get("Charged quantity")));
-            ps.setString(12, csvReader.get("Service unit"));
-            ps.setString(13, customerID);
-            ps.setString(14, filename);
-
-            ps.executeUpdate();
-
-
-          }
-
-          ps.close();
-          jObj.put("Mesage", "CSV_IMPORT_SUCCESS");
-        } catch (FileNotFoundException e) {
-          jObj.put("ERROR", e.getMessage());
-          e.printStackTrace();
-        } catch (SQLException e) {
-          jObj.put("ERROR", e.getMessage());
-          e.printStackTrace();
-        } catch (IOException e) {
-          jObj.put("ERROR", e.getMessage());
-          e.printStackTrace();
-        }
-
+      JSONObject object = new JSONObject();
+      CSVIzvestajImport csvIzvestajImport = new CSVIzvestajImport(db);
+      csvIzvestajImport.importFile(rLine);
+      if (csvIzvestajImport.isError()) {
+        object.put("ERROR", csvIzvestajImport.getErrorMsg());
       }
-
-      send_object(jObj);
+      send_object(object);
       return;
     }
 
@@ -4253,7 +4189,12 @@ public class ClientWorker implements Runnable {
           if(t.equals("action")) continue;
           ps = db.conn.prepareStatement(query);
           ps.setString(1, t);
-          ps.setString(2, obj.getString(t));
+          if (obj.get(t) instanceof String) {
+            ps.setString(2, obj.getString(t));
+          } else if (obj.get(t) instanceof Boolean) {
+            ps.setBoolean(2, obj.getBoolean(t));
+          }
+
           ps.executeUpdate();
         }
         ps.close();
@@ -4340,6 +4281,9 @@ public class ClientWorker implements Runnable {
             }
             if (rs.getString("settings").equals("DTV_UDP_TIMEOUT")) {
               jObj.put("DTV_UDP_TIMEOUT", rs.getString("value"));
+            }
+            if (rs.getString("settings").equals("DTV_SERVICE")) {
+              jObj.put("DTV_SERVICE", rs.getBoolean("value"));
             }
           }
 

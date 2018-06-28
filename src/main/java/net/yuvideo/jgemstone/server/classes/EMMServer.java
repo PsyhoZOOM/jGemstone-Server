@@ -5,12 +5,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import org.apache.log4j.Logger;
 
 /**
  * Created by PsyhoZOOM on 9/21/17.
  */
 public class EMMServer implements Runnable {
 
+  public Logger LOGGER;
   private final int MINUTES = 60 * 100;
   public int DEBUG;
   DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -36,6 +38,7 @@ public class EMMServer implements Runnable {
     query = "SELECT * FROM DTVKartice ";
 
     sendEmmUDP = new sendEMMUDP(this.host, this.port);
+    LOGGER.info("Starting EMM Service");
     while (true) {
       try {
         ps = db.conn.prepareStatement(query);

@@ -12,7 +12,6 @@ import java.security.cert.CertificateException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -23,6 +22,7 @@ import net.yuvideo.jgemstone.server.classes.EMMServer;
 import net.yuvideo.jgemstone.server.classes.GPSReceiver;
 import net.yuvideo.jgemstone.server.classes.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.database;
+import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 /**
@@ -30,6 +30,8 @@ import org.apache.log4j.PropertyConfigurator;
  */
 public class Server {
 
+
+  private static Logger LOGGER = Logger.getLogger("SERVER");
 
   public static void main(String[] args) {
 
@@ -68,8 +70,6 @@ public class Server {
           SecureRandom.getInstance("SHA1PRNG"));
       serverSocket = (SSLServerSocket) ssl.getServerSocketFactory().createServerSocket(portNumber);
 
-      System.out.println("PROTOCOLS: " + Arrays.toString(serverSocket.getEnabledProtocols()));
-      System.out.println("CIPHER: " + Arrays.toString(serverSocket.getEnabledCipherSuites()));
 
 
 
@@ -145,6 +145,7 @@ public class Server {
     String EMMhost = "127.0.0.1";
     int EMMport = 10000;
     int EMMTimeout = 1000;
+    boolean runEMMServce = false;
     try {
       ps = db.conn.prepareStatement(query);
       rs = ps.executeQuery();
@@ -159,23 +160,29 @@ public class Server {
           if (rs.getString("settings").equals("DTV_EMM_PORT")) {
             EMMport = Integer.valueOf(rs.getString("value"));
           }
+          if (rs.getString("settings").equals("DTV_SERVICE")) {
+            runEMMServce = rs.getBoolean("value");
+          }
         }
       }
     } catch (SQLException e) {
       e.printStackTrace();
     }
 
-    EMMServer emmServer = new EMMServer(EMMTimeout, db, EMMhost, EMMport);
-    emmServer.DEBUG = DEBUG;
-    Thread emmThread = new Thread(emmServer);
-    emmThread.start();
+    if (runEMMServce) {
+      EMMServer emmServer = new EMMServer(EMMTimeout, db, EMMhost, EMMport);
+      emmServer.DEBUG = DEBUG;
+      emmServer.LOGGER = LOGGER;
+      Thread emmThread = new Thread(emmServer);
+      emmThread.start();
+    }
 
     GPSReceiver gpsReceiver = new GPSReceiver();
     gpsReceiver.setDatabase(db);
     Thread gpsTH = new Thread(gpsReceiver);
     gpsTH.start();
 
-    System.out.println("Server started");
+    LOGGER.info("Server startd");
     PropertyConfigurator.configure(ClassLoader.getSystemResource("log4j.properties"));
     while (true) {
       ClientWorker cw;
@@ -184,7 +191,7 @@ public class Server {
         //       cw = new ClientWorker((SSLSocket) serverSock.accept());
         cw = new ClientWorker((SSLSocket) serverSocket.accept(), db);
         cw.DEBUG = DEBUG;
-        cw.LOGGER = org.apache.log4j.Logger.getLogger("SERVER");
+        cw.LOGGER = LOGGER;
         Thread th = new Thread(cw);
         th.start();
         st.add_client(cw);
