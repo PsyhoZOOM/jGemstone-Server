@@ -9,7 +9,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -89,32 +88,9 @@ public class monthlyScheduler {
     } catch (SQLException e) {
       e.printStackTrace();
     }
-    zaduziFakturu(date, "SYSTEM");
 
   }
 
-  private void zaduziFakturu(LocalDate godina, String operater) {
-    try {
-      PreparedStatement ps;
-      ResultSet rs = null;
-      String query = "SELECT * FROM userDebts WHERE zaMesec=? AND paketType != 'CUSTOM' ";
-
-      ps = db.conn.prepareStatement(query);
-      ps.setString(1, godina.format(format_month));
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        while (rs.next()) {
-          FaktureFunct faktureFunct = new FaktureFunct(rs.getInt("userID"), godina, operater, db);
-          if (faktureFunct.hasFirma) {
-            faktureFunct.createFakturu(rs);
-          }
-        }
-      }
-    } catch (SQLException ex) {
-      Logger.getLogger(monthlyScheduler.class.getName()).log(Level.SEVERE, null, ex);
-    }
-
-  }
 
   private void setOldService(int id) {
     query = "UPDATE servicesUser set newService=0 WHERE id=?";

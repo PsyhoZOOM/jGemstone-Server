@@ -192,11 +192,53 @@ public class Radius {
         case "Mikrotik-Rate-Limit": {
           setBadwidthLimit(rLine.getString("username"), rLine.getString("Mikrotik-Rate-Limit"));
         }
+        case "Simultaneous-Use": {
+          setSimultaneousUse(rLine.getString("username"), rLine.getString("Simultaneous-Use"));
+        }
         break;
       }
     }
 
     return object;
+  }
+
+  private boolean setSimultaneousUse(String username, String simulUse) {
+    PreparedStatement ps;
+    String query = "DELETE FROM radcheck WHERE username=? and attribute='Simultaneous-Use'";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, username);
+      ps.executeUpdate();
+      ps.close();
+      error = false;
+    } catch (SQLException e) {
+      error = true;
+      errorMSG = e.getMessage();
+      e.printStackTrace();
+      return error;
+    }
+
+    if (simulUse.isEmpty()) {
+      return false;
+    }
+
+    query = "INSERT INTO radcheck (username, attribute, op, value) VALUES (?,?,?,?)";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, username);
+      ps.setString(2, "Simultaneous-Use");
+      ps.setString(3, ":=");
+      ps.setString(4, simulUse);
+      ps.executeUpdate();
+      error = false;
+    } catch (SQLException e) {
+      errorMSG = e.getMessage();
+      error = true;
+      e.printStackTrace();
+      return error;
+    }
+
+    return false;
   }
 
   private boolean setBadwidthLimit(String username, String rateLimit) {
@@ -471,6 +513,20 @@ public class Radius {
     return error;
   }
 
+  public void activateUser(String userName) {
+    PreparedStatement ps;
+    String query = "UPDATE radcheck set value='Accept' WHERE attribute='Auth-Type' AND username=?";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, userName);
+      ps.executeUpdate();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+  }
 
   public String getErrorMSG() {
     return errorMSG;
@@ -487,4 +543,5 @@ public class Radius {
   public void setError(boolean error) {
     this.error = error;
   }
+
 }

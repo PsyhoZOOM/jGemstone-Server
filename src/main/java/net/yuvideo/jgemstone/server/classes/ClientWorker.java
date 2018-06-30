@@ -50,7 +50,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.102";
+  private static final String S_VERSION = "0.103";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -976,53 +976,21 @@ public class ClientWorker implements Runnable {
       object = radius.changeRadReplyData(rLine);
       if (radius.isError()) {
         object.put("ERROR", radius.getErrorMSG());
-        send_object(object);
-        return;
-      }
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
-      servicesFunctions
-          .changeServiceComment(rLine.getInt("serviceID"), rLine.getString("komentar"));
-      servicesFunctions.setEndDate(rLine.getInt("serviceID"), rLine.getString("endDate"));
-      if (servicesFunctions.isHaveError()) {
-        object.put("ERROR", servicesFunctions.getErrorMessage());
       }
       send_object(object);
       return;
 
     }
 
-    if (rLine.get("action").equals("activate_service")) {
-      PreparedStatement ps;
-      ResultSet rs;
-      String query;
+    if (rLine.get("action").equals("activate_new_service")) {
 
       jObj = new JSONObject();
-
       int service_id = rLine.getInt("service_id");
-      query = "SELECT * FROM servicesUser WHERE id=?";
-
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, service_id);
-        rs = ps.executeQuery();
-        if (rs.isBeforeFirst()) {
-          rs.next();
-          if (rs.getString("paketType").equals("BOX")) {
-            ServicesFunctions.activateBoxService(getOperName(), rs, db);
-          } else {
-            ServicesFunctions.activateService(getOperName(), rs, db);
-          }
-        }
-
-        ps.close();
-        rs.close();
-
-      } catch (SQLException e) {
-        jObj.put("ERROR", e.getMessage());
-        e.printStackTrace();
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      servicesFunctions.activateNewService(service_id, getOperName());
+      if (servicesFunctions.isHaveError()) {
+        jObj.put("ERROR", servicesFunctions.getErrorMessage());
       }
-
-      jObj.put("Message", "SERVICE_AKTIVATED");
 
       send_object(jObj);
       return;
@@ -1111,8 +1079,10 @@ public class ClientWorker implements Runnable {
         //add BOX to servicesUser
         addBoxService addBox = new addBoxService();
         addBox.db = db;
-        String hostIsAlive = addBox.addBox(rLine, getOperName());
-        jObj.put("ERROR", hostIsAlive);
+        boolean hostIsAlive = addBox.addBox(rLine, getOperName());
+        if (!hostIsAlive) {
+          jObj.put("ERROR", "IPTV server nije dostupan!");
+        }
 
       }
 
@@ -1239,39 +1209,11 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("delete_service_user")) {
       jObj = new JSONObject();
-      JSONObject delObj;
 
-      //rline.lenght -2 becouse 1 = action 2 = userid
-      for (int i = 0; i < rLine.length() - 2; i++) {
-        delObj = (JSONObject) rLine.get(String.valueOf(i));
-
-        if (delObj.getString("paketType").equals("DTV")
-            || delObj.getString("paketType").equals("LINKED_DTV")) {
-          ServicesFunctions.deleteServiceDTV(delObj, getOperName(), db);
-        }
-        if (delObj.getString("paketType").equals("NET")
-            || delObj.getString("paketType").equals("LINKED_NET")) {
-          ServicesFunctions.deleteServiceNET(delObj, getOperName(), db);
-        }
-
-        if (delObj.getString("paketType").equals("BOX")) {
-          ServicesFunctions.deleteServiceBOX(delObj, getOperName(), db);
-        }
-
-        if (delObj.getString("paketType").equals("FIX")
-            || delObj.getString("paketType").equals("LINKED_FIX")) {
-          ServicesFunctions.deleteServiceFIX(delObj, getOperName(), db);
-        }
-
-        if (delObj.getString("paketType").equals("IPTV")
-            || delObj.getString("paketType").equals("LINKED_IPTV")) {
-          ServicesFunctions.deleteServiceIPTV(delObj, getOperName(), db);
-        }
-
-        if (delObj.getString("paketType").equals("OSTALE_USLUGE")) {
-          ServicesFunctions.deleteServiceOstalo(delObj, operName, db);
-        }
-
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      servicesFunctions.deleteService(rLine.getInt("serviceID"));
+      if (servicesFunctions.isHaveError()) {
+        jObj.put("ERROR", servicesFunctions.getErrorMessage());
       }
 
       send_object(jObj);
@@ -1519,7 +1461,7 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
 
       PreparedStatement ps = null;
-      ResultSet rs;
+      ResultSet rs = null;
       String query;
 
       //ako je uplata fiksne telefonije uzimamo paket i saobracaj iz userDebta i vrsimo uplatu
@@ -1680,21 +1622,20 @@ public class ClientWorker implements Runnable {
       }
 
       //produzenje Servisa
-      if (rLine.getString("paketType").equals("BOX")) {
-        query = "SELECT * FROM servicesUser WHERE box_id=?";
-      } else {
         query = "SELECT * FROM servicesUser WHERE id=?";
-      }
-      rs = null;
       try {
         ps = db.conn.prepareStatement(query);
         ps.setInt(1, rLine.getInt("id_ServiceUser"));
         rs = ps.executeQuery();
         if (rs.isBeforeFirst()) {
+          ServicesFunctions servicesFunctions = new ServicesFunctions(db);
           while (rs.next()) {
-            ServicesFunctions
-                .produziService(rs.getInt("id"), getOperName(), rLine.getBoolean("skipProduzenje"),
-                    db);
+            if (rs.getString("paketType").contains("BOX")) {
+              servicesFunctions.activateBoxService(rs.getInt("id"), rs.getString("endDate"),
+                  rs.getInt("produzenje"), getOperName());
+            } else {
+              servicesFunctions.activateService(rs.getInt("id"), getOperName());
+            }
           }
 
         }
@@ -1791,22 +1732,6 @@ public class ClientWorker implements Runnable {
             id = rs.getInt(1);
           }
 
-          //zaduzivanje fakture ako korisnik ima firmu
-          query = "SELECT * FROM userDebts WHERE id=?";
-          ps = db.conn.prepareStatement(query);
-          ps.setInt(1, id);
-          rs = ps.executeQuery();
-          if (rs.isBeforeFirst()) {
-            rs.next();
-
-            //   LocalDate localDate =Date.of(calRate.get(Calendar.YEAR), calRate.get(Calendar.), 1);
-            FaktureFunct faktureFunct = new FaktureFunct(rLine.getInt("userID"), calrate,
-                getOperName(), db);
-            if (faktureFunct.hasFirma) {
-              faktureFunct.createFakturu(rs);
-            }
-          }
-
         } catch (SQLException e) {
           jObj.put("Error", e.getMessage());
           e.printStackTrace();
@@ -1841,9 +1766,11 @@ public class ClientWorker implements Runnable {
           ps.setInt(1, rLine.getInt("id_ServiceUser"));
           rs = ps.executeQuery();
           if (rs.isBeforeFirst()) {
+            ServicesFunctions servicesFunctions = new ServicesFunctions(db);
             rs.next();
-            /// skipProduzenje proveriti
-            ServicesFunctions.produziService(rs.getInt("id"), getOperName(), false, db);
+            servicesFunctions
+                .produziService(rs.getInt("id"), rs.getString("endDate"), rs.getInt("produzenje"),
+                    getOperName(), false);
           }
           ps.close();
           rs.close();
@@ -1851,6 +1778,7 @@ public class ClientWorker implements Runnable {
           jObj.put("Error", e.getMessage());
           e.printStackTrace();
         }
+
 
         jObj.put("Message", "Usluga za mesec " + rLine.getString("zaMesec") + " zaduzena");
       } else {
@@ -4592,6 +4520,9 @@ public class ClientWorker implements Runnable {
   public void send_object(JSONObject obj) {
     if (DEBUG > 0) {
       //  LOGGER.info("Sending Object: " + obj.toString());
+    }
+    if (obj.has("ERROR")) {
+      LOGGER.error(String.format("GRESKA: %s", obj.getString("ERROR")));
     }
 
     if (client.isClosed()) {

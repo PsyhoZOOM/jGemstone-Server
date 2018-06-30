@@ -28,15 +28,15 @@ public class addBoxService {
   private int BOX_Service_ID;
   private SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
 
-  public String addBox(JSONObject rLine, String opername) {
+  public boolean addBox(JSONObject rLine, String opername) {
 
     query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, "
             +
-            "cena, obracun, brojUgovora, aktivan, produzenje, newService, idDTVCard, username, GroupName, IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType, PDV, opis)"
+            "cena, obracun, brojUgovora, aktivan, produzenje, newService, idDTVCard, username, GroupName, IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType, PDV, opis, endDate)"
             +
             "VALUES " +
-            "(?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?)";
+            "(?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
@@ -71,6 +71,7 @@ public class addBoxService {
       ps.setString(20, "BOX");
       ps.setDouble(21, rLine.getDouble("pdv"));
       ps.setString(22, rLine.getString("opis"));
+      ps.setString(23, "2000-01-01");
 
       ps.executeUpdate();
       ResultSet rsBoxId = ps.getGeneratedKeys();
@@ -79,7 +80,7 @@ public class addBoxService {
 
       StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
       if (!stalkerRestAPI2.isHostAlive()) {
-        return "IPTV Server nije u funkciji.\n Probajte kasnije ili se obratite tehnickoj podrsci!";
+        return false;
       }
       if (rLine.has("STB_MAC")) {
         add_iptv(rLine, opername);
@@ -98,10 +99,11 @@ public class addBoxService {
 
     } catch (SQLException e) {
       e.printStackTrace();
+      return false;
 
     }
 
-    return "OK";
+    return true;
   }
 
   private String add_iptv(JSONObject rLine, String opername) {

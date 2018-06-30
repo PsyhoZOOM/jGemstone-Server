@@ -12,9 +12,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
-import net.yuvideo.jgemstone.server.classes.FaktureFunct;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
+import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
 import org.json.JSONObject;
@@ -375,9 +375,9 @@ public class ServicesFunctions {
     PreparedStatement ps;
     String query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena,"
-            + "obracun, brojUgovora, aktivan, produzenje, newService, IPTV_EXT_ID, IPTV_MAC, paketType, endDate, PDV, opis)"
+            + "obracun, brojUgovora, aktivan, produzenje, newService,  IPTV_MAC, paketType, endDate, PDV, opis)"
             + "VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, rLine.getInt("id"));
@@ -392,12 +392,11 @@ public class ServicesFunctions {
       ps.setBoolean(10, false);
       ps.setInt(11, rLine.getInt("produzenje"));
       ps.setBoolean(12, true);
-      ps.setString(13, rLine.getString("external_id"));
-      ps.setString(14, rLine.getString("STB_MAC"));
-      ps.setString(15, "IPTV");
-      ps.setString(16, "2000-01-01");
-      ps.setDouble(17, rLine.getDouble("pdv"));
-      ps.setString(18, rLine.getString("komentar"));
+      ps.setString(13, rLine.getString("STB_MAC"));
+      ps.setString(14, "IPTV");
+      ps.setString(15, "2000-01-01");
+      ps.setDouble(16, rLine.getDouble("pdv"));
+      ps.setString(17, rLine.getString("komentar"));
       ps.executeUpdate();
       ps.close();
       Message = "SERVICE_ADDED";
@@ -446,19 +445,8 @@ public class ServicesFunctions {
     return Message;
   }
 
-  public static void deleteServiceOstalo(JSONObject delObj, String opername, database db) {
-    PreparedStatement ps;
-    String query = "DELETE FROM servicesUser WHERE id=?";
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setInt(1, delObj.getInt("id"));
-      ps.executeUpdate();
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-  }
 
-  public static void deleteServiceDTV(JSONObject delObj, String operName, database db) {
+  private void deleteServiceDTV(int serviceID) {
     PreparedStatement ps;
     PreparedStatement psDelete;
     ResultSet rs;
@@ -468,7 +456,7 @@ public class ServicesFunctions {
     query = "SELECT * FROM servicesUser WHERE id=?";
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setInt(1, delObj.getInt("id"));
+      ps.setInt(1, serviceID);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         rs.next();
@@ -481,15 +469,16 @@ public class ServicesFunctions {
 
         query = "DELETE FROM servicesUser WHERE id=?";
         psDelete = db.conn.prepareStatement(query);
-        psDelete.setInt(1, delObj.getInt("id"));
+        psDelete.setInt(1, serviceID);
         psDelete.executeUpdate();
+        psDelete.close();
       }
     } catch (SQLException e) {
       e.printStackTrace();
     }
   }
 
-  public static void deleteServiceNET(JSONObject delObj, String operName, database db) {
+  private void deleteServiceNET(int serviceID) {
     PreparedStatement ps;
     PreparedStatement psDelete;
     ResultSet rs;
@@ -499,7 +488,7 @@ public class ServicesFunctions {
     String query = "SELECT * FROM servicesUser WHERE id=?";
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setInt(1, delObj.getInt("id"));
+      ps.setInt(1, serviceID);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         rs.next();
@@ -508,28 +497,39 @@ public class ServicesFunctions {
         psDelete = db.connRad.prepareStatement(query);
         psDelete.setString(1, userName);
         psDelete.executeUpdate();
+        psDelete.close();
 
         query = "DELETE from radreply WHERE username=?";
         psDelete = db.connRad.prepareStatement(query);
         psDelete.setString(1, userName);
         psDelete.executeUpdate();
+        psDelete.close();
 
         query = "DELETE from radcheck WHERE username=?";
         psDelete = db.connRad.prepareStatement(query);
         psDelete.setString(1, userName);
         psDelete.executeUpdate();
+        psDelete.close();
 
         query = "DELETE FROM servicesUser WHERE id=?";
         psDelete = db.conn.prepareStatement(query);
-        psDelete.setInt(1, delObj.getInt("id"));
+        psDelete.setInt(1, serviceID);
         psDelete.executeUpdate();
+        psDelete.close();
       }
     } catch (SQLException e) {
       e.printStackTrace();
     }
   }
 
-  public static void deleteServiceIPTV(JSONObject delObj, String operName, database db) {
+  private void deleteServiceIPTV(int serviceID) {
+    StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+    if (!stalkerRestAPI2.isHostAlive()) {
+      this.setHaveError(true);
+      this.errorMessage = stalkerRestAPI2.getHostMessage();
+      return;
+    }
+
     PreparedStatement ps;
     ResultSet rs;
     String query;
@@ -540,7 +540,7 @@ public class ServicesFunctions {
 
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setInt(1, delObj.getInt("id"));
+      ps.setInt(1, serviceID);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         rs.next();
@@ -552,14 +552,13 @@ public class ServicesFunctions {
     }
 
     //brisanje IPTV tarife RESTAPIjem
-    StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
     stalkerRestAPI2.deleteAccount(mac);
 
     //brisanje u baziu
     query = "DELETE FROM servicesUser WHERE id=?";
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setInt(1, delObj.getInt("id"));
+      ps.setInt(1, serviceID);
       ps.executeUpdate();
       ps.close();
 
@@ -569,7 +568,7 @@ public class ServicesFunctions {
 
   }
 
-  public static void deleteServiceFIX(JSONObject delObj, String operName, database db) {
+  private void deleteServiceFIX(int serviceID) {
     PreparedStatement ps;
     ResultSet rs;
     String query;
@@ -578,7 +577,7 @@ public class ServicesFunctions {
 
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setInt(1, delObj.getInt("id"));
+      ps.setInt(1, serviceID);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         rs.next();
@@ -594,7 +593,7 @@ public class ServicesFunctions {
 
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setInt(1, delObj.getInt("id"));
+      ps.setInt(1, serviceID);
       ps.executeUpdate();
       ps.close();
       FIXFunctions.deleteService(brojTelefona, db);
@@ -604,20 +603,21 @@ public class ServicesFunctions {
     }
   }
 
-  public static void deleteServiceBOX(JSONObject delObj, String operName, database db) {
+  private void deleteServiceBOX(int serviceID) {
     PreparedStatement ps;
     String query;
 
     query = "DELETE FROM servicesUser WHERE id=?";
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setInt(1, delObj.getInt("id"));
+      ps.setInt(1, serviceID);
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e1) {
       e1.printStackTrace();
     }
   }
+
 
   public static String getDatumIsteka(JSONObject rLine, database db) {
     PreparedStatement ps;
@@ -711,83 +711,157 @@ public class ServicesFunctions {
 
   }
 
-  public static void activateBoxService(String operName, ResultSet rs, database db) {
+  public void activateNewService(int serviceID, String operName) {
     PreparedStatement ps;
-    ResultSet resultSet;
+    ResultSet rs;
+    String query = "SELECT * FROM servicesUser WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, serviceID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        String endDate = rs.getString("endDate");
+        int produzenje = rs.getInt("produzenje");
+        if (rs.getString("paketType").equals("BOX")) {
+          activateBoxService(serviceID, endDate, produzenje, operName);
+        } else {
+          activateService(serviceID, operName);
+          zaduziKorisnika(serviceID, operName);
+          produziService(serviceID, endDate, produzenje, operName, false);
+        }
+
+      } else {
+        setHaveError(true);
+        setErrorMessage("SERVIS NE POSTOJI");
+        return;
+      }
+    } catch (SQLException e) {
+      setHaveError(true);
+      setErrorMessage(e.getMessage());
+      e.printStackTrace();
+      return;
+    }
+  }
+
+
+  public void activateBoxService(int serviceID, String endDateStr, int produzenje,
+      String operName) {
+    PreparedStatement ps;
+    ResultSet rs = null;
     String query;
     int lastInserID = 0;
+    String endDate = LocalDate.now().format(dtfNormalDate);
 
     query = "SELECT * FROM servicesUser WHERE box_id=?";
 
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setInt(1, rs.getInt("id"));
-      resultSet = ps.executeQuery();
-      if (resultSet.isBeforeFirst()) {
-        while (resultSet.next()) {
-          produziService(resultSet.getInt("id"), operName, false, db);
-          //status on STALKER
-          try {
-            if (resultSet.getString("paketType").equals("IPTV") || resultSet.getString("paketType")
-                .equals("LINKED_IPTV")) {
-              StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
-              stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
-            }
-          } catch (SQLException e) {
-            e.printStackTrace();
+      ps.setInt(1, serviceID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        while (rs.next()) {
+          int service = rs.getInt("id");
+          activateService(service, operName);
+          zaduziKorisnika(service, operName);
+          endDate = produziService(service, endDateStr, produzenje, operName, false);
+        }
+      }
+      rs.close();
+      ps.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    query = "UPDATE servicesUser set aktivan=1, newService=false, date_activated=?, endDate=? WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, LocalDate.now().format(dtfNormalDate));
+      ps.setString(2, endDate);
+      ps.setInt(3, serviceID);
+      ps.executeUpdate();
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+  }
+
+  public void activateService(int serviceID, String operName) {
+    LocalDateTime date = LocalDateTime.now();
+    PreparedStatement ps;
+    ResultSet rs = null;
+    String query = "SELECT * FROM servicesUser WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, serviceID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+
+        //samo u slucaju ako ima IPTV
+        if (rs.getString("paketType").contains("IPTV")) {
+          StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+          stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
+        }
+        if (rs.getString("paketType").contains("NET")) {
+          Radius radius = new Radius(db);
+          radius.activateUser(rs.getString("UserName"));
+          if (radius.isError()) {
+            this.setHaveError(true);
+            this.setErrorMessage(radius.getErrorMSG());
           }
         }
+
       }
-      resultSet.close();
     } catch (SQLException e) {
+      this.haveError = true;
+      this.errorMessage = e.getMessage();
       e.printStackTrace();
+      return;
     }
+  }
 
-    query = "INSERT INTO userDebts "
-        + "(id_ServiceUser, nazivPaketa, datumZaduzenja, userID, "
-        + "paketType, cena, dug, popust, zaduzenOd, zaMesec, PDV) "
-        + "VALUES "
-        + "(?,?,?,?,?,?,?,?,?,?,?)";
 
-    int daysInMonth = 0;
-    int daysToEndMonth = 0;
-    Double cenaService = 0.00;
-    Double cenaServiceOrig = 0.00;
-    Double pdv = 0.00;
-    Double popust = 0.00;
+  private void zaduziKorisnika(int serviceID, String operName) {
+    LocalDate date = LocalDate.now();
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM servicesUser WHERE id=?";
     try {
-      cenaService = rs.getDouble("cena");
-      cenaServiceOrig = cenaService;
-      pdv = rs.getDouble("PDV");
-      popust = rs.getDouble("popust");
-      cenaService = cenaService + valueToPercent.getPDVOfValue(cenaService, pdv);
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, serviceID);
+      rs = ps.executeQuery();
+      rs.next();
+      int daysInMonth = 0;
+      int daysToEndMonth = 0;
+      Double cenaService = rs.getDouble("cena");
+      Double cenaServiceOrig = cenaService;
+      Double pdv = rs.getDouble("PDV");
+      Double popust = rs.getDouble("popust");
+      Double zaUplatu = 0.00;
+      Double cenaZaDan = 0.00;
+      Double cenaZaDaOrig = 0.00;
       cenaService = cenaService - valueToPercent.getPDVOfSum(cenaService, popust);
-      cenaServiceOrig = cenaServiceOrig - valueToPercent.getPDVOfSum(cenaServiceOrig, popust);
+      cenaService = cenaService + valueToPercent.getPDVOfValue(cenaService, pdv);
 
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-    Double zaUplatu = 0.00;
-    Double cenaZaDan = 0.00;
-    Double cenaZaDanOrig = 0.00;
-    LocalDateTime date = LocalDateTime.now();
-
-
-
-    try {
       if (rs.getBoolean("newService")) {
-        daysInMonth = date.getMonth().length(true);
+        daysInMonth = date.getMonth().length(LocalDate.now().isLeapYear());
         daysToEndMonth = daysInMonth - date.getDayOfMonth();
         cenaZaDan = cenaService / daysInMonth;
-        cenaZaDanOrig = cenaServiceOrig / daysInMonth;
-
-        if (rs.getBoolean("newService")) {
-          zaUplatu = cenaZaDan * daysToEndMonth;
-          cenaServiceOrig = cenaZaDanOrig * daysToEndMonth;
-        } else {
-          zaUplatu = cenaService;
-        }
+        cenaZaDaOrig = cenaServiceOrig / daysInMonth;
+        zaUplatu = cenaZaDan * daysToEndMonth;
+        cenaServiceOrig = cenaZaDaOrig * daysToEndMonth;
+      } else {
+        zaUplatu = cenaService;
       }
+
+      query = "INSERT INTO userDebts "
+          + "(id_ServiceUser, nazivPaketa, datumZaduzenja, "
+          + "userID, paketType, cena, dug, popust, zaduzenOd, zaMesec, PDV) "
+          + "VALUES "
+          + "(?,?,?,?,?,?,?,?,?,?,?)";
 
       ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
       ps.setInt(1, rs.getInt("id"));
@@ -800,156 +874,33 @@ public class ServicesFunctions {
       ps.setDouble(8, rs.getDouble("popust"));
       ps.setString(9, operName);
       ps.setString(10, LocalDate.now().format(dtfMesecZaduzenja));
-      ps.setDouble(11, rs.getDouble("pdv"));
-      ps.executeUpdate();
-      ResultSet rsID = ps.getGeneratedKeys();
-      if (rsID.next()) {
-        lastInserID = rsID.getInt(1);
-      }
-    } catch (SQLException e) {
-
-      e.printStackTrace();
-    }
-
-    //INSERT FAKTURE IF USER HAS FIRMA
-    try {
-      FaktureFunct faktureFunct = new FaktureFunct(rs.getInt("userID"), LocalDate.now(), operName,
-          db);
-      if (faktureFunct.hasFirma) {
-        query = "SELECT * FROM userDebts WHERE id=?";
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, lastInserID);
-        ResultSet resultSet1 = ps.executeQuery();
-        if (resultSet1.next()) {
-          faktureFunct.createFakturu(resultSet1);
-        }
-      }
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-    query = "UPDATE servicesUser set aktivan=1, newService=false, date_activated=? WHERE id=?";
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setString(1, LocalDateTime.now().toString());
-      ps.setInt(2, rs.getInt("id"));
-      ps.executeUpdate();
-      ps.close();
-      rs.close();
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-  }
-
-  public static void activateService(String operName, ResultSet rs, database db) {
-    int lastInserID = 0;
-    try {
-      if (rs.getBoolean("newService")) {
-        LocalDateTime date = LocalDateTime.now();
-        String query;
-        int daysInMonth = 0;
-        int daysToEndMonth = 0;
-        Double cenaService = rs.getDouble("cena");
-        Double cenaServiceOrig = cenaService;
-        Double pdv = rs.getDouble("PDV");
-        Double popust = rs.getDouble("popust");
-        Double zaUplatu = 0.00;
-        Double cenaZaDan = 0.00;
-        Double cenaZaDaOrig = 0.00;
-        cenaService = cenaService - valueToPercent.getPDVOfSum(cenaService, popust);
-        cenaService = cenaService + valueToPercent.getPDVOfValue(cenaService, pdv);
-
-        if (rs.getBoolean("newService")) {
-          daysInMonth = date.getMonth().length(LocalDate.now().isLeapYear());
-          daysToEndMonth = daysInMonth - date.getDayOfMonth();
-          cenaZaDan = cenaService / daysInMonth;
-          cenaZaDaOrig = cenaServiceOrig / daysInMonth;
-          zaUplatu = cenaZaDan * daysToEndMonth;
-          cenaServiceOrig = cenaZaDaOrig * daysToEndMonth;
-        } else {
-          zaUplatu = cenaService;
-        }
-
-        PreparedStatement ps;
-
-        query = "INSERT INTO userDebts "
-            + "(id_ServiceUser, nazivPaketa, datumZaduzenja, "
-            + "userID, paketType, cena, dug, popust, zaduzenOd, zaMesec, PDV) "
-            + "VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?)";
-
-        ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-        ps.setInt(1, rs.getInt("id"));
-        ps.setString(2, rs.getString("nazivPaketa"));
-        ps.setString(3, LocalDate.now().toString());
-        ps.setInt(4, rs.getInt("userID"));
-        ps.setString(5, rs.getString("paketType"));
-        ps.setDouble(6, cenaServiceOrig);
-        ps.setDouble(7, zaUplatu);
-        ps.setDouble(8, rs.getDouble("popust"));
-        ps.setString(9, operName);
-        ps.setString(10, LocalDate.now().format(dtfMesecZaduzenja));
-        ps.setDouble(11, rs.getDouble("PDV"));
+      ps.setDouble(11, rs.getDouble("PDV"));
+      //ako je servis nov i zadnji dan u mesecu,
+      // a zaUplatu = 0 necemo ubaciti u bazu,
+      // jer nema potrebe da stampamo racun koji je za zadnji dan u mesecu i iznosi 0din
+      if (!(rs.getBoolean("newService") && zaUplatu == 0)) {
         ps.executeUpdate();
-
-        ResultSet rsID = ps.getGeneratedKeys();
-        if (rsID.next()) {
-          lastInserID = rsID.getInt(1);
-        }
-
-        produziService(rs.getInt("id"), operName, false, db);
-
       }
-
-      //INSERT FAKTURE IF USER HAS FIRMA
-      try {
-        FaktureFunct faktureFunct = new FaktureFunct(rs.getInt("userID"), LocalDate.now(), operName,
-            db);
-        if (faktureFunct.hasFirma) {
-          String query = "SELECT * FROM userDebts WHERE id=?";
-          PreparedStatement ps = db.conn.prepareStatement(query);
-          ps.setInt(1, lastInserID);
-          ResultSet resultSet = ps.executeQuery();
-          if (resultSet.next()) {
-            faktureFunct.createFakturu(resultSet);
-          }
-        }
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }
-
-      //samo u slucaju ako ima IPTV
-      if (rs.getString("IPTV_MAC") != null) {
-        StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
-        stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
-      }
-
-      String query = "UPDATE servicesUser SET aktivan=1, newService=false, date_activated=? WHERE id=?";
-      PreparedStatement ps = db.conn.prepareStatement(query);
-      ps.setString(1, LocalDateTime.now().toString());
-      ps.setInt(2, rs.getInt("id"));
-      ps.executeUpdate();
       ps.close();
-      rs.close();
     } catch (SQLException e) {
+      setHaveError(true);
+      setErrorMessage(e.getMessage());
       e.printStackTrace();
     }
   }
 
-  public static void produziService(int serviceID, String operName, boolean skipProduzenje,
-      database db) {
+  public String produziService(int serviceID, String endDateStr, int produzenje, String operName,
+      boolean skipProduzenje) {
     PreparedStatement ps;
     ResultSet rs;
     boolean newService = false;
-    int produzenje = 0;
     String UserName = null;
     int idCard = 0;
     String IPTV_MAC = null;
 
-    LocalDate endDate = LocalDate.now();
     String type = "NONE";
     String query;
+    LocalDate endDate = LocalDate.parse(endDateStr, dtfNormalDate);
 
     query = "SELECT * FROM servicesUser WHERE id=?";
     try {
@@ -960,12 +911,12 @@ public class ServicesFunctions {
         rs.next();
         type = rs.getString("paketType");
         newService = rs.getBoolean("newService");
-        produzenje = rs.getInt("produzenje");
         UserName = rs.getString("UserName");
         idCard = rs.getInt("idDTVCard");
         IPTV_MAC = rs.getString("IPTV_MAC");
 
         if (newService) {
+          endDate = LocalDate.now();
           endDate = endDate.plusMonths(produzenje);
           endDate = endDate.with(TemporalAdjusters.firstDayOfMonth());
         } else {
@@ -983,6 +934,7 @@ public class ServicesFunctions {
         }
 
       }
+
       rs.close();
       ps.close();
 
@@ -1007,22 +959,22 @@ public class ServicesFunctions {
         break;
     }
 
-    if (newService) {
-      query = "UPDATE servicesUser SET endDate=?,  newService=false WHERE id=?";
-    } else {
-      query = "UPDATE servicesUser SET endDate=?, newService=false WHERE id=?";
-    }
+    query = "UPDATE servicesUser SET endDate=?,  newService=false, aktivan=? WHERE id=?";
     try {
       ps = db.conn.prepareStatement(query);
       ps.setString(1, endDate.format(dtfNormalDate));
-      ps.setInt(2, serviceID);
+      ps.setBoolean(2, true);
+      ps.setInt(3, serviceID);
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
       e.printStackTrace();
     }
 
+    return endDate.format(dtfNormalDate);
+
   }
+
 
   private static void setEndDateNET(String username, LocalDate endDate, database db) {
     String eDateRadCheck = endDate.format(dtfRadCheck);
@@ -1053,7 +1005,6 @@ public class ServicesFunctions {
     } catch (SQLException e) {
       e.printStackTrace();
     }
-
   }
 
   private static void setEndDateDTV(int idCard, LocalDate endDate, database db) {
@@ -1073,6 +1024,7 @@ public class ServicesFunctions {
     }
 
   }
+
 
   private static void setEndDateIPTV(String STB_MAC, LocalDate endDate, database db) {
     String eDate = LocalDateTime.of(endDate, LocalTime.of(00, 00, 00)).format(dtfIPTV);
@@ -1287,7 +1239,7 @@ public class ServicesFunctions {
           object.put("IPTV_MAC", rs.getString("IPTV_MAC"));
           object.put("userName", iptv_acc_info);
         }
-        if(paketType.contains("DTV")){
+        if (paketType.contains("DTV")) {
           DTVFunctions dtvFunctions = new DTVFunctions(db);
           String endDate = dtvFunctions.getEndDate(rs.getInt("idDTVCard"));
           object.put("endDate", endDate);
@@ -1434,6 +1386,46 @@ public class ServicesFunctions {
       ps.executeUpdate();
       ps.close();
       setHaveError(false);
+    } catch (SQLException e) {
+      setHaveError(true);
+      setErrorMessage(e.getMessage());
+      e.printStackTrace();
+    }
+  }
+
+  public void deleteService(int serviceID) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM servicesUser WHERE box_id =?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, serviceID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        while (rs.next()) {
+          if (rs.getString("paketType").contains("IPTV")) {
+            deleteServiceIPTV(rs.getInt("id"));
+            if (isHaveError()) {
+              return;
+            }
+          }
+          if (rs.getString("paketType").contains("DTV")) {
+            deleteServiceDTV(rs.getInt("id"));
+          }
+          if (rs.getString("paketType").contains("NET")) {
+            deleteServiceNET(rs.getInt("id"));
+          }
+          if (rs.getString("paketType").contains("FIX")) {
+            deleteServiceFIX(rs.getInt("id"));
+          }
+        }
+      }
+      ps.close();
+      query = "DELETE FROM servicesUser where id=?";
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, serviceID);
+      ps.executeUpdate();
+      ps.close();
     } catch (SQLException e) {
       setHaveError(true);
       setErrorMessage(e.getMessage());
