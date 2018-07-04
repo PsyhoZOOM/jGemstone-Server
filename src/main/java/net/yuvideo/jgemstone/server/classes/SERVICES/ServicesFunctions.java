@@ -815,6 +815,11 @@ public class ServicesFunctions {
         }
 
       }
+      String querySrv = "UPDATE servicesUser set aktivan=true WHERE id=?";
+      PreparedStatement ps1 = db.conn.prepareStatement(querySrv);
+      ps1.setInt(1, serviceID);
+      ps1.executeUpdate();
+      ps1.close();
     } catch (SQLException e) {
       this.haveError = true;
       this.errorMessage = e.getMessage();
@@ -1431,5 +1436,23 @@ public class ServicesFunctions {
       setErrorMessage(e.getMessage());
       e.printStackTrace();
     }
+  }
+
+  public static String getFiksnaTel(int id_servicesUser, database db) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT FIKSNA_TEL FROM servicesUser WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, id_servicesUser);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        return rs.getString("FIKSNA_TEL");
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return null;
   }
 }

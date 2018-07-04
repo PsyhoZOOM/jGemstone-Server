@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
+import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,6 +37,10 @@ public class StalkerRestAPI2 {
   private String url;
   private String AuthString;
   private String AuthStringENC;
+
+
+  private boolean error;
+  private String errorMSG;
 
   public StalkerRestAPI2(database db) {
     this.db = db;
@@ -87,6 +92,8 @@ public class StalkerRestAPI2 {
       e.printStackTrace();
       isHostAlive = false;
       hostMessage = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
     } finally {
       if (webResource == null) {
         isHostAlive = false;
@@ -233,9 +240,14 @@ public class StalkerRestAPI2 {
         .header("Authorization", "Basic "+AuthStringENC)
         .get(ClientResponse.class);
     if (response.getStatus() != 200) {
-      jsonObject.put("ERROR", response.getStatusInfo());
+      jsonObject.put("ERROR", response.toString());
+      this.error = true;
+      this.errorMSG = String.valueOf(response.getStatusInfo());
     } else {
       jsonObject = new JSONObject(response.getEntity(String.class));
+    }
+    if (jsonObject.getString("status").equals("ERROR")) {
+      jsonObject.put("ERROR", jsonObject.getString("error"));
     }
 
     return jsonObject;
@@ -369,6 +381,72 @@ public class StalkerRestAPI2 {
   }
 
 
+  public JSONObject getAccountInfo(String MAC) {
+    JSONObject object = new JSONObject();
+    object = getAccInfo(MAC);
+    System.out.println(object.toString());
+    return object;
+
+
+  }
+
+  public void changePass(String MAC, String pass) {
+    setupAPI();
+    if (isError()) {
+      return;
+    }
+
+    webResource = apiClient.resource(url).path("accounts").path(MAC);
+    response = webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic " + AuthStringENC)
+        .put(ClientResponse.class, "password=" + pass);
+    if (response.getStatus() != 200) {
+      this.setError(true);
+      this.setErrorMSG(response.getStatusInfo().toString());
+      return;
+    }
+    return;
+
+  }
+
+  public void saveAccountInfo(JSONObject accountInfo) {
+    setupAPI();
+    if (isError()) {
+      return;
+    }
+
+    JSONObject data = new JSONObject();
+    data.put("full_name", accountInfo.getString("fullName"));
+    data.put("login", accountInfo.getString("login"));
+    data.put("stb_mac", accountInfo.getString("MAC_CHANGE"));
+    data.put("status", accountInfo.getInt("status"));
+    String postStr = null;
+    Map<String, Object> stringObjectMap = data.toMap();
+    for (String key : stringObjectMap.keySet()) {
+      postStr += key + "=" + stringObjectMap.get(key) + "&";
+    }
+    webResource = apiClient.resource(url).path("accounts").path(accountInfo.getString("accountID"));
+    response = webResource.type(MediaType.APPLICATION_JSON_TYPE)
+        .header("Authorization", "Basic " + this.AuthStringENC)
+        .put(ClientResponse.class, postStr);
+    System.out.println(response.toString());
+    System.out.println(webResource.toString());
+    if (response.getStatus() != 200) {
+      this.setError(true);
+      this.setErrorMSG(response.getStatusInfo().toString());
+      return;
+    }
+    changeMac(Integer.parseInt(accountInfo.getString("accountID")),
+        accountInfo.getString("MAC_CHANGE"));
+    ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+    String old_MAC = accountInfo.getString("MAC");
+    String new_MAC = accountInfo.getString("MAC_CHANGE");
+    IPTVFunctions iptvFunctions = new IPTVFunctions(db);
+    iptvFunctions.changeMAC(old_MAC, new_MAC);
+    return;
+  }
+
+
   public boolean isHostAlive() {
     return isHostAlive;
   }
@@ -383,5 +461,21 @@ public class StalkerRestAPI2 {
 
   public void setHostMessage(String hostMessage) {
     this.hostMessage = hostMessage;
+  }
+
+  public boolean isError() {
+    return error;
+  }
+
+  public void setError(boolean error) {
+    this.error = error;
+  }
+
+  public String getErrorMSG() {
+    return errorMSG;
+  }
+
+  public void setErrorMSG(String errorMSG) {
+    this.errorMSG = errorMSG;
   }
 }

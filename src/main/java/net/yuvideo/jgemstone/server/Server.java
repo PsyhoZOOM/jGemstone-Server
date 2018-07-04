@@ -92,28 +92,6 @@ public class Server {
     }
 
 
-      /*
-      SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
-      SSLServerSocket serverSocket = (SSLServerSocket) ssf.createServerSocket(portNumber);
-      serverSocket.setEnabledCipherSuites(serverSocket.getSupportedCipherSuites());
-      serverSocket.setEnabledCipherSuites(new String[]{"TLS_DH_anon_WITH_AES_256_GCM_SHA384"});
-      String[] supportedCipherSuites = serverSocket.getSupportedCipherSuites();
-
-
-      String[] a;
-
-      for (int i = 0; i< supportedCipherSuites.length;i++){
-        if(!supportedCipherSuites[i].contains("anon")){
-        }
-      }
-
-      serverSocket.setEnabledCipherSuites(supportedCipherSuites);
-      System.out.println(Arrays.toString(serverSocket.getSupportedCipherSuites()));
-      System.out.println(Arrays.toString(serverSocket.getEnabledCipherSuites()));
-   //   serverSocket.setEnabledProtocols(new String[]{"TLSv1.2"});
-      System.out.println(Arrays.toString(serverSocket.getSupportedProtocols()));
-      System.out.println(Arrays.toString(serverSocket.getEnabledProtocols()));
-*/
     // ONLINE OPERS OFFLINE
     db = new database();
 

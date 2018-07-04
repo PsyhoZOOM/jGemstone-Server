@@ -50,7 +50,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.103";
+  private static final String S_VERSION = "0.105";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -893,19 +893,20 @@ public class ClientWorker implements Runnable {
             service.put("pdv", rs2.getDouble("PDV"));
             service.put("linkedService", rs2.getBoolean("linkedService"));
             service.put("aktivan", rs2.getBoolean("aktivan"));
+            service.put("obracun", rs2.getBoolean("obracun"));
             service.put("endDate", rs2.getString("endDate"));
             service.put("paketType", rs2.getString("paketType"));
             service.put("newService", rs2.getBoolean("newService"));
             service.put("komentar", rs2.getString("komentar"));
             service.put("opis", rs2.getString("opis"));
 
-            if (rs2.getString("idDTVCard") != null) {
+            if (!rs2.getString("idDTVCard").isEmpty()) {
               service.put("idUniqueName", rs2.getString("idDTVCard"));
             }
-            if (rs2.getString("UserName") != null) {
+            if (!rs2.getString("UserName").isEmpty()) {
               service.put("idUniqueName", rs2.getString("UserName"));
             }
-            if (rs2.getString("IPTV_MAC") != null) {
+            if (!rs2.getString("IPTV_MAC").isEmpty()) {
               service.put("idUniqueName", rs2.getString("IPTV_MAC"));
               service.put("IPTV_MAC", rs2.getString("IPTV_MAC"));
               service.put("STB_MAC", rs2.getString("IPTV_MAC"));
@@ -1291,6 +1292,8 @@ public class ClientWorker implements Runnable {
             userDebt.put("paketType", rs.getString("paketType"));
             userDebt.put("identification",
                 ServicesFunctions.getIdentify(rs.getInt("id_ServiceUser"), db));
+            userDebt
+                .put("fiksnaTel", ServicesFunctions.getFiksnaTel(rs.getInt("id_ServiceUser"), db));
             userDebt.put("pdv", pdv);
             userDebt.put("popust", popust);
             userDebt.put("osnovica", osnovica);
@@ -3705,6 +3708,50 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("get_iptv_mac_info")) {
+      JSONObject object = new JSONObject();
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      if (stalkerRestAPI2.isError()) {
+        object.put("ERROR", stalkerRestAPI2.getErrorMSG());
+      } else {
+        object = stalkerRestAPI2.getAccountInfo(rLine.getString("MAC"));
+      }
+
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("change_iptv_pass")) {
+      JSONObject object = new JSONObject();
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      if (stalkerRestAPI2.isError()) {
+        object.put("ERROR", stalkerRestAPI2.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("changeIPTVEndDate")) {
+      JSONObject object = new JSONObject();
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      stalkerRestAPI2.setEndDate(rLine.getString("MAC"), rLine.getString("endDate"));
+      if (stalkerRestAPI2.isError()) {
+        object.put("ERROR", stalkerRestAPI2.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+    if (rLine.getString("action").equals("save_iptv_acc_data")) {
+      JSONObject object = new JSONObject();
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      stalkerRestAPI2.saveAccountInfo(rLine);
+      if (stalkerRestAPI2.isError()) {
+        object.put("ERROR", stalkerRestAPI2.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
     if (rLine.getString("action").equals("check_fix_obracun")) {
       jObj = new JSONObject();
       boolean exist = false;
@@ -3778,8 +3825,8 @@ public class ClientWorker implements Runnable {
       boolean deleted = iptvFunctions.deletePaket(rLine.getInt("id"));
       if (deleted) {
         obj.put("MESSAGE", "DELETED");
-      } else {
-        obj.put("ERROR", iptvFunctions.error);
+      } else if (iptvFunctions.isError()) {
+        obj.put("ERROR", iptvFunctions.getErrorMSG());
       }
       send_object(obj);
       return;
@@ -4271,6 +4318,14 @@ public class ClientWorker implements Runnable {
       send_object(onlineUsers);
       return;
 
+    }
+
+    if (rLine.getString("action").equals("checkUsersOnline")) {
+      JSONObject object = new JSONObject();
+      MikrotikAPI mikrotikAPI = new MikrotikAPI(db);
+      object = mikrotikAPI.checkUsersOnline(rLine.getString("username"));
+      send_object(object);
+      return;
     }
 
     if (rLine.getString("action").equals("getUsersOnlineStat")) {

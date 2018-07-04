@@ -17,7 +17,7 @@ public class NASOnlineUsers {
   public JSONObject getOnlineUsers() {
     NetworkDevices networkDevices = new NetworkDevices(db);
     JSONObject nasDevices = networkDevices.getNASDevices();
-    MikrotikAPI mikrotikAPI = new MikrotikAPI();
+    MikrotikAPI mikrotikAPI = new MikrotikAPI(db);
 
     int nasNo = 0;
     for (int i = 0; i < nasDevices.length(); i++) {
