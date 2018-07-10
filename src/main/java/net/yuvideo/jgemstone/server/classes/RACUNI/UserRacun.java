@@ -194,6 +194,10 @@ public class UserRacun {
         {
           JSONObject racunI = racun.getJSONObject(String.valueOf(i));
           JSONObject racunZ = racun.getJSONObject(String.valueOf(z));
+
+          if (!racunI.has("osnovica") || !racunZ.has("osnovica")) {
+            System.out.println("ERRORRRRR");
+          }
           if (
               racunI.getDouble("cena") == racunZ.getDouble("cena") &&
                   racunI.getDouble("stopaPDV") == racunZ.getDouble("stopaPDV") &&
@@ -201,6 +205,7 @@ public class UserRacun {
                   racunI.getString("nazivUsluge").equals(racunZ.getString("nazivUsluge")) &&
                   racunI.getString("jMere").equals(racunZ.getString("jMere"))
               ) {
+
 
             kolicina = racunI.getInt("kolicina") + racunZ.getInt("kolicina");
             osnovica = racunI.getDouble("osnovica") + racunZ.getDouble("osnovica");
@@ -210,7 +215,7 @@ public class UserRacun {
             racun.getJSONObject(String.valueOf(i)).put("kolicina", kolicina);
 
             racun.getJSONObject(String.valueOf(i)).remove("osnovica");
-            racun.getJSONObject(String.valueOf(i)).put("osonvica", osnovica);
+            racun.getJSONObject(String.valueOf(i)).put("osnovica", osnovica);
 
             racun.getJSONObject(String.valueOf(i)).remove("zaUlatu");
             racun.getJSONObject(String.valueOf(i)).put("zaUplatu", zaUplatu);

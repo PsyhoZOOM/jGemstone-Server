@@ -133,6 +133,9 @@ public class MikrotikAPI {
               userData.put("NASIP", mikrotikAPI.getIp());
               userData.put("NASName", mikrotikAPI.getName());
               userData.put("identification", res.get("name"));
+              userData.put("userStats",
+                  getUserStats(res.get("address"), mikrotikAPI.getUserName(), mikrotikAPI.getPass(),
+                      mikrotikAPI.getIp()));
               users.put(res.get("name"), userData);
 
             }

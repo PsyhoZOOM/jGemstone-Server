@@ -52,7 +52,11 @@ public class addBoxService {
       ps.setBoolean(10, false);
       ps.setInt(11, rLine.getInt("produzenje"));
       ps.setBoolean(12, true);
-      ps.setInt(13, rLine.getInt("DTVKartica"));
+      if (rLine.has("DTVKartica")) {
+        ps.setInt(13, rLine.getInt("DTVKartica"));
+      } else {
+        ps.setString(13, "");
+      }
       ps.setString(14, rLine.getString("userName"));
       ps.setString(15, rLine.getString("groupName"));
       if (rLine.has("IPTV_MAC")) {

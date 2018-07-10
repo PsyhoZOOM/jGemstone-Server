@@ -165,9 +165,9 @@ public class FIXFunctions {
 
     query = "INSERT INTO userDebts " +
         "(id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena, uplaceno," +
-        "datumUplate, dug, operater, zaduzenOd, zaMesec, skipProduzenje, PDV )" +
+        "datumUplate, dug, operater, zaduzenOd, zaMesec, skipProduzenje, PDV, kolicina )" +
         "VALUES " +
-        "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       double cena = ukupno;
@@ -193,6 +193,7 @@ public class FIXFunctions {
       ps.setString(13, zaMesec);
       ps.setBoolean(14, false);
       ps.setDouble(15, rs.getDouble("PDV"));
+      ps.setInt(16, 1);
       ps.executeUpdate();
       ps.close();
       rs.close();
@@ -215,15 +216,15 @@ public class FIXFunctions {
     }
   }
 
-  public static JSONObject getAccountSaobracaj(String account, String zaMesec, database db) {
+  public static JSONObject getAccountSaobracaj(int id_ServiceUser, String zaMesec, database db) {
     JSONObject jsonObject = new JSONObject();
     PreparedStatement ps;
     ResultSet rs;
-    String query = "SELECT * FROM userDebts WHERE paketType = 'FIX_SAOBRACAJ' AND nazivPaketa=? and zaMesec=?";
+    String query = "SELECT * FROM userDebts WHERE paketType = 'FIX_SAOBRACAJ' AND id_ServiceUser=? and zaMesec=?";
 
     try {
       ps = db.conn.prepareStatement(query);
-      ps.setString(1, "Saobraćaj-" + account);
+      ps.setInt(1, id_ServiceUser);
       ps.setString(2, zaMesec);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
@@ -238,12 +239,16 @@ public class FIXFunctions {
         double pdv = rs.getDouble("PDV");
         double popust = rs.getDouble("popust");
         double ukupno = cena - valueToPercent.getPDVOfSum(cena, popust);
+        int kolicina = 1;
+        double osnovica = ukupno;
         ukupno = ukupno + valueToPercent.getPDVOfValue(ukupno, pdv);
 
         jsonObject.put("popust", popust);
         jsonObject.put("paketType", rs.getString("paketType"));
         jsonObject.put("cena", cena);
         jsonObject.put("uplaceno", rs.getDouble("uplaceno"));
+        jsonObject.put("kolicina", kolicina);
+        jsonObject.put("osnovica", osnovica);
         jsonObject.put("datumUplate", rs.getString("datumUplate"));
         jsonObject.put("dug", ukupno);
         jsonObject.put("operater", rs.getString("operater"));

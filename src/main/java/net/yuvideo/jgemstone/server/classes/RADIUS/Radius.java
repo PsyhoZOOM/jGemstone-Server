@@ -528,6 +528,84 @@ public class Radius {
 
   }
 
+  public String getCalledID(String ip, String sessionID) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT calledstationid from radacct WHERE framedipaddress=? AND acctsessionid =?";
+    String calledID = "N/A";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, ip);
+      ps.setString(2, sessionID.replace("0x", ""));
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        calledID = rs.getString("calledstationid");
+      }
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+    return calledID;
+  }
+
+  public JSONObject getTrafficReport(String username) {
+    JSONObject userTrafficObj = new JSONObject();
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM radacct WHERE username=? order by radacctid desc limit ?";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, username);
+      ps.setInt(2, 10);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        int i = 0;
+        while (rs.next()) {
+          JSONObject userTraffic = new JSONObject();
+          userTraffic.put("radacctid", rs.getLong("radacctid"));
+          userTraffic.put("acctsessionid", rs.getString("acctsessionid"));
+          userTraffic.put("acctuniqueid", rs.getString("acctuniqueid"));
+          userTraffic.put("username", rs.getString("username"));
+          userTraffic.put("realm", rs.getString("realm"));
+          userTraffic.put("nasipaddress", rs.getString("nasipaddress"));
+          userTraffic.put("nasportid", rs.getString("nasportid"));
+          userTraffic.put("nasporttype", rs.getString("nasporttype"));
+          userTraffic.put("acctstarttime", rs.getString("acctstarttime"));
+          userTraffic.put("acctstoptime", rs.getString("acctstoptime"));
+          if (rs.wasNull()) {
+            userTraffic.remove("acctstoptime");
+            userTraffic.put("acctstoptime", "ONLINE");
+          }
+          userTraffic.put("acctsessiontime", rs.getInt("acctsessiontime"));
+          userTraffic.put("acctauthentic", rs.getString("acctauthentic"));
+          userTraffic.put("connectinfo_start", rs.getString("connectinfo_start"));
+          userTraffic.put("connectinfo_stop", rs.getString("connectinfo_stop"));
+          userTraffic.put("acctinputoctets", rs.getLong("acctinputoctets"));
+          userTraffic.put("acctoutputoctets", rs.getLong("acctoutputoctets"));
+          userTraffic.put("calledstationid", rs.getString("calledstationid"));
+          userTraffic.put("callingstationid", rs.getString("callingstationid"));
+          userTraffic.put("acctterminatecause", rs.getString("acctterminatecause"));
+          userTraffic.put("servicetype", rs.getString("servicetype"));
+          userTraffic.put("framedprotocol", rs.getString("framedprotocol"));
+          userTraffic.put("framedipaddress", rs.getString("framedipaddress"));
+          userTrafficObj.put(String.valueOf(i), userTraffic);
+          i++;
+        }
+      }
+      ps.close();
+      rs.close();
+
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+    return userTrafficObj;
+  }
+
   public String getErrorMSG() {
     return errorMSG;
   }

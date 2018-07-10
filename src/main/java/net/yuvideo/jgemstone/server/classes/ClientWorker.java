@@ -37,6 +37,7 @@ import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.NAS.NASOnlineUsers;
 import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
+import net.yuvideo.jgemstone.server.classes.RACUNI.Zaduzenja;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
@@ -50,7 +51,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.105";
+  private static final String S_VERSION = "0.107";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -1252,72 +1253,15 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("get_zaduzenja_user")) {
-      jObj = new JSONObject();
-      if (rLine.getBoolean("sveUplate")) {
-        query = "SELECT * FROM userDebts where userID=? AND paketType != 'FIX_SAOBRACAJ' ORDER BY zaMesec ASC";
-      } else {
-        query = "SELECT * FROM userDebts WHERE userID=? AND dug > uplaceno AND paketType != 'FIX_SAOBRACAJ' ORDER BY zaMesec ASC";
+      Zaduzenja zaduzenja = new Zaduzenja(db);
+      JSONObject zaduzenjaOfUser = zaduzenja
+          .getZaduzenjaOfUser(rLine.getInt("userID"), rLine.getBoolean("sveUplate"));
+
+      if (zaduzenja.isError()) {
+        zaduzenjaOfUser.put("ERROR", zaduzenja.getErrorMSG());
       }
 
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("userID"));
-        rs = ps.executeQuery();
-        if (rs.isBeforeFirst()) {
-          JSONObject userDebt;
-          int i = 0;
-          while (rs.next()) {
-            double cena = rs.getDouble("cena");
-            double popust = rs.getDouble("popust");
-            double pdv = rs.getDouble("pdv");
-            int kolicina = rs.getInt("kolicina");
-            double osnovica = cena * kolicina;
-            double zaUplatu = osnovica - valueToPercent.getPDVOfValue(osnovica, popust);
-            double uplaceno = rs.getDouble("uplaceno");
-
-            zaUplatu = zaUplatu + valueToPercent.getPDVOfValue(zaUplatu, pdv);
-
-            userDebt = new JSONObject();
-            userDebt.put("id", rs.getInt("id"));
-            userDebt.put("id_ServiceUser", rs.getInt("id_ServiceUser"));
-            userDebt.put("nazivPaketa", rs.getString("nazivPaketa"));
-            userDebt.put("datumZaduzenja", rs.getDate("datumZaduzenja"));
-            userDebt.put("userID", rs.getInt("userID"));
-            userDebt.put("popust", popust);
-            userDebt.put("paketType", rs.getString("paketType"));
-            userDebt.put("cena", cena);
-            userDebt.put("kolicina", kolicina);
-            userDebt.put("dug", zaUplatu);
-            userDebt.put("zaUplatu", zaUplatu);
-            userDebt.put("paketType", rs.getString("paketType"));
-            userDebt.put("identification",
-                ServicesFunctions.getIdentify(rs.getInt("id_ServiceUser"), db));
-            userDebt
-                .put("fiksnaTel", ServicesFunctions.getFiksnaTel(rs.getInt("id_ServiceUser"), db));
-            userDebt.put("pdv", pdv);
-            userDebt.put("popust", popust);
-            userDebt.put("osnovica", osnovica);
-            userDebt.put("uplaceno", uplaceno);
-            userDebt.put("datumUplate", rs.getString("datumUplate"));
-            userDebt.put("operater", rs.getString("operater"));
-            userDebt.put("zaduzenOd", rs.getString("zaduzenOd"));
-            userDebt.put("zaMesec", rs.getString("zaMesec"));
-            userDebt.put("skipProduzenje", rs.getBoolean("skipProduzenje"));
-            userDebt.put("haveFIX", ServicesFunctions.boxHaveFIX(rs.getInt("id_ServiceUser"), db));
-            jObj.put(String.valueOf(i), userDebt);
-            i++;
-          }
-        }
-        rs.close();
-        ps.close();
-
-      } catch (SQLException e) {
-        jObj.put("Message", "ERROR");
-        jObj.put("Error", e.getMessage());
-        e.printStackTrace();
-      }
-
-      send_object(jObj);
+      send_object(zaduzenjaOfUser);
       return;
     }
 
@@ -1470,7 +1414,8 @@ public class ClientWorker implements Runnable {
       //ako je uplata fiksne telefonije uzimamo paket i saobracaj iz userDebta i vrsimo uplatu
       //uplaceno - paketDug = ostatak (update paket fix dug)
       //ostatak - saobracaj dug = uplacenoSaobracaj (update paket saobracaj fix dug)
-      if (rLine.getBoolean("haveFIX")) {
+      if (rLine.getString("paketType").equals("FIX") || rLine.getString("paketType")
+          .equals("BOX")) {
         double uplaceno = rLine.getDouble("uplaceno");
         int idFixPaket = 0;
         int idFixSaobracaj = 0;
@@ -1660,7 +1605,6 @@ public class ClientWorker implements Runnable {
       logUplate.put("nazivPaketa", rLine.getString("nazivPaketa"));
       logUplate.put("operater", getOperName());
       logUplate.put("userID", rLine.getInt("userID"));
-      logUplate.put("identification", rLine.getString("identification"));
       logUplate.put("id_ServiceUser", rLine.getInt("id_ServiceUser"));
       logUplate.put("mestoUplate", rLine.getString("mestoUplate"));
       logUplate.put("zaMesec", rLine.getString("zaMesec"));
@@ -3411,7 +3355,7 @@ public class ClientWorker implements Runnable {
     if (rLine.getString("action").equals("get_FIX_account_saobracaj")) {
       jObj = new JSONObject();
       jObj = FIXFunctions.getAccountSaobracaj(
-          rLine.getString("account"),
+          rLine.getInt("id_ServiceUser"),
           rLine.getString("zaMesec"),
           db);
       send_object(jObj);
@@ -4328,6 +4272,18 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("getUserTrafficReport")) {
+      JSONObject object = new JSONObject();
+      Radius radius = new Radius(db);
+      object = radius.getTrafficReport(rLine.getString("username"));
+      if (radius.isError()) {
+        object.put("ERROR", radius.getErrorMSG());
+      }
+      send_object(object);
+      return;
+
+    }
+
     if (rLine.getString("action").equals("getUsersOnlineStat")) {
       JSONObject object = new JSONObject();
       MikrotikAPI mikrotikAPI = new MikrotikAPI();
@@ -4352,6 +4308,19 @@ public class ClientWorker implements Runnable {
       send_object(userSearch);
       return;
     }
+
+    if (rLine.getString("action").equals("getCalledID")) {
+      JSONObject object = new JSONObject();
+      Radius radius = new Radius(db);
+      String calledID = radius.getCalledID(rLine.getString("IP"), rLine.getString("sessionID"));
+      object.put("calledID", calledID);
+      if (radius.isError()) {
+        object.put("ERROR", radius.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
   }
 
   private void setUserFirma(int userID, boolean hasFirma) {
