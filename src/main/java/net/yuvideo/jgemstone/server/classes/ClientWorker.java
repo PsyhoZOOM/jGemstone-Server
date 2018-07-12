@@ -51,7 +51,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.107";
+  private static final String S_VERSION = "0.109";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -990,8 +990,8 @@ public class ClientWorker implements Runnable {
       int service_id = rLine.getInt("service_id");
       ServicesFunctions servicesFunctions = new ServicesFunctions(db);
       servicesFunctions.activateNewService(service_id, getOperName());
-      if (servicesFunctions.isHaveError()) {
-        jObj.put("ERROR", servicesFunctions.getErrorMessage());
+      if (servicesFunctions.isError()) {
+        jObj.put("ERROR", servicesFunctions.getErrorMSG());
       }
 
       send_object(jObj);
@@ -1003,8 +1003,8 @@ public class ClientWorker implements Runnable {
       JSONObject jsonObject = new JSONObject();
       ServicesFunctions servicesFunctions = new ServicesFunctions();
       servicesFunctions.updateService(getOperName(), db, rLine);
-      if (servicesFunctions.isHaveError()) {
-        jsonObject.put("ERROR", servicesFunctions.getErrorMessage());
+      if (servicesFunctions.isError()) {
+        jsonObject.put("ERROR", servicesFunctions.getErrorMSG());
       }
       send_object(jsonObject);
       return;
@@ -1198,12 +1198,15 @@ public class ClientWorker implements Runnable {
         send_object(jObj);
         return;
       }
-      String userAdded = ServicesFunctions.addServiceNET(rLine, getOperName(), this.db);
-      if (userAdded.equals("USER_EXIST")) {
-        jObj.put("Error", "USER_EXIST");
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      servicesFunctions.addServiceNET(rLine, getOperName(), this.db);
+      if (servicesFunctions.isError()) {
+        jObj.put("ERROR", servicesFunctions.getErrorMSG());
       } else {
-        jObj.put("Message", "USER_ADDED");
+        jObj.put("Message",
+            String.format("Korisničko ime %s je snimljeno", rLine.getString("userName")));
       }
+
 
       send_object(jObj);
       return;
@@ -1214,8 +1217,8 @@ public class ClientWorker implements Runnable {
 
       ServicesFunctions servicesFunctions = new ServicesFunctions(db);
       servicesFunctions.deleteService(rLine.getInt("serviceID"));
-      if (servicesFunctions.isHaveError()) {
-        jObj.put("ERROR", servicesFunctions.getErrorMessage());
+      if (servicesFunctions.isError()) {
+        jObj.put("ERROR", servicesFunctions.getErrorMSG());
       }
 
       send_object(jObj);
@@ -1455,7 +1458,7 @@ public class ClientWorker implements Runnable {
           ps.setInt(4, rLine.getInt("userID"));
           ps.setDouble(5, 0.00);
           ps.setString(6, rLine.getString("paketType"));
-          ps.setDouble(7, rLine.getDouble("cena"));
+          ps.setDouble(7, rLine.getDouble("cena") / rate);
           ps.setDouble(8, 0.00);
           double cena = rLine.getDouble("cena");
           double kolicina = rLine.getInt("kolicina");
@@ -3643,9 +3646,9 @@ public class ClientWorker implements Runnable {
       ServicesFunctions servicesFunctions = new ServicesFunctions(db);
       boolean deleted = servicesFunctions.deletePaketOstalo(rLine.getInt("id"));
       if (deleted) {
-        obj.put("MESSAGE", "DELETED");
+        obj.put("MESSAGE", "IZBRISANO");
       } else {
-        obj.put("ERROR", servicesFunctions.getErrorMessage());
+        obj.put("ERROR", servicesFunctions.getErrorMSG());
       }
 
       send_object(obj);

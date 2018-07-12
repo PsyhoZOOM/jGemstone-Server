@@ -36,29 +36,49 @@ public class MesecniObracun {
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         int i = 0;
+        double ukupnaOsnovica = 0;
+        double ukupnoPDV = 0;
+        double ukupno = 0;
         while (rs.next()) {
           JSONObject mesec = new JSONObject();
-          Double cena = rs.getDouble("cena");
-          Double popust = rs.getDouble("popust");
-          Double pdv = rs.getDouble("pdv");
-          Double cenaSaPopustom = cena - valueToPercent.getPDVOfSum(cena, popust);
-          Double pdvCena = valueToPercent.getPDVOfValue(cenaSaPopustom, pdv);
+          double cena = rs.getDouble("cena");
+          double popust = rs.getDouble("popust");
+          double pdv = rs.getDouble("pdv");
+          double cenaSaPopustom = cena - valueToPercent.getPDVOfSum(cena, popust);
+          int kolicina = rs.getInt("kolicina");
+          double osnovica = cenaSaPopustom * kolicina;
+          double pdvCena = valueToPercent.getPDVOfValue(osnovica, pdv);
+
+          ukupnoPDV += pdvCena;
+          ukupnaOsnovica += osnovica;
+          ukupno += ukupnaOsnovica + ukupnoPDV;
+
           UsersData user = new UsersData(db, operName);
           JSONObject userObj = user.getUserData(rs.getInt("userID"));
           String imePrezime = userObj.getString("ime");
           String jBroj = userObj.getString("jBroj");
 
           mesec.put("id", rs.getInt("id"));
+          mesec.put("naziv", rs.getString("nazivPaketa"));
           mesec.put("imePrezime", imePrezime);
           mesec.put("jBroj", jBroj);
-          mesec.put("cena", (cenaSaPopustom));
+          mesec.put("cena", cenaSaPopustom);
+          mesec.put("kolicina", kolicina);
           mesec.put("popust", popust);
           mesec.put("pdv",pdv);
           mesec.put("pdvCena", pdvCena);
-          mesec.put("ukupno", cenaSaPopustom + pdvCena);
+          mesec.put("osnovica", osnovica);
+          mesec.put("ukupno", osnovica + pdvCena);
+          System.out.println(mesec);
           mesecniObracunObject.put(String.valueOf(i), mesec);
           i++;
         }
+        JSONObject finalObj = new JSONObject();
+        finalObj.put("ukupnoPDV", ukupnoPDV);
+        finalObj.put("ukupnaOsnovica", ukupnaOsnovica);
+        finalObj.put("ukupno", ukupno);
+        mesecniObracunObject.put(String.valueOf(i), finalObj);
+
       }
 
     } catch (SQLException e) {

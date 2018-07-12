@@ -67,19 +67,21 @@ public class Uplate {
     if (serviceData.isBoxService()) {
       servicesFunction.activateBoxService(serviceData.getId(), serviceData.getEndDate(),
           serviceData.getProduzenje(), getOperName());
-      if (servicesFunction.isHaveError()) {
+      if (servicesFunction.isError()) {
         setError(true);
-        setErrorMSG(servicesFunction.getErrorMessage());
+        setErrorMSG(servicesFunction.getErrorMSG());
         return;
       }
 
     } else {
-      servicesFunction.activateService(serviceData.getId(), getOperName());
-      servicesFunction.produziService(serviceData.getId(), serviceData.getEndDate(),
-          serviceData.getProduzenje(), getOperName(), debt.isSkipProduzenje());
-      if (servicesFunction.isHaveError()) {
+      if (serviceData.getPaketType() != null) {
+        servicesFunction.activateService(serviceData.getId(), getOperName());
+        servicesFunction.produziService(serviceData.getId(), serviceData.getEndDate(),
+            serviceData.getProduzenje(), getOperName(), debt.isSkipProduzenje());
+      }
+      if (servicesFunction.isError()) {
         setError(true);
-        setErrorMSG(servicesFunction.getErrorMessage());
+        setErrorMSG(servicesFunction.getErrorMSG());
         return;
       }
 

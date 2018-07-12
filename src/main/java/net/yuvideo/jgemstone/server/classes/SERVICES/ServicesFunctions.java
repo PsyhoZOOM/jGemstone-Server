@@ -34,8 +34,9 @@ public class ServicesFunctions {
   private static DateTimeFormatter dtfMesecZaduzenja = DateTimeFormatter.ofPattern("yyyy-MM");
   private static DateTimeFormatter dtfIPTV = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-  private boolean haveError = false;
-  private String errorMessage = "";
+  boolean error = false;
+  String errorMSG;
+
 
   public ServicesFunctions(database db) {
     this.db = db;
@@ -289,11 +290,11 @@ public class ServicesFunctions {
 
   }
 
-  public static String addServiceNET(JSONObject rLine, String opername, database db) {
+  public void addServiceNET(JSONObject rLine, String opername, database db) {
     String Message;
     if (NETFunctions.check_userName_busy(rLine.getString("userName"), db)) {
-      Message = "USER_EXIST";
-      return Message;
+      setErrorMSG("KORISNIK POSTOJI");
+      setError(true);
     }
 
     NETFunctions.addUser(rLine, db);
@@ -329,8 +330,6 @@ public class ServicesFunctions {
       e.printStackTrace();
     }
 
-    Message = "USER_ADDED";
-    return Message;
   }
 
   public static String addServiceFIX(JSONObject rLine, String opername, database db) {
@@ -527,8 +526,8 @@ public class ServicesFunctions {
   private void deleteServiceIPTV(int serviceID) {
     StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
     if (!stalkerRestAPI2.isHostAlive()) {
-      this.setHaveError(true);
-      this.errorMessage = stalkerRestAPI2.getHostMessage();
+      setError(true);
+      setErrorMSG(stalkerRestAPI2.getHostMessage());
       return;
     }
 
@@ -617,7 +616,7 @@ public class ServicesFunctions {
         while (rs.next()) {
           if (rs.getString("paketType").contains("IPTV")) {
             deleteServiceIPTV(rs.getInt("id"));
-            if (isHaveError()) {
+            if (isError()) {
               return;
             }
           }
@@ -639,8 +638,8 @@ public class ServicesFunctions {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
-      setHaveError(true);
-      setErrorMessage(e.getMessage());
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
     }
   }
@@ -760,13 +759,13 @@ public class ServicesFunctions {
         }
 
       } else {
-        setHaveError(true);
-        setErrorMessage("SERVIS NE POSTOJI");
+        setError(true);
+        setErrorMSG("SERVIS NE POSTOJI");
         return;
       }
     } catch (SQLException e) {
-      setHaveError(true);
-      setErrorMessage(e.getMessage());
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
       return;
     }
@@ -836,8 +835,8 @@ public class ServicesFunctions {
           Radius radius = new Radius(db);
           radius.activateUser(rs.getString("UserName"));
           if (radius.isError()) {
-            this.setHaveError(true);
-            this.setErrorMessage(radius.getErrorMSG());
+            setErrorMSG(radius.getErrorMSG());
+            setError(true);
           }
         }
 
@@ -848,8 +847,8 @@ public class ServicesFunctions {
       ps1.executeUpdate();
       ps1.close();
     } catch (SQLException e) {
-      this.haveError = true;
-      this.errorMessage = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
       return;
     }
@@ -915,8 +914,8 @@ public class ServicesFunctions {
       }
       ps.close();
     } catch (SQLException e) {
-      setHaveError(true);
-      setErrorMessage(e.getMessage());
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
     }
   }
@@ -1183,8 +1182,8 @@ public class ServicesFunctions {
       ps.close();
 
     } catch (SQLException e) {
-      this.haveError = true;
-      this.errorMessage = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
 
@@ -1207,21 +1206,9 @@ public class ServicesFunctions {
 
   }
 
-  public boolean isHaveError() {
-    return haveError;
-  }
 
-  public void setHaveError(boolean haveError) {
-    this.haveError = haveError;
-  }
 
-  public String getErrorMessage() {
-    return errorMessage;
-  }
 
-  public void setErrorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
 
 
   public boolean deletePaketOstalo(int id) {
@@ -1237,7 +1224,8 @@ public class ServicesFunctions {
       delete = true;
       ps.close();
     } catch (SQLException e) {
-      setErrorMessage(e.getMessage());
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
     return delete;
@@ -1413,8 +1401,8 @@ public class ServicesFunctions {
       ps.setInt(2, servieID);
       ps.executeUpdate();
     } catch (SQLException e) {
-      this.errorMessage = e.getMessage();
-      setHaveError(true);
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
     }
   }
@@ -1428,10 +1416,10 @@ public class ServicesFunctions {
       ps.setInt(2, serviceID);
       ps.executeUpdate();
       ps.close();
-      setHaveError(false);
+      setError(true);
     } catch (SQLException e) {
-      setHaveError(true);
-      setErrorMessage(e.getMessage());
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
   }
@@ -1452,7 +1440,7 @@ public class ServicesFunctions {
           }
           if (rs.getString("paketType").contains("IPTV")) {
             deleteServiceIPTV(rs.getInt("id"));
-            if (isHaveError()) {
+            if (isError()) {
               return;
             }
           }
@@ -1474,8 +1462,8 @@ public class ServicesFunctions {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
-      setHaveError(true);
-      setErrorMessage(e.getMessage());
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
     }
   }
@@ -1496,5 +1484,22 @@ public class ServicesFunctions {
       e.printStackTrace();
     }
     return null;
+  }
+
+
+  public boolean isError() {
+    return error;
+  }
+
+  public void setError(boolean error) {
+    this.error = error;
+  }
+
+  public String getErrorMSG() {
+    return errorMSG;
+  }
+
+  public void setErrorMSG(String errorMSG) {
+    this.errorMSG = errorMSG;
   }
 }
