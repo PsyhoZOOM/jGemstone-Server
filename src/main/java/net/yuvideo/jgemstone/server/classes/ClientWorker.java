@@ -16,7 +16,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Calendar;
 import java.util.Date;
 import javax.net.ssl.SSLSocket;
 import net.yuvideo.jgemstone.server.classes.ARTIKLI.ArtikliFunctions;
@@ -36,6 +35,7 @@ import net.yuvideo.jgemstone.server.classes.MIKROTIK_API.MikrotikAPI;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.NAS.NASOnlineUsers;
 import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
+import net.yuvideo.jgemstone.server.classes.RACUNI.Uplate;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.Zaduzenja;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
@@ -1255,7 +1255,8 @@ public class ClientWorker implements Runnable {
     if (rLine.getString("action").equals("get_zaduzenja_user")) {
       Zaduzenja zaduzenja = new Zaduzenja(db);
       JSONObject zaduzenjaOfUser = zaduzenja
-          .getZaduzenjaOfUser(rLine.getInt("userID"), rLine.getBoolean("sveUplate"));
+          .getZaduzenjaOfUser(rLine.getInt("userID"), rLine.getBoolean("sveUplate"),
+              rLine.getString("zaMesec"));
 
       if (zaduzenja.isError()) {
         zaduzenjaOfUser.put("ERROR", zaduzenja.getErrorMSG());
@@ -1405,213 +1406,15 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("uplata_servisa")) {
-      jObj = new JSONObject();
-
-      PreparedStatement ps = null;
-      ResultSet rs = null;
-      String query;
-
-      //ako je uplata fiksne telefonije uzimamo paket i saobracaj iz userDebta i vrsimo uplatu
-      //uplaceno - paketDug = ostatak (update paket fix dug)
-      //ostatak - saobracaj dug = uplacenoSaobracaj (update paket saobracaj fix dug)
-      if (rLine.getString("paketType").equals("FIX") || rLine.getString("paketType")
-          .equals("BOX")) {
-        double uplaceno = rLine.getDouble("uplaceno");
-        int idFixPaket = 0;
-        int idFixSaobracaj = 0;
-        double paketDug = 0;
-        double paketUplaceno = 0;
-        double saobracajDug = 0;
-        double saobracajUplaceno = 0;
-
-        //prvo uzeti id-ove od paketa i saobracaja od servisa, userID i zaMesec
-        query = "SELECT id, paketType FROM userDebts WHERE zaMesec=? and id_ServiceUser=? and userID=?";
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setString(1, rLine.getString("zaMesec"));
-          ps.setInt(2, rLine.getInt("id_ServiceUser"));
-          ps.setInt(3, rLine.getInt("userID"));
-          rs = ps.executeQuery();
-          if (rs.isBeforeFirst()) {
-            while (rs.next()) {
-              if (rs.getString("paketType").equals("BOX")) {
-                idFixPaket = rs.getInt("id");
-              }
-              if (rs.getString("paketType").equals("FIX")) {
-                idFixPaket = rs.getInt("id");
-              }
-              if (rs.getString("paketType").equals("FIX_SAOBRACAJ")) {
-                idFixSaobracaj = rs.getInt("id");
-              }
-            }
-          }
-          ps.close();
-          rs.close();
-        } catch (SQLException e) {
-          jObj.put("ERROR", e.getMessage());
-          e.printStackTrace();
-        }
-
-        //onda moramo proveriti da li vec postoji uplata
-        //ako postoji proverti koliko fali za paket a koliko za saobracaj
-
-        //CODE HERE
-        //get paket dug
-        query = "SELECT uplaceno, dug FROM userDebts WHERE id=?";
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setInt(1, idFixPaket);
-          rs = ps.executeQuery();
-          if (rs.isBeforeFirst()) {
-            rs.next();
-            paketDug = rs.getDouble("dug");
-            paketUplaceno = rs.getDouble("uplaceno");
-          }
-          ps.close();
-          rs.close();
-
-        } catch (SQLException e) {
-          jObj.put("ERROR", e.getMessage());
-          e.printStackTrace();
-        }
-
-        //get saobracaj dug
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setInt(1, idFixSaobracaj);
-          rs = ps.executeQuery();
-          if (rs.isBeforeFirst()) {
-            rs.next();
-            saobracajDug = rs.getDouble("dug");
-            saobracajUplaceno = rs.getDouble("uplaceno");
-          }
-          rs.close();
-          ps.close();
-        } catch (SQLException e) {
-          jObj.put("ERROR", e.getMessage());
-          e.printStackTrace();
-
-        }
-
-        double zaUplatuPaket = 0; // = paketDug - paketUplaceno;
-        double zaUplatuSaobracaj = 0; // = saobracajDug - saobracajUplaceno;
-
-        //saobracaj
-        double ukupnoUplaceno = paketUplaceno + saobracajUplaceno + uplaceno;
-        double ukupanDug = paketDug + saobracajDug;
-        double dug = ukupanDug - ukupnoUplaceno;
-
-        if (ukupnoUplaceno >= paketDug) {
-          ukupnoUplaceno -= paketDug;
-          zaUplatuPaket = paketDug;
-          zaUplatuSaobracaj = ukupnoUplaceno;
-        } else {
-          zaUplatuPaket = ukupnoUplaceno;
-          zaUplatuSaobracaj = 0;
-        }
-
-        query = "UPDATE userDebts set uplaceno = ? where id=?";
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setDouble(1, zaUplatuPaket);
-          ps.setInt(2, idFixPaket);
-          ps.executeUpdate();
-          ps.close();
-        } catch (SQLException e) {
-          jObj.put("ERROR", e.getMessage());
-          e.printStackTrace();
-        }
-
-        query = "UPDATE userDebts set uplaceno =? where id=?";
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setDouble(1, zaUplatuSaobracaj);
-          ps.setInt(2, idFixSaobracaj);
-          ps.executeUpdate();
-        } catch (SQLException e) {
-          jObj.put("ERROR", e.getMessage());
-          e.printStackTrace();
-        }
-
-      } else {
-        //uplata za   obicne servise
-        double ukupnoUplaceno = 0;
-        double zaUplatu = 0;
-        query = "SELECT dug, uplaceno FROM userDebts WHERE id=?";
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setInt(1, rLine.getInt("id"));
-          rs = ps.executeQuery();
-          if (rs.isBeforeFirst()) {
-            rs.next();
-            ukupnoUplaceno = rs.getDouble("uplaceno");
-            zaUplatu = ukupnoUplaceno + rLine.getDouble("uplaceno");
-          }
-        } catch (SQLException e) {
-          e.printStackTrace();
-        }
-
-        query = "UPDATE userDebts SET uplaceno=?, datumUplate=?, operater=?, skipProduzenje=true WHERE id=?";
-
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setDouble(1, zaUplatu);
-          ps.setString(2, date_format_full.format(Calendar.getInstance().getTime()));
-          ps.setString(3, getOperName());
-          ps.setInt(4, rLine.getInt("id"));
-          ps.executeUpdate();
-          jObj.put("Message", "SERVICE_PAYMENTS_DONE");
-          ps.close();
-        } catch (SQLException e) {
-          jObj.put("Error", e.getMessage());
-          e.printStackTrace();
-        }
-
+      JSONObject object = new JSONObject();
+      Uplate uplata = new Uplate(getOperName(), db);
+      uplata
+          .uplati(rLine.getInt("id"), rLine.getDouble("uplaceno"), rLine.getString("mestoUplate"));
+      if (uplata.isError()) {
+        object.put("ERROR", uplata.getErrorMSG());
       }
 
-      //produzenje Servisa
-        query = "SELECT * FROM servicesUser WHERE id=?";
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("id_ServiceUser"));
-        rs = ps.executeQuery();
-        if (rs.isBeforeFirst()) {
-          ServicesFunctions servicesFunctions = new ServicesFunctions(db);
-          while (rs.next()) {
-            if (rs.getString("paketType").contains("BOX")) {
-              servicesFunctions.activateBoxService(rs.getInt("id"), rs.getString("endDate"),
-                  rs.getInt("produzenje"), getOperName());
-            } else {
-              servicesFunctions.activateService(rs.getInt("id"), getOperName());
-            }
-          }
-
-        }
-      } catch (SQLException ex) {
-        ex.printStackTrace();
-      }
-
-      try {
-        ps.close();
-        rs.close();
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }
-
-      //UPLATA LOG SVAKE UPLATE
-      JSONObject logUplate = new JSONObject();
-      logUplate.put("uplaceno", rLine.getDouble("uplaceno"));
-      logUplate.put("id", rLine.getInt("id"));
-      logUplate.put("nazivPaketa", rLine.getString("nazivPaketa"));
-      logUplate.put("operater", getOperName());
-      logUplate.put("userID", rLine.getInt("userID"));
-      logUplate.put("id_ServiceUser", rLine.getInt("id_ServiceUser"));
-      logUplate.put("mestoUplate", rLine.getString("mestoUplate"));
-      logUplate.put("zaMesec", rLine.getString("zaMesec"));
-
-      ServicesFunctions.uplataLOG(logUplate, db);
-
-      send_object(jObj);
+      send_object(object);
       return;
     }
 

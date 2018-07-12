@@ -1243,6 +1243,10 @@ public class ServicesFunctions {
     return delete;
   }
 
+  public ServiceData getServiceData(int serviceID) {
+    ServiceData serviceData = new ServiceData(db);
+    return serviceData.getData(serviceID);
+  }
 
   public JSONObject getServiceDetail(int serviceID) {
     JSONObject object = new JSONObject();

@@ -19,21 +19,22 @@ public class Zaduzenja {
     this.db = db;
   }
 
-  public JSONObject getZaduzenjaOfUser(int userID, boolean sveUplate) {
+  public JSONObject getZaduzenjaOfUser(int userID, boolean sveUplate, String zaMesec) {
     JSONObject object = new JSONObject();
     PreparedStatement ps;
     ResultSet rs;
     String query;
 
     if (sveUplate) {
-      query = "SELECT * FROM userDebts where userID=? AND paketType != 'FIX_SAOBRACAJ' ORDER BY zaMesec ASC";
+      query = "SELECT * FROM userDebts where userID=? AND paketType != 'FIX_SAOBRACAJ' and zaMesec LIKE ? ORDER BY zaMesec ASC";
     } else {
-      query = "SELECT * FROM userDebts WHERE userID=? AND dug > uplaceno AND paketType != 'FIX_SAOBRACAJ' ORDER BY zaMesec ASC";
+      query = "SELECT * FROM userDebts WHERE userID=? AND dug > uplaceno AND paketType != 'FIX_SAOBRACAJ' AND zaMesec LIKE ? ORDER BY zaMesec ASC";
     }
 
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, userID);
+      ps.setString(2, String.format("%s%%", zaMesec));
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         JSONObject userDebt;

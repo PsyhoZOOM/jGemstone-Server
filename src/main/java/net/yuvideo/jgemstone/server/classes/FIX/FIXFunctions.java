@@ -173,9 +173,11 @@ public class FIXFunctions {
       double cena = ukupno;
       double popust = rs.getDouble("popust");
       double pdv = rs.getDouble("PDV");
+      int kolicina = 1;
+      double osnovica = cena * kolicina;
 
-      double dug = cena - valueToPercent.getPDVOfValue(cena, popust);
-      dug = dug + valueToPercent.getPDVOfSum(cena, pdv);
+      double dug = osnovica - valueToPercent.getPDVOfSum(osnovica, popust);
+      dug = dug + valueToPercent.getPDVOfValue(osnovica, pdv);
 
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, rs.getInt("id"));
@@ -238,19 +240,16 @@ public class FIXFunctions {
         double cena = rs.getDouble("cena");
         double pdv = rs.getDouble("PDV");
         double popust = rs.getDouble("popust");
-        double ukupno = cena - valueToPercent.getPDVOfSum(cena, popust);
         int kolicina = 1;
-        double osnovica = ukupno;
-        ukupno = ukupno + valueToPercent.getPDVOfValue(ukupno, pdv);
 
         jsonObject.put("popust", popust);
         jsonObject.put("paketType", rs.getString("paketType"));
         jsonObject.put("cena", cena);
         jsonObject.put("uplaceno", rs.getDouble("uplaceno"));
         jsonObject.put("kolicina", kolicina);
-        jsonObject.put("osnovica", osnovica);
+        jsonObject.put("osnovica", cena * kolicina);
         jsonObject.put("datumUplate", rs.getString("datumUplate"));
-        jsonObject.put("dug", ukupno);
+        jsonObject.put("dug", rs.getDouble("dug"));
         jsonObject.put("operater", rs.getString("operater"));
         jsonObject.put("zaduzenOd", rs.getString("zaduzenOd"));
         jsonObject.put("zaMesec", rs.getString("zaMesec"));
