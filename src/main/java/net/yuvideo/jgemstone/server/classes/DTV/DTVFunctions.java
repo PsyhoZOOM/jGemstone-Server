@@ -30,6 +30,9 @@ public class DTVFunctions {
   }
 
   public static Boolean check_card_busy(int cardID, database db) {
+    if (cardID == 0) {
+      return false;
+    }
     PreparedStatement ps;
     ResultSet rs;
     Boolean cardExist = false;
@@ -50,9 +53,11 @@ public class DTVFunctions {
   }
 
   public static void addCard(JSONObject rLine, String opername, database db) {
+    if (rLine.getInt("DTVKartica") == 0) {
+      return;
+    }
 
     PreparedStatement ps;
-    ResultSet rs;
 
     String query =
         "INSERT INTO DTVKartice (idKartica, userID, paketID, endDate, createDate ) VALUES " +

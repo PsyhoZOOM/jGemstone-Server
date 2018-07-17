@@ -57,8 +57,13 @@ public class addBoxService {
       } else {
         ps.setString(13, "");
       }
-      ps.setString(14, rLine.getString("userName"));
-      ps.setString(15, rLine.getString("groupName"));
+      if (rLine.has("userName") && rLine.has("groupName")) {
+        ps.setString(14, rLine.getString("userName"));
+        ps.setString(15, rLine.getString("groupName"));
+      } else {
+        ps.setString(14, "");
+        ps.setString(15, "");
+      }
       if (rLine.has("IPTV_MAC")) {
         ps.setString(16, rLine.getString("IPTV_MAC"));
       } else {

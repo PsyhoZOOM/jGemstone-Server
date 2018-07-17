@@ -1,11 +1,11 @@
-package net.yuvideo.jgemstone.server.classes;
+package net.yuvideo.jgemstone.server.classes.ServerServices;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import javax.sound.midi.Soundbank;
 import net.yuvideo.jgemstone.server.classes.LOCATION.LocationsClients;
+import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
 public class GPSReceiver implements Runnable {

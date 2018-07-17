@@ -1,4 +1,4 @@
-package net.yuvideo.jgemstone.server.classes;
+package net.yuvideo.jgemstone.server.classes.ServerServices;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -8,7 +8,10 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.logging.Logger;
+import net.yuvideo.jgemstone.server.classes.ClientWorker;
+import net.yuvideo.jgemstone.server.classes.database;
+import net.yuvideo.jgemstone.server.classes.monthlyScheduler;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -33,7 +36,7 @@ public class SchedullerTask implements Runnable {
   private Thread threadClientWorker;
   private PreparedStatement ps;
   private String query;
-  private monthlyScheduler monthlyScheduler;
+  private net.yuvideo.jgemstone.server.classes.monthlyScheduler monthlyScheduler;
   private String info;
 
 
@@ -54,9 +57,15 @@ public class SchedullerTask implements Runnable {
       }
 
       //run every half hour
-      if (dateTime.getMinute() == 30) {
+      //     if (dateTime.getMinute() == 30) {
+      System.out.println(dateTime.getSecond());
+      if (dateTime.getSecond() == 1) {
+        System.out.println("WIFIFINDER");
         ////TODO wifi finder
         WiFiTracker wiFiTracker = new WiFiTracker(db);
+        if (wiFiTracker.isError()) {
+          LOGGER.error(wiFiTracker.getErrorMSG());
+        }
       }
 
       try {

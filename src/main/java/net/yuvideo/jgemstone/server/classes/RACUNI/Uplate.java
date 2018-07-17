@@ -38,11 +38,11 @@ public class Uplate {
         return;
       }
     } else if (debt.getPaketType().equals("BOX")) {
-      boolean haveBox = checkIfHaveBox(debt.getId_ServiceUser());
+      boolean haveFix = checkIfHaveFix(debt.getId_ServiceUser());
       if (isError()) {
         return;
       }
-      if (haveBox) {
+      if (haveFix) {
         debtSaobracaj = getFixSaobracaj(debt.getId_ServiceUser());
         if (isError()) {
           return;
@@ -109,7 +109,7 @@ public class Uplate {
 
   }
 
-  private boolean checkIfHaveBox(int box_id) {
+  private boolean checkIfHaveFix(int box_id) {
     PreparedStatement ps;
     ResultSet rs;
     String query = "SELECT FIKSNA_TEL FROM servicesUser WHERE box_id=?";

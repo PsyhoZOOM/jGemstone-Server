@@ -1,10 +1,11 @@
-package net.yuvideo.jgemstone.server.classes;
+package net.yuvideo.jgemstone.server.classes.ServerServices;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import net.yuvideo.jgemstone.server.classes.database;
 import org.apache.log4j.Logger;
 
 /**
@@ -52,6 +53,9 @@ public class EMMServer implements Runnable {
                           this.host,
                           this.port,
                           rs.getInt("idKartica")));
+            }
+            if (rs.getInt("idKartica") == 0) {
+              continue;
             }
             sendEmmUDP.send(
                 rs.getInt("idKartica"),

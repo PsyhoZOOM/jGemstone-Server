@@ -287,4 +287,13 @@ public class FIXFunctions {
 
   }
 
+  public JSONObject getPoziviZaMesec(String zaMesec, String account) {
+    CSVData csvData = new CSVData(db);
+    JSONObject data = csvData.getZaMesecByCountry(zaMesec, account);
+    if (csvData.isError()) {
+      data.put("ERROR", csvData.getErrorMSG());
+    }
+    return data;
+  }
+
 }

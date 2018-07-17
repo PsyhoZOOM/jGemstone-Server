@@ -234,6 +234,7 @@ public class ServicesFunctions {
       String opername, double popust, double cena, Boolean obracun,
       String brojUgovora, int produzenje, String idDTVCard, int DTVPaket, double pdv, String opis,
       database db) {
+
     PreparedStatement ps;
     String ServiceAdded;
     String query =
@@ -270,7 +271,9 @@ public class ServicesFunctions {
       ServiceAdded = e.getMessage();
       e.printStackTrace();
     }
-
+    if (idDTVCard.equals("0")) {
+      return "SERVICE_ADDED";
+    }
     query = "INSERT INTO DTVKartice (idKartica, userID, paketID, endDate, createDate) VALUES(?,?,?,?,?)";
 
     try {

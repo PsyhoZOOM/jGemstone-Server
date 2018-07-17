@@ -3,19 +3,65 @@ package net.yuvideo.jgemstone.server.classes;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import org.json.JSONObject;
 
 public class NetworkDevices {
 
-  private final database db;
+  private database db;
   private String errorMsgp;
   private boolean error;
+
+  private int id;
+  private String name;
+  private String ip;
+  private String hostName;
+  private String type;
+  private String userName;
+  private String pass;
+  private String url;
+  private String opis;
+  private String nas;
+  private String accessType;
+
+
+  private ArrayList<NetworkDevices> networkDevicesArrayList;
+
+
 
   public NetworkDevices(database db) {
     this.db = db;
   }
 
-  public JSONObject getAllDevices() {
+  public NetworkDevices() {
+
+  }
+
+  public ArrayList<NetworkDevices> getAllDevices() {
+    networkDevicesArrayList = new ArrayList<>();
+    JSONObject allDevicesJSON = getAllDevicesJSON();
+    for (int i = 0; i < allDevicesJSON.length(); i++) {
+      NetworkDevices device = new NetworkDevices();
+      JSONObject devObj = allDevicesJSON.getJSONObject(String.valueOf(i));
+      device.setId(devObj.getInt("id"));
+      device.setName(devObj.getString("name"));
+      device.setIp(devObj.getString("ip"));
+      device.setHostName(devObj.getString("hostName"));
+      device.setType(devObj.getString("type"));
+      device.setUserName(devObj.getString("userName"));
+      device.setPass(devObj.getString("pass"));
+      device.setUrl(devObj.getString("url"));
+      device.setOpis(devObj.getString("opis"));
+      device.setNas(devObj.getString("nas"));
+      device.setAccessType(devObj.getString("accessType"));
+      networkDevicesArrayList.add(device);
+    }
+
+    return getNetworkDevicesArrayList();
+
+  }
+
+  public JSONObject getAllDevicesJSON() {
     JSONObject obj = new JSONObject();
     PreparedStatement ps;
     ResultSet rs;
@@ -188,5 +234,103 @@ public class NetworkDevices {
       e.printStackTrace();
     }
     return nasName;
+  }
+
+
+  public int getId() {
+    return id;
+  }
+
+  public void setId(int id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getIp() {
+    return ip;
+  }
+
+  public void setIp(String ip) {
+    this.ip = ip;
+  }
+
+  public String getHostName() {
+    return hostName;
+  }
+
+  public void setHostName(String hostName) {
+    this.hostName = hostName;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    this.type = type;
+  }
+
+  public String getUserName() {
+    return userName;
+  }
+
+  public void setUserName(String userName) {
+    this.userName = userName;
+  }
+
+  public String getPass() {
+    return pass;
+  }
+
+  public void setPass(String pass) {
+    this.pass = pass;
+  }
+
+  public String getUrl() {
+    return url;
+  }
+
+  public void setUrl(String url) {
+    this.url = url;
+  }
+
+  public String getOpis() {
+    return opis;
+  }
+
+  public void setOpis(String opis) {
+    this.opis = opis;
+  }
+
+  public String getNas() {
+    return nas;
+  }
+
+  public void setNas(String nas) {
+    this.nas = nas;
+  }
+
+  public String getAccessType() {
+    return accessType;
+  }
+
+  public void setAccessType(String accessType) {
+    this.accessType = accessType;
+  }
+
+  public ArrayList<NetworkDevices> getNetworkDevicesArrayList() {
+    return networkDevicesArrayList;
+  }
+
+  public void setNetworkDevicesArrayList(
+      ArrayList<NetworkDevices> networkDevicesArrayList) {
+    this.networkDevicesArrayList = networkDevicesArrayList;
   }
 }

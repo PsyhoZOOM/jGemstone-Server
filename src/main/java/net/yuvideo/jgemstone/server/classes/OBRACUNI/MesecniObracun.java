@@ -51,7 +51,7 @@ public class MesecniObracun {
 
           ukupnoPDV += pdvCena;
           ukupnaOsnovica += osnovica;
-          ukupno += ukupnaOsnovica + ukupnoPDV;
+          ukupno += osnovica + pdvCena;
 
           UsersData user = new UsersData(db, operName);
           JSONObject userObj = user.getUserData(rs.getInt("userID"));

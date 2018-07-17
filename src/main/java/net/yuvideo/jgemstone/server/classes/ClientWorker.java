@@ -3234,6 +3234,15 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("get_csv_data_account")) {
+      FIXFunctions fixFunctions = new FIXFunctions(db);
+      JSONObject poziviZaMesec = new JSONObject();
+      poziviZaMesec = fixFunctions
+          .getPoziviZaMesec(rLine.getString("zaMesec"), rLine.getString("account"));
+      send_object(poziviZaMesec);
+      return;
+    }
+
     //END FIKSNA TELEFONIJA PAKETI
     //IPTV
     //test
@@ -4031,7 +4040,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getAllNetworkDevices")) {
       NetworkDevices networkDevices = new NetworkDevices(db);
-      JSONObject allDevices = networkDevices.getAllDevices();
+      JSONObject allDevices = networkDevices.getAllDevicesJSON();
       if (networkDevices.isError()) {
         allDevices.put("ERROR", networkDevices.getErrorMsgp());
       }
