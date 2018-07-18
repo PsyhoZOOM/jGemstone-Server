@@ -57,11 +57,7 @@ public class SchedullerTask implements Runnable {
       }
 
       //run every half hour
-      //     if (dateTime.getMinute() == 30) {
-      System.out.println(dateTime.getSecond());
-      if (dateTime.getSecond() == 1) {
-        System.out.println("WIFIFINDER");
-        ////TODO wifi finder
+      if (dateTime.getMinute() == 30) {
         WiFiTracker wiFiTracker = new WiFiTracker(db);
         if (wiFiTracker.isError()) {
           LOGGER.error(wiFiTracker.getErrorMSG());

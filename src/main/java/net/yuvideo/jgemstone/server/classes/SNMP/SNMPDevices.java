@@ -8,6 +8,15 @@ public class SNMPDevices {
   private String signal;
   private String hostAP;
   private String dateUpdated;
+  private String macDEC;
+
+  public String getMacDEC() {
+    return macDEC;
+  }
+
+  public void setMacDEC(String macDEC) {
+    this.macDEC = macDEC;
+  }
 
   public String getHostName() {
     return hostName;

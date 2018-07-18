@@ -14,7 +14,6 @@ import java.sql.Types;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import javax.net.ssl.SSLSocket;
@@ -40,6 +39,7 @@ import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.Zaduzenja;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
+import net.yuvideo.jgemstone.server.classes.ServerServices.WiFiTracker;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import org.apache.log4j.Logger;
@@ -51,7 +51,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.110";
+  private static final String S_VERSION = "0.111";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -3245,7 +3245,6 @@ public class ClientWorker implements Runnable {
 
     //END FIKSNA TELEFONIJA PAKETI
     //IPTV
-    //test
 
     if (rLine.getString("action").equals("check_iptv_is_alive")) {
       StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
@@ -3255,38 +3254,6 @@ public class ClientWorker implements Runnable {
         object.put("ERROR", stalkerRestAPI2.getHostMessage());
       }
       send_object(object);
-      return;
-    }
-
-    if (rLine.getString("action").equals("test_REST_API")) {
-      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
-      //stalkerRestAPI2.changeMac(1, "00:1A:79:00:39:EE");
-      //stalkerRestAPI2.checkUser(rLine.getString("STB_MAC"));
-      //stalkerRestAPI2.changeMac("5", "00:11:33:44:55:11");
-      //jObj = stalkerRestAPI2.getUsersData(1);
-      JSONObject UserObj = new JSONObject();
-      UserObj.put("login", "TEST_IZ_APIJA");
-      UserObj.put("full_name", "API_NAME_TEST");
-      UserObj.put("userID", 299);
-      UserObj.put("tariff_plan", "Apsolutno SVE");
-      UserObj.put("password", "passwordNekiAPI");
-      UserObj.put("STB_MAC", "00:00:00:02:02:03");
-      UserObj.put("status", 0);
-      UserObj.put("end_date",
-          LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-
-      //jObj = stalkerRestAPI2.saveUSER(UserObj);
-      //jObj = stalkerRestAPI2.setEndDate(UserObj.getString("STB_MAC"), UserObj.getString("end_date"));
-      //jObj = stalkerRestAPI2.deleteAccount(UserObj.getString("STB_MAC"));
-      jObj = stalkerRestAPI2.changeMac(UserObj.getInt("userID"), "00:00:00:02:02:03");
-      //boolean chkSUser = stalkerRestAPI2.checkUser(UserObj.getString("STB_MAC"));
-
-      //stalkerRestAPI2.activateStatus(true, UserObj.getString("STB_MAC"));
-      //String a = stalkerRestAPI2.get_end_date(UserObj.getString("STB_MAC"));
-      if (DEBUG > 1)
-        System.out.println("STLKER_API_RESPONSE: " + jObj.toString());
-      jObj = new JSONObject();
-      send_object(jObj);
       return;
     }
 
@@ -4134,6 +4101,19 @@ public class ClientWorker implements Runnable {
       }
       send_object(object);
       return;
+    }
+
+    if (rLine.getString("action").equals("testSNMP")) {
+      JSONObject object = new JSONObject();
+
+      WiFiTracker wiFiTracker = new WiFiTracker(db);
+      if (wiFiTracker.isError()) {
+        object.put("ERROR", wiFiTracker.getErrorMSG());
+      }
+
+      send_object(object);
+
+
     }
 
   }

@@ -21,13 +21,19 @@ public class NetworkDevices {
   private String pass;
   private String url;
   private String opis;
-  private String nas;
   private String accessType;
+  private boolean nas;
 
 
   private ArrayList<NetworkDevices> networkDevicesArrayList;
 
+  public boolean isNas() {
+    return nas;
+  }
 
+  public void setNas(boolean nas) {
+    this.nas = nas;
+  }
 
   public NetworkDevices(database db) {
     this.db = db;
@@ -52,7 +58,7 @@ public class NetworkDevices {
       device.setPass(devObj.getString("pass"));
       device.setUrl(devObj.getString("url"));
       device.setOpis(devObj.getString("opis"));
-      device.setNas(devObj.getString("nas"));
+      device.setNas(devObj.getBoolean("nas"));
       device.setAccessType(devObj.getString("accessType"));
       networkDevicesArrayList.add(device);
     }
@@ -307,14 +313,6 @@ public class NetworkDevices {
 
   public void setOpis(String opis) {
     this.opis = opis;
-  }
-
-  public String getNas() {
-    return nas;
-  }
-
-  public void setNas(String nas) {
-    this.nas = nas;
   }
 
   public String getAccessType() {
