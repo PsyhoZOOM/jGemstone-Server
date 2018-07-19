@@ -21,7 +21,7 @@ public class SchedullerTask implements Runnable {
 
   private static final Logger LOGGER = Logger.getLogger("SCHEDULER_TASK");
   //final int MINUTES = (60 * 1000); //for normal use
-  final int MINUTES = (60 * 100); //for debuging use
+  final int MINUTES = (1000); //for debuging use
   public int timeout;
   public database db;
   public int DEBUG;
@@ -56,8 +56,9 @@ public class SchedullerTask implements Runnable {
         show_clients();
       }
 
+      System.out.println(dateTime.getSecond());
       //run every half hour
-      if (dateTime.getMinute() == 30) {
+      if (dateTime.getSecond() == 1) {
         WiFiTracker wiFiTracker = new WiFiTracker(db);
         if (wiFiTracker.isError()) {
           LOGGER.error(wiFiTracker.getErrorMSG());

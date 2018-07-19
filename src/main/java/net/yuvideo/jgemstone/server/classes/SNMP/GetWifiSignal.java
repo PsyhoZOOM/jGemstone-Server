@@ -111,6 +111,7 @@ public class GetWifiSignal {
         }
       }
       snmp.close();
+      transportMapping.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -195,7 +196,10 @@ public class GetWifiSignal {
       } else {
         LOGGER.error("ERROR TIMEOUT TO:" + target.getAddress());
       }
+      snmp.close();
+      transportMapping.close();
     } catch (IOException e) {
+
       e.printStackTrace();
     }
 

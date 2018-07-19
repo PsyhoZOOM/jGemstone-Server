@@ -77,8 +77,12 @@ public class WiFiTracker {
       ps.setString(1, mac);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
+        ps.close();
+        rs.close();
         return true;
       }
+      rs.close();
+      ps.close();
     } catch (SQLException e) {
       e.printStackTrace();
     }

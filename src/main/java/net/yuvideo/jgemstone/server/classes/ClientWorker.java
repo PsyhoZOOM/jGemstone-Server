@@ -51,7 +51,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.111";
+  private static final String S_VERSION = "0.112";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -4348,6 +4348,8 @@ public class ClientWorker implements Runnable {
       LOGGER.info("CLIENT DISCONNECTED!!");
       try {
         client.close();
+        Bfr.close();
+        Bfw.close();
         return;
       } catch (IOException e) {
         e.printStackTrace();
@@ -4366,6 +4368,8 @@ public class ClientWorker implements Runnable {
 
     try {
       if (keepAlive == false) {
+        Bfw.close();
+        Bfr.close();
         client.close();
       }
     } catch (IOException e) {
