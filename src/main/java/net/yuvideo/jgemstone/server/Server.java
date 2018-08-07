@@ -170,6 +170,7 @@ public class Server {
         cw = new ClientWorker((SSLSocket) serverSocket.accept(), db);
         cw.DEBUG = DEBUG;
         cw.LOGGER = LOGGER;
+        cw.scheduler = st;
         Thread th = new Thread(cw);
         th.start();
         st.add_client(cw);

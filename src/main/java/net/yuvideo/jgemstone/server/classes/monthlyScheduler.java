@@ -85,6 +85,7 @@ public class monthlyScheduler {
       if (psUpdateDebts != null) {
         psUpdateDebts.close();
       }
+      rs.close();
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -98,6 +99,7 @@ public class monthlyScheduler {
       PreparedStatement ps2 = db.conn.prepareStatement(query);
       ps2.setInt(1, id);
       ps2.executeUpdate();
+      ps2.close();
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -116,6 +118,8 @@ public class monthlyScheduler {
       psCheck.setString(3, zaMesec);
       rsCheck = psCheck.executeQuery();
       check = rsCheck.isBeforeFirst();
+      psCheck.close();
+      rsCheck.close();
     } catch (SQLException e) {
       e.printStackTrace();
     }

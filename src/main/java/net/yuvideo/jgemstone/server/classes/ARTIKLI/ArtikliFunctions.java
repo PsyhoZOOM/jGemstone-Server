@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
 /**
@@ -18,9 +19,10 @@ public class ArtikliFunctions {
   private final database db;
   private final String operName;
   DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private boolean haveError = false;
-  private String error = "";
+  private boolean error = false;
+  private String errorMSG = "";
   private JSONObject artikli;
+  private Logger LOGGER = Logger.getLogger("ARTIKLI");
 
   public ArtikliFunctions(database db, String operName) {
     this.operName = operName;
@@ -63,9 +65,10 @@ public class ArtikliFunctions {
       rs.close();
 
     } catch (SQLException e) {
-      haveError = true;
-      error = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return;
     }
 
     //SETTING UNIQUE_ID
@@ -77,9 +80,10 @@ public class ArtikliFunctions {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
-      haveError = true;
-      error = e.getMessage();
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return;
     }
 
     artikliTrackingNew(rLine, lastID);
@@ -117,7 +121,10 @@ public class ArtikliFunctions {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return;
     }
 
   }
@@ -147,9 +154,10 @@ public class ArtikliFunctions {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
-      haveError = true;
-      error = e.getMessage();
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return;
     }
 
   }
@@ -162,21 +170,13 @@ public class ArtikliFunctions {
       ps.setInt(1, id);
       ps.executeUpdate();
       ps.close();
-      haveError = false;
     } catch (SQLException e) {
-      haveError = true;
-      error = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return;
     }
 
-  }
-
-  public boolean isError() {
-    return haveError;
-  }
-
-  public String getErrorMessage() {
-    return error;
   }
 
   public JSONObject getArtikles() {
@@ -217,8 +217,13 @@ public class ArtikliFunctions {
           i++;
         }
       }
+      ps.close();
+      rs.close();
     } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return;
     }
     this.artikli = jsonObject;
   }
@@ -229,12 +234,13 @@ public class ArtikliFunctions {
     PreparedStatement ps;
     ResultSet rs;
     String query;
-    if (rLine.getInt("idMagacin") == 0) {
+    //sve
+    if (rLine.getInt("idMagacin") == 0 && !rLine.has("onlyUsers")) {
       query =
           "SELECT * FROM Artikli WHERE naziv LIKE ? AND proizvodjac LIKE ? AND model LIKE ? AND serijski LIKE ? "
               +
               "AND pon LIKE ? AND mac LIKE ? AND dobavljac LIKE ? AND brDokumenta LIKE ? AND opis LIKE ?";
-    } else if (rLine.getInt("idMagacin") == 1) {
+    } else if (rLine.has("onlyUsers")) {
       query =
           "SELECT * FROM Artikli WHERE naziv LIKE ? AND proizvodjac LIKE ? AND model LIKE ? AND serijski LIKE ? AND pon LIKE ? "
               +
@@ -243,7 +249,7 @@ public class ArtikliFunctions {
       query =
           "SELECT * FROM Artikli WHERE naziv LIKE ? AND proizvodjac LIKE ? AND model LIKE ? AND serijski LIKE ? AND pon LIKE ? "
               +
-              "AND mac LIKE ? AND dobavljac LIKE ? AND brDokumenta LIKE ? AND opis LIKE ? AND idMagacin LIKE ?";
+              "AND mac LIKE ? AND dobavljac LIKE ? AND brDokumenta LIKE ? AND opis LIKE ? AND idMagacin = ?";
     }
 
     try {
@@ -258,15 +264,9 @@ public class ArtikliFunctions {
       ps.setString(8, rLine.getString("brDokumenta") + "%");
       ps.setString(9, rLine.getString("opis") + "%");
 
-      //ako trazimo sve magacine onda je idMagacin == 0 u suprotnom trazimo sve artikle iz magacina idMagacin ;)
-      if (rLine.getInt("idMagacin") == 0) {
-
-        //ako trazimo artikle-opermu korisnika
-      } else if (rLine.getInt("idMagacin") == 1) {
-
-      } else {
+      //ako trazimo magacine (0 su korisnici)
+      if (rLine.getInt("idMagacin") > 0)
         ps.setInt(10, rLine.getInt("idMagacin"));
-      }
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         int i = 0;
@@ -280,9 +280,10 @@ public class ArtikliFunctions {
       ps.close();
       rs.close();
     } catch (SQLException e) {
-      haveError = true;
-      error = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return;
     }
 
     this.artikli = jsonObject;
@@ -305,9 +306,10 @@ public class ArtikliFunctions {
       rs.close();
       ps.close();
     } catch (SQLException e) {
-      this.haveError = true;
-      this.error = e.getMessage();
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return null;
     }
 
     return artikal;
@@ -337,7 +339,10 @@ public class ArtikliFunctions {
       artObj.put("uniqueID", rs.getInt("uniqueID"));
       artObj.put("isUser", rs.getBoolean("isUser"));
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return null;
     }
 
     return artObj;
@@ -348,7 +353,6 @@ public class ArtikliFunctions {
   public void zaduziArtikalUser(JSONObject rLine) {
     JSONObject artikal = getArtikal(rLine.getInt("artikalID"));
     PreparedStatement ps;
-    ResultSet rs;
     String query;
     UsersData user = new UsersData(db, operName);
     JSONObject destUser = user.getUserData(rLine.getInt("destUserID"));
@@ -367,9 +371,10 @@ public class ArtikliFunctions {
         ps.executeUpdate();
         ps.close();
       } catch (SQLException e) {
-        haveError = true;
-        error = e.getMessage();
+        setErrorMSG(e.getMessage());
+        setError(true);
         e.printStackTrace();
+        return;
       }
 
       artikliTrackingUser(rLine, artikal);
@@ -405,9 +410,10 @@ public class ArtikliFunctions {
         ps.executeUpdate();
         ps.close();
       } catch (SQLException e) {
-        error = e.getMessage();
-        haveError = true;
+        setError(true);
+        setErrorMSG(e.getMessage());
         e.printStackTrace();
+        return;
       }
 
       //subdivide source artikal kolicina of dst artikal kolicina :)
@@ -422,9 +428,10 @@ public class ArtikliFunctions {
         ps.executeUpdate();
         ps.close();
       } catch (SQLException e) {
-        error = e.getMessage();
-        haveError = true;
+        setErrorMSG(e.getMessage());
+        setError(true);
         e.printStackTrace();
+        return;
       }
 
       //ARTIKLI TRACKING
@@ -453,9 +460,10 @@ public class ArtikliFunctions {
         ps.executeUpdate();
         ps.close();
       } catch (SQLException e) {
-        this.haveError = true;
-        this.error = e.getMessage();
+        setError(true);
+        setErrorMSG(e.getMessage());
         e.printStackTrace();
+        return;
       }
 
       //ARITKLI TRACKING
@@ -493,8 +501,8 @@ public class ArtikliFunctions {
         ps.executeUpdate();
         ps.close();
       } catch (SQLException e) {
-        error = e.getMessage();
-        haveError = true;
+        setErrorMSG(e.getMessage());
+        setError(true);
         e.printStackTrace();
       }
 
@@ -510,9 +518,10 @@ public class ArtikliFunctions {
         ps.executeUpdate();
         ps.close();
       } catch (SQLException e) {
-        error = e.getMessage();
-        haveError = true;
+        setError(true);
+        setErrorMSG(e.getMessage());
         e.printStackTrace();
+        return;
       }
 
       //ARTIKLI TRACKING
@@ -552,16 +561,16 @@ public class ArtikliFunctions {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
-      haveError = true;
-      error = e.getMessage();
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return;
     }
 
   }
 
 
   private void artikliTrackingUser(JSONObject rLine, JSONObject artikal) {
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     PreparedStatement ps;
     String query =
         "INSERT INTO ArtikliTracking (sourceID, destinationID, source, destination, kolicina ,date, message, isUser, operName, artikalID, artikalNaziv, uniqueID, opis)"
@@ -591,10 +600,51 @@ public class ArtikliFunctions {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
-      haveError = true;
-      error = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return;
     }
+  }
+
+  private void artikliTrackingRazduzenjeUser(int arikalID, int magacinID, int userID,
+      String komentar) {
+    JSONObject artikal = getArtikal(arikalID);
+    JSONObject magacin = getMagacinInfo(magacinID);
+    JSONObject userInfo = getUserInfo(userID);
+    PreparedStatement ps;
+    String query = "INSERT INTO ArtikliTracking (sourceID, destinationID, source, destination, "
+        + "kolicina, date, message, isUser, operName, artikalID, "
+        + "artikalNaziv, uniqueID, opis) VALUES "
+        + "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, arikalID);
+      ps.setInt(2, magacinID);
+      ps.setString(3, userInfo.toString());
+      ps.setString(4, magacin.toString());
+      ps.setInt(5, artikal.getInt("kolicina"));
+      ps.setString(6, LocalDateTime.now().format(dateTimeFormatter).toString());
+      ps.setString(7, String.format("%s razdužio %s sa %s kolicina: %d",
+          getUserInfo(magacinID),
+          magacin.toString(),
+          artikal,
+          artikal.getInt("kolicina")));
+      ps.setBoolean(8, false);
+      ps.setString(9, operName);
+      ps.setInt(10, arikalID);
+      ps.setString(11, artikal.getString("naziv"));
+      ps.setInt(12, artikal.getInt("uniqueID"));
+      ps.setString(13, komentar);
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+      return;
+    }
+
   }
 
 
@@ -618,7 +668,10 @@ public class ArtikliFunctions {
       ps.close();
       rs.close();
     } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return null;
     }
     return object;
   }
@@ -646,9 +699,10 @@ public class ArtikliFunctions {
       ps.close();
       rs.close();
     } catch (SQLException e) {
-      error = e.getMessage();
-      haveError = true;
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return null;
     }
     return obj;
 
@@ -693,12 +747,51 @@ public class ArtikliFunctions {
       ps.close();
       rs.close();
     } catch (SQLException e) {
-      obj.put("ERROR", e.getMessage());
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return null;
     }
 
     return obj;
   }
 
 
+  public void razduziArtikalUser(int artikalID, int magacinID, int userID, String komentar) {
+    String query = "UPDATE Artikli SET isUser=false, idMagacin=? WHERE id=?";
+    PreparedStatement ps;
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, magacinID);
+      ps.setInt(2, artikalID);
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      LOGGER.error(e.getMessage());
+      e.printStackTrace();
+      return;
+    }
+
+    artikliTrackingRazduzenjeUser(artikalID, magacinID, userID, komentar);
+  }
+
+
+  public boolean isError() {
+    return error;
+  }
+
+  public void setError(boolean error) {
+    this.error = error;
+  }
+
+  public String getErrorMSG() {
+    return errorMSG;
+  }
+
+  public void setErrorMSG(String errorMSG) {
+    LOGGER.error(String.format("%s - %s", operName, errorMSG));
+    this.errorMSG = errorMSG;
+  }
 }

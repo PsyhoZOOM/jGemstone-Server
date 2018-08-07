@@ -119,6 +119,7 @@ public class Radius {
           }
         }
       }
+      ps.close();
     } catch (SQLException e) {
       error = true;
       errorMSG = e.getMessage();
@@ -231,6 +232,8 @@ public class Radius {
       ps.setString(4, simulUse);
       ps.executeUpdate();
       error = false;
+
+      ps.close();
     } catch (SQLException e) {
       errorMSG = e.getMessage();
       error = true;
@@ -306,6 +309,7 @@ public class Radius {
       ps.setString(3, "=");
       ps.setString(4, filterID);
       ps.executeUpdate();
+      ps.close();
     } catch (SQLException e) {
       errorMSG = e.getMessage();
       error = true;
@@ -520,6 +524,7 @@ public class Radius {
       ps = db.connRad.prepareStatement(query);
       ps.setString(1, userName);
       ps.executeUpdate();
+      ps.close();
     } catch (SQLException e) {
       setError(true);
       setErrorMSG(e.getMessage());
@@ -542,6 +547,7 @@ public class Radius {
         rs.next();
         calledID = rs.getString("calledstationid");
       }
+      ps.close();
     } catch (SQLException e) {
       setError(true);
       setErrorMSG(e.getMessage());

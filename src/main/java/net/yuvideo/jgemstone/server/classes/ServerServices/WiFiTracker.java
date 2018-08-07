@@ -24,7 +24,14 @@ public class WiFiTracker {
   public WiFiTracker(database db) {
     this.db = db;
     this.networkDevices = getSNMPDevices();
-    updateDevicesToDb(this.networkDevices);
+    Thread wifiTrackThread = new Thread() {
+      @Override
+      public void run() {
+        super.run();
+        updateDevicesToDb(networkDevices);
+      }
+    };
+    wifiTrackThread.start();
   }
 
   private void updateDevicesToDb(ArrayList<NetworkDevices> networkDevices) {
@@ -96,7 +103,6 @@ public class WiFiTracker {
     for (NetworkDevices netDev : netDevArr) {
       if (netDev.getAccessType().equals("SNMP")) {
         networkDevices.add(netDev);
-        System.out.println("ADDED " + netDev.getIp());
       }
     }
     return networkDevices;

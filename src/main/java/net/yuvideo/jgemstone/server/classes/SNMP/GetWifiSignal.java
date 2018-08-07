@@ -93,8 +93,9 @@ public class GetWifiSignal {
         }
 
         if (event.isError()) {
-          LOGGER.error(event.getErrorMessage());
-          setErrorMSG(event.getErrorMessage());
+          String err = String.format("%s - %s - %s", oidWalk, target, event.getErrorMessage());
+          LOGGER.error(err);
+          setErrorMSG(err);
           setError(true);
         }
 
@@ -113,6 +114,9 @@ public class GetWifiSignal {
       snmp.close();
       transportMapping.close();
     } catch (IOException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      LOGGER.error(e.getMessage());
       e.printStackTrace();
     }
 
@@ -134,8 +138,6 @@ public class GetWifiSignal {
 
     if (result != null) {
       for (String signal : result.keySet()) {
-        System.out.println(String
-            .format("MAC: %s, decMAC: %s, SIGNAL: %s", mac, getDecOfMac(mac), result.get(signal)));
         dev = new SNMPDevices();
         dev.setMacDEC(getDecOfMac(mac));
         dev.setMac(mac);
@@ -169,32 +171,30 @@ public class GetWifiSignal {
       pdu.setRequestID(new Integer32());
 
       Snmp snmp = new Snmp(transportMapping);
-      System.out.println("REQUESTING");
       ResponseEvent responseEvent = snmp.get(pdu, communityTarget);
       if (responseEvent != null) {
-        System.out.println("RESPONSE FROM TARGET");
         PDU responsePDU = responseEvent.getResponse();
         if (responsePDU != null) {
           int errorStatus = responsePDU.getErrorStatus();
           int errorIndex = responsePDU.getErrorIndex();
           String errorStratusText = responsePDU.getErrorStatusText();
           if (errorStatus == PDU.noError) {
-            System.out.println(responsePDU.getVariableBindings());
             response = new TreeMap<>();
             for (VariableBinding binding : responsePDU.getVariableBindings()) {
               response.put(binding.getOid().toString(), binding.getVariable().toString());
             }
           } else {
             LOGGER.error(String
-                .format("ERROR Status: %d, Index: %d, Error, %s ", errorStatus, errorIndex,
+                .format("ERROR %s Status: %d, Index: %d, Error, %s ", target, errorStatus,
+                    errorIndex,
                     errorStratusText));
 
           }
         } else {
-          LOGGER.error("ERROR response is NULL");
+          LOGGER.error(String.format("ERROR  %s response is NULL", target));
         }
       } else {
-        LOGGER.error("ERROR TIMEOUT TO:" + target.getAddress());
+        LOGGER.info("ERROR TIMEOUT TO:" + target.getAddress());
       }
       snmp.close();
       transportMapping.close();

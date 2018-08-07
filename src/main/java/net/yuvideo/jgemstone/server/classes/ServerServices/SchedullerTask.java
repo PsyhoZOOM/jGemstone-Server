@@ -12,6 +12,7 @@ import net.yuvideo.jgemstone.server.classes.ClientWorker;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.monthlyScheduler;
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 
 
 /**
@@ -38,6 +39,8 @@ public class SchedullerTask implements Runnable {
   private String query;
   private net.yuvideo.jgemstone.server.classes.monthlyScheduler monthlyScheduler;
   private String info;
+  private JSONObject pppoeInterface = new JSONObject();
+  private boolean first_run = true;
 
 
   public SchedullerTask(int timeout) {
@@ -56,15 +59,17 @@ public class SchedullerTask implements Runnable {
         show_clients();
       }
 
-      System.out.println(dateTime.getSecond());
       //run every half hour
-      if (dateTime.getSecond() == 1) {
+
+      //run wifi tracker
+      if (dateTime.getMinute() == 30 || dateTime.getMinute() == 00 || first_run == true) {
+        first_run = false;
         WiFiTracker wiFiTracker = new WiFiTracker(db);
         if (wiFiTracker.isError()) {
           LOGGER.error(wiFiTracker.getErrorMSG());
         }
-      }
 
+      }
       try {
         Thread.sleep(timeout * MINUTES);
       } catch (InterruptedException e) {
@@ -191,5 +196,13 @@ public class SchedullerTask implements Runnable {
 
   public void add_thread_clientWorker(Thread th) {
     this.threadClientWorker = th;
+  }
+
+  public JSONObject getPppoeInterface() {
+    return pppoeInterface;
+  }
+
+  public void setPppoeInterface(JSONObject pppoeInterface) {
+    this.pppoeInterface = pppoeInterface;
   }
 }

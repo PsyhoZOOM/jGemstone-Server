@@ -32,13 +32,13 @@ import net.yuvideo.jgemstone.server.classes.LOCATION.LocationsClients;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.MIKROTIK_API.MikrotikAPI;
 import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
-import net.yuvideo.jgemstone.server.classes.NAS.NASOnlineUsers;
 import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.Uplate;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.Zaduzenja;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
+import net.yuvideo.jgemstone.server.classes.ServerServices.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.ServerServices.WiFiTracker;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
@@ -51,7 +51,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.112";
+  private static final String S_VERSION = "0.113";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -80,6 +80,7 @@ public class ClientWorker implements Runnable {
   private JSONObject jUsers;
   private int operID;
   private boolean keepAlive;
+  public SchedullerTask scheduler;
 
   public ClientWorker(SSLSocket client, database db) {
     //this.client = client;
@@ -2788,6 +2789,8 @@ public class ClientWorker implements Runnable {
         ps.executeUpdate();
 
         jObj.put("Message", "INTERNET_PAKET_SAVED");
+        ps.close();
+        rs.close();
 
       } catch (SQLException e) {
         jObj.put("ERROR", e.getMessage());
@@ -2826,6 +2829,7 @@ public class ClientWorker implements Runnable {
         ps.setDouble(5, rLine.getDouble("pdv"));
         ps.setInt(6, rLine.getInt("idPaket"));
         ps.executeUpdate();
+        ps.close();
 
         jObj.put("Message", "INTERNET_PAKET_UPDATED");
 
@@ -3637,7 +3641,7 @@ public class ClientWorker implements Runnable {
       ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
       artikliFunctions.addArtikl(rLine);
       if (artikliFunctions.isError()) {
-        jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+        jsonObject.put("ERROR", artikliFunctions.getErrorMSG());
       } else {
         jsonObject.put("MESSAGE", "ARTIKL_ADDED");
       }
@@ -3651,7 +3655,7 @@ public class ClientWorker implements Runnable {
       ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
       artikliFunctions.deleteArtikl(rLine.getInt("id"));
       if (artikliFunctions.isError()) {
-        jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+        jsonObject.put("ERROR", artikliFunctions.getErrorMSG());
       } else {
         jsonObject.put("MESSAGE", "ARTIKLE_DELETED");
       }
@@ -3664,7 +3668,7 @@ public class ClientWorker implements Runnable {
       ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
       artikliFunctions.editArtikl(rLine);
       if (artikliFunctions.isError()) {
-        jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+        jsonObject.put("ERROR", artikliFunctions.getErrorMSG());
       } else {
         jsonObject.put("MESSAGE", "ARTIKLE_EDITED");
       }
@@ -3678,7 +3682,7 @@ public class ClientWorker implements Runnable {
       ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
       artikliFunctions.getAllArtikles();
       if (artikliFunctions.isError()) {
-        jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+        jsonObject.put("ERROR", artikliFunctions.getErrorMSG());
       } else {
         jsonObject = artikliFunctions.getArtikles();
       }
@@ -3702,7 +3706,7 @@ public class ClientWorker implements Runnable {
       ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
       artikliFunctions.zaduziArtikalMag(rLine);
       if (artikliFunctions.isError()) {
-        jObj.put("ERROR", artikliFunctions.getErrorMessage());
+        jObj.put("ERROR", artikliFunctions.getErrorMSG());
       } else {
         jObj.put("INFO", "SUCCESS");
       }
@@ -3714,11 +3718,23 @@ public class ClientWorker implements Runnable {
       ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
       artikliFunctions.zaduziArtikalUser(rLine);
       if (artikliFunctions.isError()) {
-        jsonObject.put("ERROR", artikliFunctions.getErrorMessage());
+        jsonObject.put("ERROR", artikliFunctions.getErrorMSG());
       } else {
         jsonObject.put("INFOP", "SUCCES");
       }
       send_object(jsonObject);
+    }
+
+    if (rLine.getString("action").equals("razduziUserArtikal")) {
+      JSONObject object = new JSONObject();
+      ArtikliFunctions artikliFunctions = new ArtikliFunctions(db, getOperName());
+      artikliFunctions.razduziArtikalUser(rLine.getInt("artikalID"), rLine.getInt("magacinID"),
+          rLine.getInt("userID"), rLine.getString("komentar"));
+      if (artikliFunctions.isError()) {
+        object.put("ERROR", artikliFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
     }
 
     if (rLine.getString("action").equals("editMagacin")) {
@@ -4037,23 +4053,6 @@ public class ClientWorker implements Runnable {
       return;
     }
 
-    if (rLine.getString("action").equals("getOnlineUsers")) {
-      NASOnlineUsers nasOnlineUsers = new NASOnlineUsers(db);
-      JSONObject onlineUsers = nasOnlineUsers.getOnlineUsers();
-
-      send_object(onlineUsers);
-      return;
-
-    }
-
-    if (rLine.getString("action").equals("checkUsersOnline")) {
-      JSONObject object = new JSONObject();
-      MikrotikAPI mikrotikAPI = new MikrotikAPI(db);
-      object = mikrotikAPI.checkUsersOnline(rLine.getString("username"));
-      send_object(object);
-      return;
-    }
-
     if (rLine.getString("action").equals("getUserTrafficReport")) {
       JSONObject object = new JSONObject();
       Radius radius = new Radius(db);
@@ -4066,21 +4065,19 @@ public class ClientWorker implements Runnable {
 
     }
 
-    if (rLine.getString("action").equals("getUsersOnlineStat")) {
-      JSONObject object = new JSONObject();
-      MikrotikAPI mikrotikAPI = new MikrotikAPI();
-      object = mikrotikAPI
-          .getUserStats(rLine.getString("ip"), "apiUser", "apiPass", rLine.getString("nasIP"));
-      send_object(object);
+    //MIKROTIK API
+    if (rLine.getString("action").equals("mtAPITest")) {
+      MikrotikAPI api = new MikrotikAPI(db);
+      JSONObject allUsers = api.getAllUsers();
+      send_object(allUsers);
       return;
     }
 
-    if (rLine.getString("action").equals("customMTAPICommand")) {
-      JSONObject object;
-      MikrotikAPI mikrotikAPI = new MikrotikAPI();
-      object = mikrotikAPI.customCommand(rLine.getString("cmd"), rLine.getString("nasIP"),
-          rLine.getString("user"), rLine.getString("pass"));
-      send_object(object);
+    if (rLine.getString("action").equals("getMikrotikOnlineUsersSum")) {
+      MikrotikAPI api = new MikrotikAPI(db);
+      JSONObject onlineUsers = new JSONObject();
+      onlineUsers.put("usersStatus", "15/5485");
+      send_object(onlineUsers);
       return;
     }
 
