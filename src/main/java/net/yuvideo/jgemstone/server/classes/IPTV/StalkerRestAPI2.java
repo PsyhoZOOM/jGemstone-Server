@@ -78,7 +78,7 @@ public class StalkerRestAPI2 {
     AuthStringENC = Base64.getEncoder().encodeToString(AuthString.getBytes());
 
     clientConfig = new DefaultClientConfig();
-    clientConfig.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
+    //clientConfig.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
 
     apiClient = Client.create(clientConfig);
     try {
