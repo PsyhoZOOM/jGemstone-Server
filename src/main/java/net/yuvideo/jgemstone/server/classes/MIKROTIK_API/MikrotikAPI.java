@@ -138,8 +138,6 @@ public class MikrotikAPI {
         continue;
       }
 
-      obj.put("nasIP", mtDev.getIp());
-      obj.put("nasName", mtDev.getName());
       JSONObject object = new JSONObject();
       int i = 0;
 

@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import javax.net.ssl.SSLSocket;
+import me.legrange.mikrotik.MikrotikApiException;
 import net.yuvideo.jgemstone.server.classes.ARTIKLI.ArtikliFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.BoxFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.addBoxService;
@@ -4071,6 +4072,15 @@ public class ClientWorker implements Runnable {
       JSONObject allUsers = api.getAllUsers();
       send_object(allUsers);
       return;
+    }
+
+    if(rLine.getString("action").equals("getOnlineUsers")){
+      JSONObject object = new JSONObject();
+      MikrotikAPI mikrotikAPI = new MikrotikAPI(db);
+      object = mikrotikAPI.getAllUsers();
+      send_object(object);
+      return;
+
     }
 
     if (rLine.getString("action").equals("getMikrotikOnlineUsersSum")) {
