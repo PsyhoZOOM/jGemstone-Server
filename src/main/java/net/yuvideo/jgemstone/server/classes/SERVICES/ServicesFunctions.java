@@ -835,7 +835,7 @@ public class ServicesFunctions {
           stalkerRestAPI2.activateStatus(true, rs.getString("IPTV_MAC"));
         }
         if (rs.getString("paketType").contains("NET")) {
-          Radius radius = new Radius(db);
+          Radius radius = new Radius(db, operName);
           radius.activateUser(rs.getString("UserName"));
           if (radius.isError()) {
             setErrorMSG(radius.getErrorMSG());

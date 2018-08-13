@@ -3,6 +3,7 @@ package net.yuvideo.jgemstone.server.classes.USERS;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
@@ -19,6 +20,29 @@ public class UsersData {
   public UsersData(database db, String operName) {
     this.db = db;
   }
+
+  public int getUserIDOfRadiusUserName(String userName) {
+    int userid = 0;
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT userID FROM servicesUser WHERE UserName=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, userName);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        userid = rs.getInt("userID");
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return userid;
+  }
+
 
   public JSONObject getUserData(int userID) {
     JSONObject user = new JSONObject();
@@ -48,7 +72,11 @@ public class UsersData {
         user.put("datumKreiranja", rs.getString("datumKreiranja"));
         user.put("operater", rs.getString("operater"));
         user.put("jMesto", rs.getString("jMesto"));
+        MestaFuncitons mestaFuncitons = new MestaFuncitons(db);
+        user.put("jMestoNaziv", mestaFuncitons.getNazivMesta(rs.getString("jMesto")));
         user.put("jAdresa", rs.getString("jAdresa"));
+        user.put("jAdresaNaziv",
+            mestaFuncitons.getNazivAdrese(rs.getString("jMesto"), rs.getString("jAdresa")));
         user.put("jAdresaBroj", rs.getString("jAdresaBroj"));
         user.put("jBroj", rs.getString("jBroj"));
         user.put("firma", rs.getBoolean("firma"));
@@ -62,6 +90,7 @@ public class UsersData {
         user.put("fax", rs.getString("fax"));
         user.put("adresaFirme", rs.getString("adresaFirme"));
         user.put("mestoFirme",  rs.getString("mestoFirme"));
+        user.put("oprema", getUserOprema(userID));
 
       }
     } catch (SQLException e) {

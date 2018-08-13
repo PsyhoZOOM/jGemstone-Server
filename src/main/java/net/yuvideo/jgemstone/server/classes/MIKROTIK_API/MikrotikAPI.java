@@ -10,12 +10,14 @@ import javax.net.SocketFactory;
 import me.legrange.mikrotik.ApiConnection;
 import me.legrange.mikrotik.ApiConnectionException;
 import me.legrange.mikrotik.MikrotikApiException;
+import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
 public class MikrotikAPI {
 
+  private String operName;
   private database db = null;
 
   private int id;
@@ -42,8 +44,9 @@ public class MikrotikAPI {
   private ApiConnection apiConnection;
 
 
-  public MikrotikAPI(database db) {
+  public MikrotikAPI(database db, String operName) {
     this.db = db;
+    this.operName = operName;
     PreparedStatement ps;
     ResultSet rs;
     String query = "SELECT * FROM networkDevices WHERE type='Mikrotik' and accessType='API'";
@@ -129,6 +132,29 @@ public class MikrotikAPI {
     return mtDevice;
   }
 
+
+  public int getOnlineUsersCount() {
+    String cmd = "/interface/pppoe-server/print";
+    int count = 0;
+    for (MikrotikAPI mtDev : mikrotikAPIArrayList) {
+      login(mtDev);
+      if (!apiConnection.isConnected()) {
+        continue;
+      }
+      try {
+        List<Map<String, String>> execute = apiConnection.execute(cmd);
+        for (Map<String, String> exe : execute) {
+          count++;
+        }
+      } catch (MikrotikApiException e) {
+        e.printStackTrace();
+      }
+      logout(mtDev);
+    }
+
+    return count;
+  }
+
   public JSONObject getAllUsers() {
     String cmd = "/interface/pppoe-server/print detail";
     JSONObject obj = new JSONObject();
@@ -152,6 +178,10 @@ public class MikrotikAPI {
           object.put("remoteMAC", response.get("remote-address"));
           object.put("nasIP", mtDev.getIp());
           object.put("nasName", mtDev.getName());
+          UsersData usersData = new UsersData(db, getOperName());
+          int user = usersData.getUserIDOfRadiusUserName(response.get("user"));
+          object.put("userID", user);
+
           obj.put(String.valueOf(i), object);
           i++;
 
@@ -289,5 +319,13 @@ public class MikrotikAPI {
 
   public void setApiConnection(ApiConnection apiConnection) {
     this.apiConnection = apiConnection;
+  }
+
+  public String getOperName() {
+    return operName;
+  }
+
+  public void setOperName(String operName) {
+    this.operName = operName;
   }
 }

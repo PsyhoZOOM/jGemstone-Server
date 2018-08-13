@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
@@ -18,12 +19,14 @@ public class Radius {
   private final DateTimeFormatter dtfRadreply = DateTimeFormatter
       .ofPattern("yyyy-MM-dd'T'HH:mm:ss");
   private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private String operName;
 
   private String errorMSG;
   private boolean error = false;
 
-  public Radius(database db) {
+  public Radius(database db, String operName) {
     this.db = db;
+    this.operName = operName;
   }
 
   public JSONObject getUsers(String userName) {
@@ -612,6 +615,74 @@ public class Radius {
     return userTrafficObj;
   }
 
+  public JSONObject getRadiusOnlineLOG(int rowCount) {
+    JSONObject object = new JSONObject();
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM radpostauth GROUP BY authdate DESC LIMIT ?";
+    int i = 0;
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setInt(1, rowCount);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        while (rs.next()) {
+          JSONObject onlineLog = new JSONObject();
+          onlineLog.put("id", rs.getInt("id"));
+          onlineLog.put("username", rs.getString("username"));
+          onlineLog.put("reply", rs.getString("reply"));
+          onlineLog.put("authdate", rs.getString("authdate"));
+          onlineLog.put("clientid", rs.getString("clientid"));
+          onlineLog.put("nas", rs.getString("nas"));
+          object.put(String.valueOf(i), onlineLog);
+          i++;
+
+        }
+      }
+
+      rs.close();
+      ps.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+    return object;
+  }
+
+  public JSONObject searchAllusers() {
+    JSONObject usersObj = new JSONObject();
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM radcheck WHERE attribute = 'Expiration'";
+
+    try {
+      ps = db.connRad.prepareStatement(query);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        int i = 0;
+        while (rs.next()) {
+          UsersData usersData = new UsersData(db, getOperName());
+          JSONObject userObj;
+          int userID = usersData.getUserIDOfRadiusUserName(rs.getString("username"));
+          userObj = usersData.getUserData(userID);
+          if (userObj.isNull("id")) {
+            continue;
+          }
+          userObj.put("endDate", rs.getString("value"));
+          userObj.put("username", rs.getString("username"));
+          usersObj.put(String.valueOf(i), userObj);
+          i++;
+        }
+      }
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+    return usersObj;
+  }
+
   public String getErrorMSG() {
     return errorMSG;
   }
@@ -627,5 +698,14 @@ public class Radius {
   public void setError(boolean error) {
     this.error = error;
   }
+
+  public String getOperName() {
+    return operName;
+  }
+
+  public void setOperName(String operName) {
+    this.operName = operName;
+  }
+
 
 }

@@ -17,7 +17,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import javax.net.ssl.SSLSocket;
-import me.legrange.mikrotik.MikrotikApiException;
 import net.yuvideo.jgemstone.server.classes.ARTIKLI.ArtikliFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.BoxFunctions;
 import net.yuvideo.jgemstone.server.classes.BOX.addBoxService;
@@ -38,11 +37,13 @@ import net.yuvideo.jgemstone.server.classes.RACUNI.Uplate;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.Zaduzenja;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
+import net.yuvideo.jgemstone.server.classes.RADIUS.TrafficReports;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.ServerServices.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.ServerServices.WiFiTracker;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
+import net.yuvideo.jgemstone.server.classes.WiFi.WiFiData;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
@@ -953,7 +954,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getRadiusServiceData")) {
 
-      Radius radius = new Radius(db);
+      Radius radius = new Radius(db, getOperName());
       JSONObject data = radius.getRadReplyData(rLine.getString("username"));
 
       ServicesFunctions servicesFunctions = new ServicesFunctions(db);
@@ -968,7 +969,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("changeRadiusPass")) {
       JSONObject object = new JSONObject();
-      Radius radius = new Radius(db);
+      Radius radius = new Radius(db, getOperName());
       object = radius.changeUserPass(rLine.getString("username"), rLine.getString("pass"));
       send_object(object);
       return;
@@ -976,7 +977,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("changeRadiusData")) {
       JSONObject object = new JSONObject();
-      Radius radius = new Radius(db);
+      Radius radius = new Radius(db, getOperName());
       object = radius.changeRadReplyData(rLine);
       if (radius.isError()) {
         object.put("ERROR", radius.getErrorMSG());
@@ -4056,7 +4057,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getUserTrafficReport")) {
       JSONObject object = new JSONObject();
-      Radius radius = new Radius(db);
+      Radius radius = new Radius(db, getOperName());
       object = radius.getTrafficReport(rLine.getString("username"));
       if (radius.isError()) {
         object.put("ERROR", radius.getErrorMSG());
@@ -4068,39 +4069,69 @@ public class ClientWorker implements Runnable {
 
     //MIKROTIK API
     if (rLine.getString("action").equals("mtAPITest")) {
-      MikrotikAPI api = new MikrotikAPI(db);
+      MikrotikAPI api = new MikrotikAPI(db, getOperName());
       JSONObject allUsers = api.getAllUsers();
       send_object(allUsers);
       return;
     }
 
+    if (rLine.getString("action").equals("getOnlineUsersCount")) {
+      JSONObject object = new JSONObject();
+      MikrotikAPI mtApi = new MikrotikAPI(db, getOperName());
+      int onlineUsersCount = mtApi.getOnlineUsersCount();
+      object.put("count", onlineUsersCount);
+      send_object(object);
+      return;
+    }
+
     if(rLine.getString("action").equals("getOnlineUsers")){
       JSONObject object = new JSONObject();
-      MikrotikAPI mikrotikAPI = new MikrotikAPI(db);
+      MikrotikAPI mikrotikAPI = new MikrotikAPI(db, getOperName());
       object = mikrotikAPI.getAllUsers();
       send_object(object);
       return;
 
     }
 
-    if (rLine.getString("action").equals("getMikrotikOnlineUsersSum")) {
-      MikrotikAPI api = new MikrotikAPI(db);
-      JSONObject onlineUsers = new JSONObject();
-      onlineUsers.put("usersStatus", "15/5485");
-      send_object(onlineUsers);
-      return;
-    }
-
     if (rLine.getString("action").equals("getRadReplyUsers")) {
-      Radius radReplyUsers = new Radius(db);
+      Radius radReplyUsers = new Radius(db, getOperName());
       JSONObject userSearch = radReplyUsers.getUsers(rLine.getString("userSearch"));
       send_object(userSearch);
       return;
     }
 
+    if (rLine.getString("action").equals("getRadiusOnlineLOG")) {
+      JSONObject object = new JSONObject();
+      Radius radius = new Radius(db, getOperName());
+      int rowCount = 100;
+      if (rLine.has("rowCount")) {
+        rowCount = rLine.getInt("rowCount");
+      }
+
+      object = radius.getRadiusOnlineLOG(rowCount);
+      if (radius.isError()) {
+        object.put("ERROR", radius.getErrorMSG());
+      }
+      send_object(object);
+
+      return;
+    }
+
+    if (rLine.getString("action").equals("searchRadiusUsers")) {
+      JSONObject object = new JSONObject();
+      Radius radius = new Radius(db, getOperName());
+      object = radius.searchAllusers();
+      if (radius.isError()) {
+        object.put("ERROR", radius.getErrorMSG());
+      }
+      send_object(object);
+      return;
+
+    }
+
     if (rLine.getString("action").equals("getCalledID")) {
       JSONObject object = new JSONObject();
-      Radius radius = new Radius(db);
+      Radius radius = new Radius(db, getOperName());
       String calledID = radius.getCalledID(rLine.getString("IP"), rLine.getString("sessionID"));
       object.put("calledID", calledID);
       if (radius.isError()) {
@@ -4119,8 +4150,36 @@ public class ClientWorker implements Runnable {
       }
 
       send_object(object);
+    }
 
+    if (rLine.getString("action").equals("getWifiSignalData")) {
+      JSONObject object = new JSONObject();
 
+      WiFiData wiFiData = new WiFiData(db);
+      object = wiFiData.getWifiData();
+      if (wiFiData.isError()) {
+        object.put("ERROR", wiFiData.getErrorMSG());
+      }
+      System.out.println(object);
+
+      send_object(object);
+      return;
+
+    }
+
+    if (rLine.getString("action").equals("getTrafficReports")) {
+      JSONObject object = new JSONObject();
+
+      TrafficReports trafficReports = new TrafficReports(db);
+      object = trafficReports
+          .getTrafficeReports(rLine.getInt("count"), rLine.getString("startTime"),
+              rLine.getString("stopTime"));
+      if (trafficReports.isError()) {
+        object.put("ERROR", trafficReports.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
     }
 
   }
