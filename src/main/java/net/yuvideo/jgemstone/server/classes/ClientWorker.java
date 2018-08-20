@@ -37,7 +37,6 @@ import net.yuvideo.jgemstone.server.classes.RACUNI.Uplate;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.Zaduzenja;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
-import net.yuvideo.jgemstone.server.classes.RADIUS.TrafficReports;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.ServerServices.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.ServerServices.WiFiTracker;
@@ -53,7 +52,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.113";
+  private static final String S_VERSION = "0.114";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -933,7 +932,8 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getServiceDetail")) {
       ServicesFunctions servicesFunctions = new ServicesFunctions(db);
-      JSONObject serviceDetail = servicesFunctions.getServiceDetail(rLine.getInt("serviceID"));
+      JSONObject serviceDetail = servicesFunctions
+          .getServiceDetail(rLine.getInt("serviceID"), getOperName());
       send_object(serviceDetail);
       return;
     }
@@ -958,7 +958,8 @@ public class ClientWorker implements Runnable {
       JSONObject data = radius.getRadReplyData(rLine.getString("username"));
 
       ServicesFunctions servicesFunctions = new ServicesFunctions(db);
-      JSONObject serviceDetail = servicesFunctions.getServiceDetail(rLine.getInt("serviceID"));
+      JSONObject serviceDetail = servicesFunctions
+          .getServiceDetail(rLine.getInt("serviceID"), getOperName());
       data.put("nazivPaketa", serviceDetail.getString("nazivPaketa"));
       data.put("paketType", serviceDetail.getString("paketType"));
       data.put("endDateService", serviceDetail.getString("endDateService"));
@@ -4058,7 +4059,9 @@ public class ClientWorker implements Runnable {
     if (rLine.getString("action").equals("getUserTrafficReport")) {
       JSONObject object = new JSONObject();
       Radius radius = new Radius(db, getOperName());
-      object = radius.getTrafficReport(rLine.getString("username"));
+      object = radius
+          .getUserTrafficReport(rLine.getString("username"), rLine.getString("startTime"),
+              rLine.getString("stopTime"));
       if (radius.isError()) {
         object.put("ERROR", radius.getErrorMSG());
       }
@@ -4084,12 +4087,52 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("pingAddressMT")) {
+      JSONObject object;
+      MikrotikAPI mtApi = new MikrotikAPI(db, getOperName());
+      object = mtApi.pingMtUser(rLine.getString("nasIP"), rLine.getString("ipAddress"));
+      if (mtApi.isError()) {
+        object.put("ERROR", mtApi.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("bwMonitor")) {
+      JSONObject object;
+      MikrotikAPI mtApi = new MikrotikAPI(db, getOperName());
+      object = mtApi.bwMonitor(rLine.getString("nasIP"), rLine.getString("interfaceName"));
+      if (mtApi.isError()) {
+        object.put("ERROR", mtApi.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
     if(rLine.getString("action").equals("getOnlineUsers")){
       JSONObject object = new JSONObject();
       MikrotikAPI mikrotikAPI = new MikrotikAPI(db, getOperName());
       object = mikrotikAPI.getAllUsers();
       send_object(object);
       return;
+
+    }
+
+    if (rLine.getString("action").equals("checkUsersOnline")) {
+      JSONObject object = new JSONObject();
+      MikrotikAPI mtApi = new MikrotikAPI(db, getOperName());
+      boolean userIsOnline = mtApi.checkUserIsOnline(rLine.getString("username"));
+      object.put("userOnline", userIsOnline);
+      if (userIsOnline) {
+        object.put("userOnlineStatus", mtApi.getOnlineUserData(rLine.getString("username")));
+      }
+      if (mtApi.isError()) {
+        object.put("ERROR", mtApi.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+
 
     }
 
@@ -4170,12 +4213,12 @@ public class ClientWorker implements Runnable {
     if (rLine.getString("action").equals("getTrafficReports")) {
       JSONObject object = new JSONObject();
 
-      TrafficReports trafficReports = new TrafficReports(db);
-      object = trafficReports
-          .getTrafficeReports(rLine.getInt("count"), rLine.getString("startTime"),
+      Radius radius = new Radius(db, getOperName());
+      object = radius
+          .getTrafficeReports(rLine.getString("startTime"),
               rLine.getString("stopTime"));
-      if (trafficReports.isError()) {
-        object.put("ERROR", trafficReports.getErrorMSG());
+      if (radius.isError()) {
+        object.put("ERROR", radius.getErrorMSG());
       }
 
       send_object(object);

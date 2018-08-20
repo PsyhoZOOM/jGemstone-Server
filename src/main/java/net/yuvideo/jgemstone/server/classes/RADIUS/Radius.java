@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
@@ -560,15 +561,59 @@ public class Radius {
     return calledID;
   }
 
-  public JSONObject getTrafficReport(String username) {
+
+  public JSONObject getTrafficeReports(String startTime, String stopTime) {
+    JSONObject reports = new JSONObject();
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM radacct  WHERE acctstarttime  >= ? AND acctstoptime <= ? ORDER BY radacctid DESC";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, startTime);
+      ps.setString(2, stopTime);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        int i = 0;
+        while (rs.next()) {
+          JSONObject result = new JSONObject();
+          result.put("id", rs.getInt("radacctid"));
+          result.put("username", rs.getString("username"));
+          result.put("nasIP", rs.getString("nasipaddress"));
+          result.put("startTime", rs.getString("acctstarttime"));
+          result.put("stopTime", rs.getString("acctstoptime"));
+          result.put("onlineTime", rs.getString("acctsessiontime"));
+          result.put("inputOctets", rs.getLong("acctinputoctets"));
+          result.put("outputOctets", rs.getLong("acctoutputoctets"));
+          result.put("service", rs.getString("calledstationid"));
+          result.put("callingStationID", rs.getString("callingstationid"));
+          result.put("ipAddress", rs.getString("framedipaddress"));
+          result.put("terminateCause", rs.getString("acctterminatecause"));
+          reports.put(String.valueOf(i), result);
+          i++;
+        }
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+
+      e.printStackTrace();
+    }
+
+    return reports;
+  }
+
+  public JSONObject getUserTrafficReport(String username, String startTime, String stopTime) {
     JSONObject userTrafficObj = new JSONObject();
     PreparedStatement ps;
     ResultSet rs;
-    String query = "SELECT * FROM radacct WHERE username=? order by radacctid desc limit ?";
+    String query = "SELECT * FROM radacct WHERE username=? AND acctstarttime >= ? AND acctstoptime <= ? ORDER BY radacctid DESC ";
     try {
       ps = db.connRad.prepareStatement(query);
       ps.setString(1, username);
-      ps.setInt(2, 10);
+      ps.setString(2, startTime);
+      ps.setString(3, stopTime);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         int i = 0;
@@ -619,7 +664,7 @@ public class Radius {
     JSONObject object = new JSONObject();
     PreparedStatement ps;
     ResultSet rs;
-    String query = "SELECT * FROM radpostauth GROUP BY authdate DESC LIMIT ?";
+    String query = "SELECT * FROM radpostauth ORDER BY authdate DESC LIMIT ?";
     int i = 0;
     try {
       ps = db.connRad.prepareStatement(query);
@@ -630,7 +675,8 @@ public class Radius {
           JSONObject onlineLog = new JSONObject();
           onlineLog.put("id", rs.getInt("id"));
           onlineLog.put("username", rs.getString("username"));
-          onlineLog.put("reply", rs.getString("reply"));
+          onlineLog
+              .put("reply", checkReplyMessage(rs.getString("reply"), rs.getString("username")));
           onlineLog.put("authdate", rs.getString("authdate"));
           onlineLog.put("clientid", rs.getString("clientid"));
           onlineLog.put("nas", rs.getString("nas"));
@@ -648,6 +694,55 @@ public class Radius {
       e.printStackTrace();
     }
     return object;
+  }
+
+  private String checkReplyMessage(String reply, String userName) {
+    if (reply.trim().equals("Access-Accept")) {
+      return "Korisnik ulogovan";
+    } else if (reply.contains("Access-Reject")) {
+      boolean userExist = NETFunctions.check_userName_busy(userName, db);
+      if (!userExist) {
+        return "Korisničko ime ne postoji";
+      } else {
+        boolean userActive = checkIsUserActive(userName);
+        if (!userActive) {
+          return "Korisnik nije aktiva";
+        }
+      }
+    } else if (reply.contains("expired")) {
+      return "Uplata je istekla";
+    } else if (reply.contains("already logged in")) {
+      return "Korisnik je već ulogovan";
+    } else if (reply.contains("empty password")) {
+      return "Logovanje bez passworda";
+    } else if (reply.contains("MD5 password check failed")) {
+      return "Pogrešan password";
+    }
+
+    return reply;
+  }
+
+  private boolean checkIsUserActive(String userName) {
+    boolean active = false;
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT value FROM radcheck WHERE username=? and attribute='Auth-Type'";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, userName);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        if (rs.getString("value").equals("Accept")) {
+          active = true;
+        }
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return active;
   }
 
   public JSONObject searchAllusers() {
@@ -675,6 +770,8 @@ public class Radius {
           i++;
         }
       }
+      ps.close();
+      rs.close();
     } catch (SQLException e) {
       setErrorMSG(e.getMessage());
       setError(true);

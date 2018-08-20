@@ -105,6 +105,7 @@ public class MikrotikAPI {
           .connect(SocketFactory.getDefault(), mtDevice.getIp(), API_PORT, API_TIMEOUT);
       apiConnection.setTimeout(API_TIMEOUT);
       apiConnection.login(mtDevice.getUserName(), mtDevice.getPass());
+      isConnected = apiConnection.isConnected();
     } catch (MikrotikApiException e) {
       e.printStackTrace();
       LOGGER.info(String.format("IP: %s - %s", ip, e.getMessage()));
@@ -155,6 +156,64 @@ public class MikrotikAPI {
     return count;
   }
 
+  public JSONObject pingMtUser(String mtIP, String ipAddress) {
+    JSONObject object = new JSONObject();
+    String cmd = String.format("/ping count=3 address=%s", ipAddress);
+    MikrotikAPI mtDev = getMtDev(mtIP);
+    login(mtDev);
+    try {
+      List<Map<String, String>> execute = apiConnection.execute(cmd);
+      for (Map<String, String> response : execute) {
+        System.out.println(response);
+        object.put("host", response.get("host"));
+        object.put("packet-loss", response.get("packet-loss"));
+        object.put("send", response.get("sent"));
+        object.put("received", response.get("received"));
+        object.put("time", response.get("time"));
+      }
+    } catch (MikrotikApiException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+    login(mtDev);
+
+    return object;
+  }
+
+  public JSONObject bwMonitor(String mtIP, String interfaceName) {
+    JSONObject object = new JSONObject();
+    String cmd = String.format("/interface/monitor-traffic \"%s\" once ");
+    MikrotikAPI mtDev = getMtDev(mtIP);
+    login(mtDev);
+    try {
+      List<Map<String, String>> execute = apiConnection.execute(cmd);
+      for (Map<String, String> response : execute) {
+        object.put("rx-packets-per-second", response.get("rx-packets-per-second"));
+        object.put("rx-bits-per-second", response.get("rx-bits-per-second"));
+        object.put("fp-rx-packets-per-second", response.get("fp-rx-packets-per-second"));
+        object.put("fp-rx-bits-per-second", response.get("fp-rx-bits-per-second"));
+        object.put("rx-drops-per-second", response.get("rx-drops-per-second"));
+        object.put("rx-errors-per-second:", response.get("rx-errors-per-second:"));
+        object.put(" tx-packets-per-second", response.get(" tx-packets-per-second"));
+        object.put("tx-bits-per-second", response.get("tx-bits-per-second"));
+        object.put("fp-tx-packets-per-second:", response.get("fp-tx-packets-per-second:"));
+        object.put("fp-tx-bits-per-second", response.get("fp-tx-bits-per-second"));
+        object.put("tx-drops-per-second", response.get("tx-drops-per-second"));
+        object.put("", response.get(""));
+        object.put("tx-queue-drops-per-second", response.get("tx-queue-drops-per-second"));
+        object.put("tx-errors-per-second", response.get("tx-errors-per-second"));
+      }
+    } catch (MikrotikApiException e) {
+      e.printStackTrace();
+    }
+
+    logout(mtDev);
+
+    return object;
+
+  }
+
   public JSONObject getAllUsers() {
     String cmd = "/interface/pppoe-server/print detail";
     JSONObject obj = new JSONObject();
@@ -179,8 +238,8 @@ public class MikrotikAPI {
           object.put("nasIP", mtDev.getIp());
           object.put("nasName", mtDev.getName());
           UsersData usersData = new UsersData(db, getOperName());
-          int user = usersData.getUserIDOfRadiusUserName(response.get("user"));
-          object.put("userID", user);
+          int userid = usersData.getUserIDOfRadiusUserName(response.get("user"));
+          object.put("userID", userid);
 
           obj.put(String.valueOf(i), object);
           i++;
@@ -191,11 +250,114 @@ public class MikrotikAPI {
       }
       logout(mtDev);
     }
-    System.out.println(obj);
     return obj;
   }
 
+  public boolean checkUserIsOnline(String username) {
+    JSONObject allUsers = getAllUsers();
+    for (int i = 0; i < allUsers.length(); i++) {
+      JSONObject user = allUsers.getJSONObject(String.valueOf(i));
+      if (user.getString("user").equals(username)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
+
+  public JSONObject getInterfaceData(String nasIP, String interfaceName) {
+    JSONObject object = new JSONObject();
+    MikrotikAPI mtDev = getMtDev(nasIP);
+    login(mtDev);
+
+    //ako nismo uspeli da se ulogujemo vracamo empty object
+    if (!apiConnection.isConnected()) {
+      return object;
+    }
+
+    //gettting interface data ;)
+
+    String cmd = String.format("/interface/print stats-detail where name=\"%s\"", interfaceName);
+    try {
+      List<Map<String, String>> execute = apiConnection.execute(cmd);
+      for (Map<String, String> response : execute) {
+        object.put("interfaceName", interfaceName);
+        object.put("nasIP", nasIP);
+        object.put("nasName", mtDev.getName());
+        object.put("lastLinkUp", response.get("last-link-up-time"));
+        object.put("rxBytes", response.get("rx-byte"));
+        object.put("txBytes", response.get("tx-byte"));
+      }
+    } catch (MikrotikApiException e) {
+      LOGGER.error(e.getMessage());
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+
+    cmd = String.format("/ip/address/print where interface=\"%s\"", interfaceName);
+    try {
+      List<Map<String, String>> execute = apiConnection.execute(cmd);
+      for (Map<String, String> response : execute) {
+        object.put("ipAddress", response.get("network"));
+      }
+
+    } catch (MikrotikApiException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      LOGGER.error(e.getMessage());
+      e.printStackTrace();
+    }
+
+    cmd = String.format("/interface/pppoe-server/print detail where name=\"%s\"", interfaceName);
+    try {
+      List<Map<String, String>> execute = apiConnection.execute(cmd);
+      for (Map<String, String> response : execute) {
+        object.put("user", response.get("user"));
+        object.put("service", response.get("service"));
+        object.put("MAC", response.get("remote-address"));
+        object.put("upTime", response.get("uptime"));
+      }
+
+    } catch (MikrotikApiException e) {
+      e.printStackTrace();
+    }
+
+    cmd = String.format("/ppp/active/print detail where caller-id=\"%s\"", object.getString("MAC"));
+    try {
+      List<Map<String, String>> execute = apiConnection.execute(cmd);
+      for (Map<String, String> response : execute) {
+        object.put("sessionID", response.get("session-id"));
+      }
+    } catch (MikrotikApiException e) {
+      e.printStackTrace();
+    }
+
+    logout(mtDev);
+
+    return object;
+
+  }
+
+
+  public JSONObject getOnlineUserData(String username) {
+    JSONObject object = new JSONObject();
+    JSONObject allUsers = getAllUsers();
+    for (int i = 0; i < allUsers.length(); i++) {
+      JSONObject user = allUsers.getJSONObject(String.valueOf(i));
+      if (user.getString("user").equals(username)) {
+        String nasIP = user.getString("nasIP");
+        String interfaceName = user.getString("interfaceName");
+
+        JSONObject userData = getInterfaceData(nasIP, interfaceName);
+        object.put(interfaceName, userData);
+
+      }
+
+    }
+
+    return object;
+  }
   public int getId() {
     return id;
   }
@@ -328,4 +490,6 @@ public class MikrotikAPI {
   public void setOperName(String operName) {
     this.operName = operName;
   }
+
+
 }

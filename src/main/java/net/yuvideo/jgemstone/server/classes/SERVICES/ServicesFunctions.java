@@ -1239,7 +1239,7 @@ public class ServicesFunctions {
     return serviceData.getData(serviceID);
   }
 
-  public JSONObject getServiceDetail(int serviceID) {
+  public JSONObject getServiceDetail(int serviceID, String operName) {
     JSONObject object = new JSONObject();
     PreparedStatement ps;
     ResultSet rs;
@@ -1262,6 +1262,11 @@ public class ServicesFunctions {
 
         }
         if (paketType.contains("NET")) {
+          Radius radius = new Radius(db, operName);
+          JSONObject radReplyData = radius.getRadReplyData(rs.getString("UserName"));
+          for (String key : radReplyData.keySet()) {
+            object.put(key, radReplyData.getString(key));
+          }
 
         }
         if (paketType.contains("FIX")) {
