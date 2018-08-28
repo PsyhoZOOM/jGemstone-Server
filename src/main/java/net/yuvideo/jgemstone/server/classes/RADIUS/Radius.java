@@ -569,9 +569,10 @@ public class Radius {
     String query = "SELECT * FROM radacct  WHERE acctstarttime  >= ? AND acctstoptime <= ? ORDER BY radacctid DESC";
     try {
       ps = db.connRad.prepareStatement(query);
-      ps.setString(1, startTime);
-      ps.setString(2, stopTime);
+      ps.setString(1, startTime + "00:00:00");
+      ps.setString(2, stopTime + " 23:59:59");
       rs = ps.executeQuery();
+      System.out.println(ps.toString());
       if (rs.isBeforeFirst()) {
         int i = 0;
         while (rs.next()) {
@@ -766,6 +767,7 @@ public class Radius {
           }
           userObj.put("endDate", rs.getString("value"));
           userObj.put("username", rs.getString("username"));
+          userObj.put("groupName", getRadUserGroup_GroupName(rs.getString("username")));
           usersObj.put(String.valueOf(i), userObj);
           i++;
         }
@@ -778,6 +780,29 @@ public class Radius {
       e.printStackTrace();
     }
     return usersObj;
+  }
+
+  private String getRadUserGroup_GroupName(String username) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String groupName = "";
+    String query = "SELECT groupname FROM radusergroup WHERE username=?";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, username);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        groupName = rs.getString("groupname");
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+    return groupName;
   }
 
   public String getErrorMSG() {

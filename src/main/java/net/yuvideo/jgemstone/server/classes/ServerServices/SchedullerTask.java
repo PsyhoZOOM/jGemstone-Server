@@ -28,7 +28,6 @@ public class SchedullerTask implements Runnable {
   public int DEBUG;
   public int DEBUG_VAL;
   SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-  Date date;
   ArrayList<ClientWorker> clientWorkerArrayList = new ArrayList<ClientWorker>();
   ClientWorker clientWorker;
   ResultSet rs;

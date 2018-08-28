@@ -117,6 +117,7 @@ public class MikrotikAPI {
 
     return isConnected;
 
+
   }
 
 
@@ -183,7 +184,7 @@ public class MikrotikAPI {
 
   public JSONObject bwMonitor(String mtIP, String interfaceName) {
     JSONObject object = new JSONObject();
-    String cmd = String.format("/interface/monitor-traffic \"%s\" once ");
+    String cmd = String.format("/interface/monitor-traffic interface=\"%s\" once", interfaceName);
     MikrotikAPI mtDev = getMtDev(mtIP);
     login(mtDev);
     try {
@@ -200,7 +201,6 @@ public class MikrotikAPI {
         object.put("fp-tx-packets-per-second:", response.get("fp-tx-packets-per-second:"));
         object.put("fp-tx-bits-per-second", response.get("fp-tx-bits-per-second"));
         object.put("tx-drops-per-second", response.get("tx-drops-per-second"));
-        object.put("", response.get(""));
         object.put("tx-queue-drops-per-second", response.get("tx-queue-drops-per-second"));
         object.put("tx-errors-per-second", response.get("tx-errors-per-second"));
       }
@@ -209,6 +209,7 @@ public class MikrotikAPI {
     }
 
     logout(mtDev);
+    System.out.println(object);
 
     return object;
 
@@ -239,6 +240,7 @@ public class MikrotikAPI {
           object.put("nasName", mtDev.getName());
           UsersData usersData = new UsersData(db, getOperName());
           int userid = usersData.getUserIDOfRadiusUserName(response.get("user"));
+          object.put("userData", usersData.getUserData(userid));
           object.put("userID", userid);
 
           obj.put(String.valueOf(i), object);

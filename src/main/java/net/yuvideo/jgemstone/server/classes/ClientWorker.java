@@ -52,7 +52,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.114";
+  private static final String S_VERSION = "0.115";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -3204,10 +3204,12 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
       PreparedStatement ps;
       ResultSet rs;
-      String query = "SELECT * FROM csv";
+      String query = "SELECT * FROM csv WHERE connectTime >= ? AND connectTime <= ? ";
       int i = 0;
       try {
         ps = db.conn.prepareStatement(query);
+        ps.setString(1, rLine.getString("od") + " 00:00:00");
+        ps.setString(2, rLine.getString("do") + " 23:59:59");
         rs = ps.executeQuery();
         if (rs.isBeforeFirst()) {
           JSONObject csvData;
