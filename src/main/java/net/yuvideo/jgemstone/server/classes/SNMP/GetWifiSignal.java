@@ -45,8 +45,8 @@ public class GetWifiSignal {
     CommunityTarget target = new CommunityTarget();
     target.setAddress(GenericAddress.parse(String.format("udp:%s/161", targetIP)));
     target.setCommunity(new OctetString(comunity));
-    target.setRetries(2);
-    target.setTimeout(1500);
+    target.setRetries(1);
+    target.setTimeout(300);
     target.setVersion(SnmpConstants.version1);
     Map<String, String> result = doWalk(oidWalk, target);
 
