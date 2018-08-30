@@ -322,6 +322,8 @@ public class MikrotikAPI {
       }
 
     } catch (MikrotikApiException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
 
@@ -332,6 +334,8 @@ public class MikrotikAPI {
         object.put("sessionID", response.get("session-id"));
       }
     } catch (MikrotikApiException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
     }
 

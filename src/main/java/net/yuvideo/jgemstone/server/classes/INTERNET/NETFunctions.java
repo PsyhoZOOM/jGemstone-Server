@@ -106,7 +106,7 @@ public class NETFunctions {
       ps.setString(1, rLine.getString("userName"));
       ps.setString(2, "WISPR-Session-Terminate-Time");
       ps.setString(3, "=");
-      ps.setString(4, "1970-1-1T23:59:59");
+      ps.setString(4, "1970-01-01T23:59:59");
       ps.executeUpdate();
     } catch (SQLException e) {
       e.printStackTrace();

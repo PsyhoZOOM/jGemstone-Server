@@ -1020,8 +1020,8 @@ public class ServicesFunctions {
 
   private static void setEndDateNET(String username, LocalDate endDate, database db) {
     String eDateRadCheck = endDate.format(dtfRadCheck);
-    LocalTime time = LocalTime.of(00, 00, 00);
-    String eDateRadReply = LocalDateTime.of(endDate, time).format(dtfRadReply);
+    LocalTime time = LocalTime.of(23, 59, 59);
+    String eDateRadReply = LocalDateTime.of(endDate, time).minusDays(1).format(dtfRadReply);
 
     PreparedStatement ps;
     String query;
