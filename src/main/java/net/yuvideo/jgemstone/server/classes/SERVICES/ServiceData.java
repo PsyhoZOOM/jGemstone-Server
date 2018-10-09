@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import net.yuvideo.jgemstone.server.classes.database;
+import org.json.JSONObject;
 
 public class ServiceData {
 
@@ -16,6 +17,7 @@ public class ServiceData {
   private int produzenje;
   private int DTVPaket;
   private int fiksnaTelPaketID;
+  private int dtv_main;
 
   private double popust;
   private double cena;
@@ -44,7 +46,9 @@ public class ServiceData {
   private String komentar;
   private String errorMSG;
 
-  public ServiceData() {
+  public ServiceData(database db, String operName) {
+    this.db = db;
+    this.operName = operName;
 
   }
 
@@ -55,6 +59,10 @@ public class ServiceData {
     this.db = db;
   }
 
+
+  public ServiceData() {
+
+  }
 
   /**
    * Getting service data from database servicesUsers
@@ -77,6 +85,7 @@ public class ServiceData {
         serviceData.setId_service(rs.getInt("id_service"));
         serviceData.setNazivPaketa(rs.getString("nazivPaketa"));
         serviceData.setDate_added(rs.getString("date_added"));
+        serviceData.setDtv_main(rs.getInt("dtv_main"));
         serviceData.setUserID(rs.getInt("userID"));
         serviceData.setOperName(rs.getString("operName"));
         serviceData.setPopust(rs.getDouble("popust"));
@@ -88,9 +97,8 @@ public class ServiceData {
         serviceData.setProduzenje(rs.getInt("produzenje"));
         serviceData.setNewService(rs.getBoolean("newService"));
         serviceData.setIdDTVCard(rs.getString("idDTVCard"));
-        serviceData.setDTVPaket(rs.getInt("DTVPaket"));
-        serviceData.setUserName(rs.getString("userName"));
-        serviceData.setGroupName(rs.getString("groupName"));
+        serviceData.setUserName(rs.getString("UserName"));
+        serviceData.setGroupName(rs.getString("GroupName"));
         serviceData.setFiksnaTel(rs.getString("FIKSNA_TEL"));
         serviceData.setFiksnaTelPaketID(rs.getInt("FIKSNA_TEL_PAKET_ID"));
         serviceData.setIptvMac(rs.getString("IPTV_MAC"));
@@ -111,6 +119,51 @@ public class ServiceData {
     return serviceData;
   }
 
+  public JSONObject getDataJSON(int serviceID) {
+    ServiceData data = getData(serviceID);
+    JSONObject object = new JSONObject();
+    object.put("id", data.getId());
+    object.put("id_service", data.getId_service());
+    object.put("date_added", data.getDate_added());
+    object.put("nazivPaketa", data.getNazivPaketa());
+    object.put("dtv_main", data.getDtv_main());
+    object.put("userID", data.getUserID());
+    object.put("operName", data.getOperName());
+    object.put("popust", data.getPopust());
+    object.put("cena", data.getCena());
+    object.put("obracun", data.isObracun());
+    object.put("brojUgovora", data.getBrojUgovora());
+    object.put("aktivan", data.isAktivan());
+    object.put("date_activated", data.getDateActivated());
+    object.put("produzenje", data.getProduzenje());
+    object.put("newService", data.isNewService());
+    object.put("idDTVCard", data.getIdDTVCard());
+    object.put("userName", data.getUserName());
+    object.put("groupName", data.getGroupName());
+    object.put("FIKSNA_TEL", data.getFiksnaTel());
+    object.put("FIKSNA_TEL_PAKET_ID", data.getFiksnaTelPaketID());
+    object.put("IPTV_MAC", data.getIptvMac());
+    object.put("linkedService", data.isLinkedService());
+    object.put("BOX_service", data.isBoxService());
+    object.put("paketType", data.getPaketType());
+    object.put("endDate", data.getEndDate());
+    object.put("pdv", data.getPdv());
+    object.put("opis", data.getOpis());
+    object.put("komentar", data.getKomentar());
+
+    return object;
+
+
+  }
+
+
+  public int getDtv_main() {
+    return dtv_main;
+  }
+
+  public void setDtv_main(int dtv_main) {
+    this.dtv_main = dtv_main;
+  }
 
   public int getId() {
     return id;

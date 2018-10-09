@@ -15,12 +15,20 @@ import org.json.JSONObject;
  */
 public class NETFunctions {
 
-  private static SimpleDateFormat normalDate = new SimpleDateFormat("yyyy-MM-dd");
-  private static SimpleDateFormat radcheckEndDate = new SimpleDateFormat("dd MMM yyyy");
-  private static SimpleDateFormat radreplyEndDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+  private SimpleDateFormat normalDate = new SimpleDateFormat("yyyy-MM-dd");
+  private SimpleDateFormat radcheckEndDate = new SimpleDateFormat("dd MMM yyyy");
+  private SimpleDateFormat radreplyEndDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+  private String errorMSG;
+  private boolean error;
+  private String operName;
+  private database db;
 
+  public NETFunctions(database db, String operName) {
+    this.db = db;
+    this.operName = operName;
+  }
 
-  public static Boolean check_userName_busy(String username, database db) {
+  public boolean check_userName_busy(String username) {
     ResultSet rs;
     PreparedStatement ps;
     String query = "SELECT username FROM radcheck where username=?";
@@ -31,16 +39,19 @@ public class NETFunctions {
       ps.setString(1, username);
       rs = ps.executeQuery();
       user_Exist = rs.isBeforeFirst();
+      rs.close();
+      ps.close();
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
 
     return user_Exist;
   }
 
-  public static void addUser(JSONObject rLine, database db) {
+  public void addUser(JSONObject rLine) {
 
-    ResultSet rs;
     PreparedStatement ps;
 
     String query = "INSERT INTO radusergroup (username, groupname, priority ) VALUES " +
@@ -53,7 +64,10 @@ public class NETFunctions {
       ps.setInt(3, 1);
       ps.executeUpdate();
     } catch (SQLException e) {
+      setErrorMSG(errorMSG);
+      setError(true);
       e.printStackTrace();
+      return;
     }
 
     query = "INSERT  INTO   radcheck (username, attribute, op, value) VALUES" +
@@ -67,7 +81,10 @@ public class NETFunctions {
       ps.setString(4, new md5_digiest(rLine.getString("passWord")).get_hash());
       ps.executeUpdate();
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return;
     }
 
     query = "INSERT INTO radcheck (username, attribute, op, value) VALUES" +
@@ -81,7 +98,10 @@ public class NETFunctions {
       ps.setString(4, "1");
       ps.executeUpdate();
     } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return;
     }
 
     query = "INSERT INTO radcheck (username, attribute, op, value) VALUES " +
@@ -95,7 +115,10 @@ public class NETFunctions {
       ps.setString(4, "Reject");
       ps.executeUpdate();
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
+      return;
     }
 
     query = "INSERT  INTO radreply (username, attribute, op , value) VALUES" +
@@ -109,7 +132,10 @@ public class NETFunctions {
       ps.setString(4, "1970-01-01T23:59:59");
       ps.executeUpdate();
     } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
+      return;
     }
 
     query = "INSERT INTO radcheck (username, attribute, op, value) VALUES" +
@@ -122,13 +148,16 @@ public class NETFunctions {
       ps.setString(3, ":=");
       ps.setString(4, "01 Jan 1970");
       ps.executeUpdate();
+      ps.close();
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
   }
 
 
-  public static void activateNewService(JSONObject rLine, database db) {
+  public void activateNewService(JSONObject rLine) {
 
     PreparedStatement ps;
     Calendar calendar = Calendar.getInstance();
@@ -161,7 +190,10 @@ public class NETFunctions {
         ps.setString(2, rLine.getString("idUniqueName"));
         ps.executeUpdate();
       } catch (SQLException e) {
+        setErrorMSG(e.getMessage());
+        setError(true);
         e.printStackTrace();
+        return;
       }
 
       query = "UPDATE radcheck SET value=? WHERE username=? AND attribute='Expiration'";
@@ -174,7 +206,10 @@ public class NETFunctions {
         ps.setString(2, rLine.getString("idUniqueName"));
         ps.executeUpdate();
       } catch (SQLException e) {
+        setErrorMSG(e.getMessage());
+        setError(true);
         e.printStackTrace();
+        return;
       }
 
       query = "UPDATE radreply SET value=? WHERE username=? AND attribute='WISPR-Session-Terminate-Time'";
@@ -185,15 +220,48 @@ public class NETFunctions {
         ps.setString(1, radreplyEndDate.format(calendar.getTime()));
         ps.setString(2, rLine.getString("idUniqueName"));
         ps.executeUpdate();
+        ps.close();
       } catch (SQLException e) {
+        setError(true);
+        setErrorMSG(e.getMessage());
         e.printStackTrace();
+        return;
       }
-
-      //add_user_debt_first_time(rLine);
 
     }
 
   }
 
 
+  public String getErrorMSG() {
+    return errorMSG;
+  }
+
+  public void setErrorMSG(String errorMSG) {
+    this.errorMSG = errorMSG;
+  }
+
+  public boolean isError() {
+    return error;
+  }
+
+  public void setError(boolean error) {
+    this.error = error;
+  }
+
+  public String getOperName() {
+    return operName;
+  }
+
+  public void setOperName(String operName) {
+    this.operName = operName;
+  }
+
+  public database getDb() {
+    return db;
+  }
+
+  public void setDb(database db) {
+    this.db = db;
+  }
 }

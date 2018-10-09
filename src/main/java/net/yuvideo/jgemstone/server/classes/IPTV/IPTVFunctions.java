@@ -14,23 +14,23 @@ public class IPTVFunctions {
   database db;
   private String errorMSG;
   private boolean error;
+  private String operName;
 
 
-  public IPTVFunctions(database db) {
+  public IPTVFunctions(database db, String operName) {
     this.db = db;
+    this.operName = operName;
   }
 
-  public IPTVFunctions() {
-  }
 
-  public static JSONObject add_account(JSONObject rLine, database db) {
-    StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
+  public JSONObject add_account(JSONObject rLine) {
+    StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db, getOperName());
     JSONObject jsonObject = restAPI2.saveUSER(rLine);
     return jsonObject;
   }
 
-  public static boolean checkUserBussy(String STB_MAC, database db) {
-    StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db);
+  public boolean checkUserBussy(String STB_MAC) {
+    StalkerRestAPI2 restAPI2 = new StalkerRestAPI2(db, getOperName());
     return restAPI2.checkUser(STB_MAC);
   }
 
@@ -82,5 +82,13 @@ public class IPTVFunctions {
 
   public void setError(boolean error) {
     this.error = error;
+  }
+
+  public String getOperName() {
+    return operName;
+  }
+
+  public void setOperName(String operName) {
+    this.operName = operName;
   }
 }

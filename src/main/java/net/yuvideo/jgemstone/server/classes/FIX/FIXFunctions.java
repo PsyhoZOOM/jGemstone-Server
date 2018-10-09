@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
 import org.json.JSONObject;
@@ -14,17 +15,18 @@ import org.json.JSONObject;
  */
 public class FIXFunctions {
 
-  static database db;
-  public static String error;
+  private database db;
+  private String operName;
+  private boolean error;
+  private String errorMSG;
 
-  public FIXFunctions() {
-  }
-
-  public FIXFunctions(database db) {
+  public FIXFunctions(database db, String operName) {
     this.db = db;
+    this.operName = operName;
   }
 
-  public static Boolean check_TELBr_bussy(String fix_tel, database db) {
+
+  public boolean check_TELBr_bussy(String fix_tel) {
     PreparedStatement ps;
     ResultSet rs;
     String query;
@@ -40,14 +42,19 @@ public class FIXFunctions {
         brojExist = true;
       }
 
+      ps.close();
+      rs.close();
+
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
 
     return brojExist;
   }
 
-  public static void addBroj(JSONObject rLine, String opername, database db) {
+  public void addBroj(JSONObject rLine) {
     PreparedStatement ps;
     String query;
 
@@ -58,13 +65,17 @@ public class FIXFunctions {
       ps.setString(1, rLine.getString("FIX_TEL"));
       ps.setInt(2, rLine.getInt("userID"));
       ps.executeUpdate();
+      ps.close();
+
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
 
   }
 
-  public static int getPaketID(String fix_naziv, database db) {
+  public int getPaketID(String fix_naziv) {
     PreparedStatement ps;
     ResultSet rs;
     String query;
@@ -80,132 +91,18 @@ public class FIXFunctions {
         rs.next();
         paketID = rs.getInt("id");
       }
-
+      ps.close();
+      rs.close();
     } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
     }
     return paketID;
   }
 
-  public static boolean check_if_obracun_postoji(String zaMesec, database db) {
-    PreparedStatement ps;
-    ResultSet rs;
-    String query = "SELECT zaMesec FROM zaduzenjaFiksna WHERE zaMesec=?";
-    boolean exist = false;
 
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setString(1, zaMesec);
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        exist = true;
-      }
-
-      ps.close();
-      rs.close();
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-    return exist;
-  }
-
-  public static JSONObject obracunajZaMesec(database db, String zaMesec, String operName) {
-    JSONObject obj = new JSONObject();
-    PreparedStatement ps;
-    ResultSet rs;
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM");
-    String query = "SELECT SUM(chargedAmountRSD) AS ukupno, account  FROM csv WHERE connectTime LIKE  ? group by account ";
-
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setString(1, zaMesec + "%");
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        while (rs.next()) {
-          zaduziKorisnika(rs.getString("account"), rs.getDouble("ukupno"),
-              zaMesec, operName, db);
-        }
-      }
-      ps.close();
-      rs.close();
-      obj.put("SNIMLJENO", true);
-    } catch (SQLException e) {
-      obj.put("Error", e.getMessage());
-      e.printStackTrace();
-    }
-    return obj;
-  }
-
-  private static void zaduziKorisnika(String account, Double ukupno, String zaMesec,
-      String operName, database db) {
-    PreparedStatement ps;
-    ResultSet rs = null;
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    //String query = "INSERT INTO FIX_Debts (zaMesec, dug, account, operName, datumZaduzenja) " +
-    //        "VALUES (?,?,?,?,?)";
-    String query;
-
-    query = "SELECT * FROM servicesUser WHERE FIKSNA_TEL = ?";
-
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setString(1, account);
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        rs.next();
-
-      } else {
-        return;
-      }
-
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-    query = "INSERT INTO userDebts " +
-        "(id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena, uplaceno," +
-        "datumUplate, dug, operater, zaduzenOd, zaMesec, skipProduzenje, PDV, kolicina )" +
-        "VALUES " +
-        "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-    try {
-      double cena = ukupno;
-      double popust = rs.getDouble("popust");
-      double pdv = rs.getDouble("PDV");
-      int kolicina = 1;
-      double osnovica = cena * kolicina;
-
-      double dug = osnovica - valueToPercent.getPDVOfSum(osnovica, popust);
-      dug = dug + valueToPercent.getPDVOfValue(osnovica, pdv);
-
-      ps = db.conn.prepareStatement(query);
-      ps.setInt(1, rs.getInt("id"));
-      ps.setString(2, "Saobraćaj-" + account);
-      ps.setString(3, LocalDate.now().format(dtf));
-      ps.setInt(4, rs.getInt("userID"));
-      ps.setDouble(5, rs.getDouble("popust"));
-      ps.setString(6, "FIX_SAOBRACAJ");
-      ps.setDouble(7, cena);
-      ps.setDouble(8, 0.00);
-      ps.setString(9, "1000-01-01 00:00:00");
-      ps.setDouble(10, dug);
-      ps.setString(11, "");
-      ps.setString(12, "SYSTEM");
-      ps.setString(13, zaMesec);
-      ps.setBoolean(14, false);
-      ps.setDouble(15, rs.getDouble("PDV"));
-      ps.setInt(16, 1);
-      ps.executeUpdate();
-      ps.close();
-      rs.close();
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-  }
-
-  public static void deleteService(String brojTelefona, database db) {
+  public void deleteService(String brojTelefona) {
     PreparedStatement ps;
     String query = "DELETE FROM FIX_brojevi WHERE brojTel=?";
     try {
@@ -214,11 +111,13 @@ public class FIXFunctions {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
   }
 
-  public static JSONObject getAccountSaobracaj(int id_ServiceUser, String zaMesec, database db) {
+  public JSONObject getAccountSaobracaj(int id_ServiceUser, String zaMesec) {
     JSONObject jsonObject = new JSONObject();
     PreparedStatement ps;
     ResultSet rs;
@@ -261,14 +160,164 @@ public class FIXFunctions {
       ps.close();
       rs.close();
     } catch (SQLException e) {
-      jsonObject.put("ERROR", e.getMessage());
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
     }
     return jsonObject;
   }
 
+  public void obracunajZaMesec(String zaMesec) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT FIKSNA_TEL FROM servicesUser WHERE paketType LIKE '%FIX%' ";
+    try {
+      ps = db.conn.prepareStatement(query);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        while (rs.next()) {
+          zaduziFixSaobracaj(rs.getString("FIKSNA_TEL"), zaMesec);
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+  }
 
-  public static boolean deleteFixPaket(int id) {
+
+  /**
+   * Zaduzivanje korisnika sa Fiksnim saobracajem. Ako postoji zaduzenje za prosledjeni mesec boti
+   * ce obrisani i ponovo sracunati
+   *
+   * @param brojTelefona broj telefona koji se zaduzuje
+   * @param mesec mesec koji za koji se zaduzuje
+   */
+  public void zaduziFixSaobracaj(String brojTelefona, String mesec) {
+    //brisanje zaduzivanje ako postoji
+    deleteZaduzivanja(brojTelefona, mesec);
+
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT SUM(chargedAmountRSD) as ukupno FROM csv WHERE account = ? AND connectTime like ? ";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, brojTelefona);
+      ps.setString(2, String.format("%s%%", mesec));
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        rs.next();
+        zaduziKorisnika(brojTelefona, rs.getDouble("ukupno"), mesec);
+      }
+
+      ps.close();
+      rs.close();
+
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+  }
+
+  private void deleteZaduzivanja(String brojTelefona, String mesec) {
+    PreparedStatement ps;
+    String query = "delete FROM zaduzenja WHERE naziv = ? AND zaMesec=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, String.format("Saobraćaj-%s", brojTelefona));
+      ps.setString(2, mesec);
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+  }
+
+  private void deleteZaduzenje(int id) {
+    PreparedStatement ps;
+    String query = "DELETE FROM zaduzenja WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, id);
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+  }
+
+  private void zaduziKorisnika(String brojTelefona, Double ukupno, String zaMesec) {
+    PreparedStatement ps;
+    ResultSet rs = null;
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    String query;
+
+    double pdv = 0;
+    double cena = 0;
+    int userID = 0;
+
+    query = "SELECT * FROM servicesUser WHERE FIKSNA_TEL=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, brojTelefona);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        rs.next();
+        pdv = rs.getDouble("pdv");
+        userID = rs.getInt("userID");
+
+      } else {
+        ps.close();
+        rs.close();
+        return;
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+
+    cena = ukupno - valueToPercent.getPDVOfValue(ukupno, pdv);
+
+    query = "INSERT INTO zaduzenja "
+        + "(datum, cena, pdv, naziv, opis, zaduzenOd, userID, paketType, dug, zaMesec) "
+        + "VALUES "
+        + "(?,?,?,?,?,?,?,?,?,?)";
+
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, LocalDate.now().format(dtf));
+      ps.setDouble(2, cena);
+      ps.setDouble(3, pdv);
+      ps.setString(4, String.format("Saobraćaj-%s", brojTelefona));
+      ps.setString(5,
+          String.format("Zaduženje saobracaja za broj %s, mesec %s", brojTelefona, zaMesec));
+      ps.setString(6, getOperName());
+      ps.setInt(7, userID);
+      ps.setString(8, "FIX_SAOBRACAJ");
+      ps.setDouble(9, ukupno);
+      ps.setString(10, zaMesec);
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+    System.out.println(String.format("broj %s cena: %f ukupno: %f", brojTelefona, cena, ukupno));
+
+  }
+
+  public boolean deleteFixPaket(int id) {
     boolean deleted = false;
     PreparedStatement ps;
     String query = "DELETE FROM FIX_paketi WHERE id=?";
@@ -279,7 +328,8 @@ public class FIXFunctions {
       deleted = true;
       ps.close();
     } catch (SQLException e) {
-      error = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
     return deleted;
@@ -294,6 +344,30 @@ public class FIXFunctions {
       data.put("ERROR", csvData.getErrorMSG());
     }
     return data;
+  }
+
+  public String getOperName() {
+    return operName;
+  }
+
+  public void setOperName(String operName) {
+    this.operName = operName;
+  }
+
+  public boolean isError() {
+    return error;
+  }
+
+  public void setError(boolean error) {
+    this.error = error;
+  }
+
+  public String getErrorMSG() {
+    return errorMSG;
+  }
+
+  public void setErrorMSG(String errorMSG) {
+    this.errorMSG = errorMSG;
   }
 
 }

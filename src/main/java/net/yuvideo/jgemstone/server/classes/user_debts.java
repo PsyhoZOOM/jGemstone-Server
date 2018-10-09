@@ -17,6 +17,7 @@ public class user_debts implements Serializable {
   private String operName;
   private double payed;
   private double popust;
+  private String zaMesec;
   private double debtTotal;
 
 

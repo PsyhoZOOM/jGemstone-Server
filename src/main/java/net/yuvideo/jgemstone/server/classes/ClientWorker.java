@@ -13,8 +13,6 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.text.Format;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import javax.net.ssl.SSLSocket;
 import net.yuvideo.jgemstone.server.classes.ARTIKLI.ArtikliFunctions;
@@ -35,8 +33,8 @@ import net.yuvideo.jgemstone.server.classes.MISC.mysqlMIsc;
 import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
 import net.yuvideo.jgemstone.server.classes.RACUNI.Uplate;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
-import net.yuvideo.jgemstone.server.classes.RACUNI.Zaduzenja;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
+import net.yuvideo.jgemstone.server.classes.SERVICES.ServiceData;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.ServerServices.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.ServerServices.WiFiTracker;
@@ -52,7 +50,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.116";
+  private static final String S_VERSION = "0.200";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -83,10 +81,10 @@ public class ClientWorker implements Runnable {
   private boolean keepAlive;
   public SchedullerTask scheduler;
 
-  public ClientWorker(SSLSocket client, database db) {
+  public ClientWorker(SSLSocket client) {
     //this.client = client;
     this.client = client;
-    this.db = db;
+    this.db = new database();
 
   }
 
@@ -98,8 +96,6 @@ public class ClientWorker implements Runnable {
   public void run() {
 
     db.DEBUG = DEBUG;
-
-
 
     System.out.println(String.format("Client connected: %s", this.client
         .getRemoteSocketAddress()));
@@ -148,6 +144,10 @@ public class ClientWorker implements Runnable {
       }
 
       if (DEBUG > 0) {
+        if (jObj.has("userNameLogin")) {
+          setOperName(jObj.getString("userNameLogin"));
+        }
+
         LOGGER.info(String.format("Reading IP: %s Operater: %s DATA: %s",
             client.getRemoteSocketAddress().toString(), getOperName(), jObj.toString()));
       }
@@ -156,10 +156,6 @@ public class ClientWorker implements Runnable {
     }
   }
 
-  private void close_database() {
-    db.closeDatabase();
-
-  }
 
   public String getOperName() {
     return operName;
@@ -261,6 +257,7 @@ public class ClientWorker implements Runnable {
       }
       return;
     }
+    setOperName(rLine.getString("userNameLogin"));
     rLine.remove("userNameLogin");
     rLine.remove("userPassLogin");
     rLine.remove("keepAlive");
@@ -274,91 +271,13 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.get("action").equals("get_users")) {
-      query = "SELECT * FROM users WHERE  ime LIKE ? or id LIKE ? or jBroj LIKE ? or nazivFirme LIKE ? or mesto LIKE ? ";
-      String userSearch;
-      if (!rLine.has("username")) {
-        userSearch = "%";
-      } else {
-        userSearch = "%" + rLine.getString("username") + "%";
+      JSONObject object = new JSONObject();
+      UserFunc userFunc = new UserFunc(db, getOperName());
+      object = userFunc.getAllUsers(rLine);
+      if (userFunc.isError()) {
+        object.put("ERROR", userFunc.getErrorMSG());
       }
-      if (rLine.has("advancedSearch")) {
-        try {
-          ps = db.conn.prepareStatement(rLine.getString("advancedSearch"));
-          rs = ps.executeQuery();
-        } catch (SQLException e) {
-          e.printStackTrace();
-        }
-      } else {
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setString(1, userSearch);
-          ps.setString(2, userSearch);
-          ps.setString(3, userSearch);
-          ps.setString(4, userSearch);
-          ps.setString(5, userSearch);
-          rs = ps.executeQuery();
-        } catch (SQLException e) {
-          e.printStackTrace();
-        }
-      }
-      jUsers = new JSONObject();
-
-      int i = 0;
-      try {
-        while (rs.next()) {
-
-          try {
-            jObj = new JSONObject();
-            jObj.put("id", rs.getInt("id"));
-            jObj.put("fullName", rs.getString("ime"));
-            jObj.put("mesto", rs.getString("mesto"));
-            jObj.put("adresa", (rs.getString("adresa")));
-            jObj.put("adresaRacuna", rs.getString("adresaRacuna"));
-            jObj.put("mestoRacuna", rs.getString("mestoRacuna"));
-            jObj.put("brLk", rs.getString("brlk"));
-            jObj.put("datumRodjenja", rs.getString("datumRodjenja"));
-            jObj.put("telFixni", rs.getString("telFiksni"));
-            jObj.put("telMobilni", rs.getString("telMobilni"));
-            jObj.put("JMBG", rs.getString("JMBG"));
-            jObj.put("komentar", rs.getString("komentar"));
-            jObj.put("postBr", rs.getString("postbr"));
-            jObj.put("jBroj", rs.getString("jBroj"));
-            jObj.put("jAdresa", rs.getString("jAdresa"));
-            jObj.put("jAdresaBroj", rs.getString("jAdresaBroj"));
-            jObj.put("jMesto", rs.getString("jMesto"));
-            MestaFuncitons mestaFuncitons = new MestaFuncitons(db);
-            jObj.put("adresaUsluge",
-                mestaFuncitons.getNazivAdrese(rs.getString("jMesto"), rs.getString("jAdresa")));
-            jObj.put("mestoUsluge", mestaFuncitons.getNazivMesta(rs.getString("jMesto")));
-
-            //DUG
-            jObj.put("dug", get_userDebt(rs.getInt("id")));
-
-            //FIRMA
-            jObj.put("firma", rs.getBoolean("firma"));
-            jObj.put("nazivFirme", rs.getString("nazivFirme"));
-            jObj.put("kontaktOsoba", rs.getString("kontaktOsoba"));
-            jObj.put("kontaktOsobaTel", rs.getString("kontaktOsobaTel"));
-            jObj.put("kodBanke", rs.getString("kodBanke"));
-            jObj.put("PIB", rs.getString("PIB"));
-            jObj.put("maticniBroj", rs.getString("maticniBroj"));
-            jObj.put("tekuciRacun", rs.getString("tekuciRacun"));
-            jObj.put("fax", rs.getString("fax"));
-            jObj.put("adresaFirme", rs.getString("adresaFirme"));
-            jObj.put("mestoFirme", rs.getString("mestoFirme"));
-            jObj.put("email", rs.getString("email"));
-            jObj.put("datumKreiranja", rs.getString("datumKreiranja"));
-
-            jUsers.put(String.valueOf(i), jObj);
-            i++;
-          } catch (SQLException e) {
-            e.printStackTrace();
-          }
-        }
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }
-      send_object(jUsers);
+      send_object(object);
       return;
     }
 
@@ -798,7 +717,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("get_user_services")) {
       jObj = new JSONObject();
-      query = "SELECT *  FROM servicesUser WHERE userID=? AND linkedService=false";
+      query = "SELECT *  FROM servicesUser WHERE userID=? AND linkedService=false AND paketType NOT LIKE '%ADDON%' ";
 
       try {
         ps = db.conn.prepareStatement(query);
@@ -819,19 +738,44 @@ public class ClientWorker implements Runnable {
             service.put("date_added", rs.getString("date_added"));
             service.put("nazivPaketa", rs.getString("nazivPaketa"));
             service.put("naziv", rs.getString("nazivPaketa"));
-            if (rs.getString("idDTVCard") != null) {
-              service.put("idUniqueName", rs.getString("idDTVCard"));
-            }
-            if (rs.getString("UserName") != null) {
-              service.put("idUniqueName", rs.getString("UserName"));
-            }
-            if (rs.getString("IPTV_MAC") != null) {
+
+            //SETTING idUniqueName
+            String[] uniqueName = new String[4];
+            if (!rs.getString("IPTV_MAC").trim().isEmpty()) {
               service.put("idUniqueName", rs.getString("IPTV_MAC"));
+              uniqueName[0] = "IPTV: " + rs.getString("IPTV_MAC");
               service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
               service.put("STB_MAC", rs.getString("IPTV_MAC"));
+            } else if (!rs.getString("UserName").trim().isEmpty()) {
+              service.put("idUniqueName", rs.getString("UserName"));
+              uniqueName[1] = "NET: " + rs.getString("UserName");
+            } else if (!rs.getString("idDTVCard").trim().isEmpty()) {
+              service.put("idUniqueName", rs.getString("idDTVCard"));
+              uniqueName[2] = "DTV: " + rs.getString("idDTVCard");
+            } else if (!rs.getString("FIKSNA_TEL").trim().isEmpty()) {
+              service.put("idUniqueName", rs.getString("FIKSNA_TEL"));
+              uniqueName[3] = "FIKSNA: " + rs.getString("FIKSNA_TEL");
+            } else {
+              service.put("idUniqueName", rs.getString("nazivPaketa"));
             }
+
+            if (rs.getString("paketType").equals("BOX")) {
+              String serviceSTR = "";
+              for (String str : uniqueName) {
+                if (str != null) {
+                  if (!str.isEmpty()) {
+                    serviceSTR += str + " ";
+                  }
+                }
+              }
+              service.put("idUniqueName", serviceSTR);
+            }
+
+
             service.put("userName", rs.getString("UserName"));
+            service.put("groupName", rs.getString("GroupName"));
             service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
+            service.put("FIKSNA_TEL", rs.getString("FIKSNA_TEL"));
             service.put("obracun", rs.getBoolean("obracun"));
             service.put("aktivan", rs.getBoolean("aktivan"));
             service.put("produzenje", rs.getInt("produzenje"));
@@ -843,10 +787,10 @@ public class ClientWorker implements Runnable {
             service.put("linkedService", rs.getBoolean("linkedService"));
             service.put("newService", rs.getBoolean("newService"));
             service.put("idDTVCard", rs.getString("idDTVCard"));
-            service.put("DTVPaketID", rs.getInt("DTVPaket"));
             service.put("endDate", rs.getString("endDate"));
             service.put("komentar", rs.getString("komentar"));
             service.put("opis", rs.getString("opis"));
+            service.put("dtv_main", rs.getString("dtv_main"));
 
             jObj.put(String.valueOf(i), service);
             i++;
@@ -865,12 +809,13 @@ public class ClientWorker implements Runnable {
 
       JSONObject jObj2 = new JSONObject();
       PreparedStatement ps2;
-      query = "SELECT * FROM servicesUser WHERE box_id=? AND linkedService=? AND userID=?";
+      query = "SELECT * FROM servicesUser WHERE box_id=? AND linkedService=? or id=? AND userID=?";
       try {
         ps2 = db.conn.prepareStatement(query);
         ps2.setInt(1, rLine.getInt("box_ID"));
         ps2.setInt(2, 1);
-        ps2.setInt(3, rLine.getInt("userID"));
+        ps2.setInt(3, rLine.getInt("box_ID"));
+        ps2.setInt(4, rLine.getInt("userID"));
         ResultSet rs2 = ps2.executeQuery();
 
         if (rs2.isBeforeFirst()) {
@@ -902,14 +847,18 @@ public class ClientWorker implements Runnable {
             service.put("newService", rs2.getBoolean("newService"));
             service.put("komentar", rs2.getString("komentar"));
             service.put("opis", rs2.getString("opis"));
+            service.put("brojUgovora", rs2.getString("brojUgovora"));
+            service.put("operName", rs2.getString("operName"));
+            service.put("date_added", rs2.getString("date_added"));
 
-            if (!rs2.getString("idDTVCard").isEmpty()) {
+            if (!rs2.getString("idDTVCard").trim().isEmpty()) {
               service.put("idUniqueName", rs2.getString("idDTVCard"));
             }
-            if (!rs2.getString("UserName").isEmpty()) {
+            if (!rs2.getString("UserName").trim().isEmpty()) {
               service.put("idUniqueName", rs2.getString("UserName"));
+              service.put("groupName", rs2.getString("GroupName"));
             }
-            if (!rs2.getString("IPTV_MAC").isEmpty()) {
+            if (!rs2.getString("IPTV_MAC").trim().isEmpty()) {
               service.put("idUniqueName", rs2.getString("IPTV_MAC"));
               service.put("IPTV_MAC", rs2.getString("IPTV_MAC"));
               service.put("STB_MAC", rs2.getString("IPTV_MAC"));
@@ -931,7 +880,7 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("getServiceDetail")) {
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
       JSONObject serviceDetail = servicesFunctions
           .getServiceDetail(rLine.getInt("serviceID"), getOperName());
       send_object(serviceDetail);
@@ -939,14 +888,14 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("changeServiceDTVCard")) {
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
       JSONObject object = servicesFunctions.changeDTVCard(rLine);
       send_object(object);
       return;
     }
 
     if (rLine.getString("action").equals("changeServiceDTVEndDate")) {
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
       JSONObject object = servicesFunctions.changeDTVEndDate(rLine);
       send_object(object);
       return;
@@ -957,7 +906,7 @@ public class ClientWorker implements Runnable {
       Radius radius = new Radius(db, getOperName());
       JSONObject data = radius.getRadReplyData(rLine.getString("username"));
 
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
       JSONObject serviceDetail = servicesFunctions
           .getServiceDetail(rLine.getInt("serviceID"), getOperName());
       data.put("nazivPaketa", serviceDetail.getString("nazivPaketa"));
@@ -992,7 +941,7 @@ public class ClientWorker implements Runnable {
 
       jObj = new JSONObject();
       int service_id = rLine.getInt("service_id");
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
       servicesFunctions.activateNewService(service_id, getOperName());
       if (servicesFunctions.isError()) {
         jObj.put("ERROR", servicesFunctions.getErrorMSG());
@@ -1005,7 +954,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("updateService")) {
       JSONObject jsonObject = new JSONObject();
-      ServicesFunctions servicesFunctions = new ServicesFunctions();
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
       servicesFunctions.updateService(getOperName(), db, rLine);
       if (servicesFunctions.isError()) {
         jsonObject.put("ERROR", servicesFunctions.getErrorMSG());
@@ -1016,21 +965,20 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("get_datum_isteka_servisa")) {
       jObj = new JSONObject();
-      String datumIsteka = ServicesFunctions.getDatumIsteka(rLine, db);
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+      String datumIsteka = servicesFunctions.getDatumIsteka(rLine.getInt("id"));
 
       if (datumIsteka == null) {
         datumIsteka = "KORISNIK NEMA SERVIS";
       }
       jObj.put("datumIsteka", datumIsteka);
-      if (DEBUG > 1)
-        System.out.println(jObj);
       send_object(jObj);
       return;
 
     }
 
     if (rLine.getString("action").equals("add_BOX_Service")) {
-      jObj = new JSONObject();
+      JSONObject object = new JSONObject();
 
       //provera da li korisnik, kartica postoji. Ako postoji prijaviti operateru da ne moze da se napravi servis
       Boolean checkNet = false;
@@ -1040,23 +988,27 @@ public class ClientWorker implements Runnable {
 
       if (rLine.has("groupName")) {
         //createInternetService;
-        checkNet = NETFunctions.check_userName_busy(rLine.getString("userName"), db);
+        NETFunctions netFunctions = new NETFunctions(db, getOperName());
+        checkNet = netFunctions.check_userName_busy(rLine.getString("userName"));
 
       }
 
-      if (rLine.has("DTVKartica")) {
+      if (rLine.has("cardID")) {
         //create DTV SERVICE
-        checkDtv = DTVFunctions.check_card_busy(rLine.getInt("DTVKartica"), db);
+        DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+        checkDtv = dtvFunctions.check_card_busy(rLine.getInt("cardID"));
 
       }
 
       if (rLine.has("FIX_TEL")) {
         //create FIX SERVICE
-        checkFix = FIXFunctions.check_TELBr_bussy(rLine.getString("FIX_TEL"), db);
+        FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
+        checkFix = fixFunctions.check_TELBr_bussy(rLine.getString("FIX_TEL"));
       }
 
       if (rLine.has("STB_MAC")) {
-        checkIptv = IPTVFunctions.checkUserBussy(rLine.getString("STB_MAC"), db);
+        IPTVFunctions iptvFunctions = new IPTVFunctions(db, getOperName());
+        checkIptv = iptvFunctions.checkUserBussy(rLine.getString("STB_MAC"));
       }
 
       //ako je user ili kartica zauzeta poslati obavestenje u suprotnom napraviti boxPaket serivis i dodati ostrale servise koriniku
@@ -1064,35 +1016,37 @@ public class ClientWorker implements Runnable {
         String message = null;
         if (checkDtv) {
           message = "DTV Kartica je zauzeta";
-          jObj.put("Error", message);
+          object.put("ERROR", message);
         }
 
         if (checkNet) {
           message = "Internet korisnicko ime je zauzeto";
-          jObj.put("Error", message);
+          object.put("ERROR", message);
         }
 
         if (checkFix) {
           message = "Broj telefona je zauzet";
-          jObj.put("Error", message);
+          object.put("ERROR", message);
         }
 
         if (checkIptv) {
           message = "IPTV STB_MAC je zauzet";
-          jObj.put("Error", message);
+          object.put("ERROR", message);
         }
       } else {
         //add BOX to servicesUser
-        addBoxService addBox = new addBoxService();
-        addBox.db = db;
-        boolean hostIsAlive = addBox.addBox(rLine, getOperName());
+        addBoxService addBox = new addBoxService(db, getOperName());
+        boolean hostIsAlive = addBox.checkIPTVAlive();
         if (!hostIsAlive) {
-          jObj.put("ERROR", "IPTV server nije dostupan!");
+          object.put("ERROR", "IPTV Server nije dostupan");
+
+        } else {
+          addBox.addBox(rLine, getOperName());
         }
 
       }
 
-      send_object(jObj);
+      send_object(object);
       return;
 
     }
@@ -1101,6 +1055,7 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
       ResultSet rs = null;
       PreparedStatement ps = null;
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
 
       query = "SELECT * FROM paketBox";
 
@@ -1122,7 +1077,7 @@ public class ClientWorker implements Runnable {
               paketBox.put("DTV_id", rs.getInt("DTV_id"));
               paketBox.put("DTV_naziv", get_paket_naziv("digitalniTVPaketi", rs.getInt("DTV_id")));
               paketBox.put("DTV_PAKET_ID",
-                  DTVFunctions.getPacketCriteriaGroup(rs.getInt("DTV_id"), this.db));
+                  dtvFunctions.getPacketCriteriaGroup(rs.getInt("DTV_id")));
             }
 
             if (rs.getString("NET_naziv") != null) {
@@ -1131,10 +1086,11 @@ public class ClientWorker implements Runnable {
             }
 
             if (rs.getString("TEL_naziv") != null) {
+              FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
               paketBox.put("FIX_id", rs.getInt("TEL_id"));
               paketBox.put("FIX_naziv", get_paket_naziv("FIXPaketi", rs.getInt("TEL_id")));
               paketBox.put("FIX_PAKET_ID",
-                  FIXFunctions.getPaketID(paketBox.getString("FIX_naziv"), this.db));
+                  fixFunctions.getPaketID(paketBox.getString("FIX_naziv")));
             }
 
             if (rs.getString("IPTV_naziv") != null) {
@@ -1171,24 +1127,26 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("add_service_to_user_DTV")) {
       jObj = new JSONObject();
-      if (DTVFunctions.check_card_busy(rLine.getInt("DTVKarticaID"), db)) {
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+      if (dtvFunctions.check_card_busy(rLine.getInt("DTVKarticaID"))) {
         jObj.put("ERROR",
             String.format("Kartica sa brojem %d je zauzeta", rLine.getInt("DTVKarticaID")));
         send_object(jObj);
         return;
       }
 
-      String serviceAdded = ServicesFunctions
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+      servicesFunctions
           .addServiceDTV(rLine.getInt("id"), rLine.getString("nazivPaketa"),
               rLine.getInt("userID"), getOperName(), rLine.getDouble("servicePopust"),
               rLine.getDouble("cena"), rLine.getBoolean("obracun"), rLine.getString("brojUgovora"),
               rLine.getInt("produzenje"), rLine.getString("idUniqueName"), rLine.getInt("packetID"),
-              rLine.getDouble("pdv"), rLine.getString("komentar"), this.db);
+              rLine.getDouble("pdv"), rLine.getString("komentar"));
 
-      if (serviceAdded.equals("SERVICE_ADDED")) {
-        jObj.put("Message", "SERVICE_ADDED");
+      if (servicesFunctions.isError()) {
+        jObj.put("ERROR", servicesFunctions.getErrorMSG());
       } else {
-        jObj.put("Error", serviceAdded);
+        jObj.put("Message", "SERVICE_ADDED");
       }
       send_object(jObj);
       return;
@@ -1196,14 +1154,16 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("add_service_to_user_NET")) {
       jObj = new JSONObject();
-      if (NETFunctions.check_userName_busy(rLine.getString("userName"), db)) {
+      NETFunctions netFunctions = new NETFunctions(db, getOperName());
+
+      if (netFunctions.check_userName_busy(rLine.getString("userName"))) {
         jObj.put("ERROR",
             String.format("Korisničko ime %s je zauzeto", rLine.getString("userName")));
         send_object(jObj);
         return;
       }
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
-      servicesFunctions.addServiceNET(rLine, getOperName(), this.db);
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+      servicesFunctions.addServiceNET(rLine);
       if (servicesFunctions.isError()) {
         jObj.put("ERROR", servicesFunctions.getErrorMSG());
       } else {
@@ -1219,8 +1179,8 @@ public class ClientWorker implements Runnable {
     if (rLine.getString("action").equals("delete_service_user")) {
       jObj = new JSONObject();
 
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
-      servicesFunctions.deleteService(rLine.getInt("serviceID"));
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+      servicesFunctions.deleteService(rLine.getInt("serviceID"), rLine.getInt("userID"));
       if (servicesFunctions.isError()) {
         jObj.put("ERROR", servicesFunctions.getErrorMSG());
       }
@@ -1231,152 +1191,38 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("get_uplate_user")) {
       jObj = new JSONObject();
-      query = "SELECT * FROM uplate WHERE userId = ? ORDER BY datumUplate DESC";
-
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("userID"));
-        rs = ps.executeQuery();
-        JSONObject uplate;
-        int i = 0;
-        if (rs.isBeforeFirst()) {
-          while (rs.next()) {
-            uplate = new JSONObject();
-            uplate.put("uplaceno", rs.getDouble("uplaceno"));
-            uplate.put("id", rs.getInt("id"));
-            uplate.put("datumUplate", rs.getDate("datumUplate"));
-            uplate.put("mesto", rs.getString("mesto"));
-            uplate.put("operater", rs.getString("operater"));
-            uplate.put("napomena", rs.getString("napomena"));
-            jObj.put(String.valueOf(i), uplate);
-            i++;
-          }
-        }
-      } catch (SQLException e) {
-        e.printStackTrace();
+      UserFunc userFunc = new UserFunc(db, getOperName());
+      jObj = userFunc.getUplateUser(rLine.getInt("userID"));
+      if (userFunc.isError()) {
+        jObj.put("ERROR", userFunc.getErrorMSG());
       }
       send_object(jObj);
       return;
     }
 
-    if (rLine.getString("action").equals("get_zaduzenja_user")) {
-      Zaduzenja zaduzenja = new Zaduzenja(db);
-      JSONObject zaduzenjaOfUser = zaduzenja
-          .getZaduzenjaOfUser(rLine.getInt("userID"), rLine.getBoolean("sveUplate"),
-              rLine.getString("zaMesec"));
-
-      if (zaduzenja.isError()) {
-        zaduzenjaOfUser.put("ERROR", zaduzenja.getErrorMSG());
-      }
-
-      send_object(zaduzenjaOfUser);
-      return;
-    }
-
-    if (rLine.getString("action").equals("getUserDebt")) {
-      jObj = new JSONObject();
-      PreparedStatement ps;
-      ResultSet rs;
-      double dug = 0;
-      double uplaceno = 0;
-      double ukupanDug = 0;
-      double cena;
-      double pdv;
-      double popust;
-      int kolicina;
-      double osnovica;
-      double dugBezPdv;
-      String query = "SELECT * FROM userDebts WHERE userID=?";
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("userID"));
-        rs = ps.executeQuery();
-        if (rs.isBeforeFirst()) {
-
-          while (rs.next()) {
-            cena = rs.getDouble("cena");
-            kolicina = rs.getInt("kolicina");
-            osnovica = cena * kolicina;
-            popust = rs.getDouble("popust");
-            pdv = rs.getDouble("pdv");
-            dugBezPdv = osnovica - valueToPercent.getPDVOfValue(osnovica, popust);
-            dug += dugBezPdv + valueToPercent.getPDVOfValue(dugBezPdv, pdv);
-          }
-
-        }
-        rs.close();
-        ps.close();
-        query = "SELECT sum(uplaceno) as uplaceno FROM userDebts WHERE userID=?";
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("userID"));
-        rs = ps.executeQuery();
-        if (rs.isBeforeFirst()) {
-          rs.next();
-          uplaceno = rs.getDouble("uplaceno");
-        }
-        ps.close();
-        rs.close();
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }
-
-      ukupanDug = dug - uplaceno;
-
-      jObj.put("ukupanDug", ukupanDug);
-      send_object(jObj);
-      return;
-    }
-
-    if (rLine.getString("action").equals("DELETE_USER_DEBT")) {
+    if (rLine.getString("action").equals("uplata_korisnika")) {
       JSONObject object = new JSONObject();
-      PreparedStatement ps;
-      String query = "DELETE FROM userDebts WHERE id=?";
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("idDebt"));
-        ps.executeUpdate();
-        ps.close();
-      } catch (SQLException e) {
-        object.put("ERROR", e.getMessage());
-        e.printStackTrace();
-
+      Uplate uplate = new Uplate(getOperName(), db);
+      uplate
+          .novaUplata(rLine.getInt("userID"), rLine.getDouble("uplaceno"), rLine.getString("opis"));
+      if (uplate.isError()) {
+        object.put("ERROR", uplate.getErrorMSG());
       }
       send_object(object);
       return;
     }
 
-    if (rLine.getString("action").equals("getUserUplate")) {
-      JSONObject jsonObject = new JSONObject();
-      PreparedStatement ps;
-      ResultSet rs;
-      String query = "SELECT * FROM uplate  WHERE userID=? ORDER BY datumUplate DESC";
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("userID"));
-        rs = ps.executeQuery();
-        if (rs.isBeforeFirst()) {
-          int i = 0;
-          while (rs.next()) {
-            JSONObject uplate = new JSONObject();
-            uplate.put("id", rs.getInt("id"));
-            uplate.put("uplaceno", rs.getDouble("uplaceno"));
-            uplate.put("mestoUplate", rs.getString("mestoUplate"));
-            uplate.put("datumUplate", rs.getString("datumUplate"));
-            uplate.put("nazivServisa", rs.getString("nazivServisa"));
-            uplate.put("operater", rs.getString("operater"));
-            uplate.put("zaMesec", rs.getString("zaMesec"));
-            jsonObject.put(String.valueOf(i), uplate);
-
-            i++;
-          }
-        }
-      } catch (SQLException e) {
-        jsonObject.put("ERROR", e.getMessage());
-        e.printStackTrace();
+    if (rLine.getString("action").equals("uplata_delete")) {
+      JSONObject object = new JSONObject();
+      Uplate uplate = new Uplate(operName, db);
+      uplate.deleteUplata(rLine.getInt("idUplate"));
+      if (uplate.isError()) {
+        object.put("ERROR", uplate.getErrorMSG());
       }
-
-      send_object(jsonObject);
+      send_object(object);
+      return;
     }
+
 
     if (rLine.getString("action").equals("get_Service_ident")) {
       jObj = new JSONObject();
@@ -1412,140 +1258,6 @@ public class ClientWorker implements Runnable {
       send_object(jObj);
     }
 
-    if (rLine.getString("action").equals("uplata_servisa")) {
-      JSONObject object = new JSONObject();
-      Uplate uplata = new Uplate(getOperName(), db);
-      uplata
-          .uplati(rLine.getInt("id"), rLine.getDouble("uplaceno"), rLine.getString("mestoUplate"));
-      if (uplata.isError()) {
-        object.put("ERROR", uplata.getErrorMSG());
-      }
-
-      send_object(object);
-      return;
-    }
-
-    if (rLine.getString("action").equals("zaduzi_servis_manual")) {
-      jObj = new JSONObject();
-
-			/*
-            Calendar cal = Calendar.getInstance();
-			Calendar calRate = Calendar.getInstance();
-			calRate.set(Calendar.DAY_OF_MONTH, 1);
-			*/
-
-      LocalDate cal = LocalDate.now();
-      LocalDate calrate;
-      //	calRate.setTime(formatMonthDate.parse(rLine.getString("zaMesec")));
-      calrate = LocalDate
-          .parse(rLine.getString("zaMesec") + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-      int rate = rLine.getInt("rate");
-      int month = 0;
-
-      for (int i = 0; i < rate; i++) {
-
-        query =
-            "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust,"
-                + " paketType, cena, uplaceno, dug, zaduzenOd, zaMesec, PDV, kolicina, jMere)"
-                + " VALUES"
-                + " (?,?,?,?,?,?,?,?,?,?,?,?,? ,?)";
-        try {
-          ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-          ps.setNull(1, Types.INTEGER);
-          if (rate > 1) {
-            ps.setString(2,
-                String.format("%s (rata %d od %d)", rLine.getString("nazivPaketa"), i + 1, rate));
-          } else {
-            ps.setString(2, rLine.getString("nazivPaketa"));
-          }
-          ps.setString(3, cal.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-          ps.setInt(4, rLine.getInt("userID"));
-          ps.setDouble(5, 0.00);
-          ps.setString(6, rLine.getString("paketType"));
-          ps.setDouble(7, rLine.getDouble("cena") / rate);
-          ps.setDouble(8, 0.00);
-          double cena = rLine.getDouble("cena");
-          double kolicina = rLine.getInt("kolicina");
-          double ukupno = kolicina * cena;
-          double dug = ukupno /rate;
-          double _DUG = dug + valueToPercent.getPDVOfValue(dug, rLine.getDouble("pdv"));
-          ps.setDouble(9,_DUG);
-
-          ps.setString(10, getOperName());
-          //calRate.add(Calendar.MONTH, month);
-          calrate = calrate.plusMonths(month);
-          if (month == 0) {
-            month++;
-          }
-          ps.setString(11, calrate.format(DateTimeFormatter.ofPattern("yyyy-MM")).toString());
-          ps.setDouble(12, rLine.getDouble("pdv"));
-          ps.setInt(13, rLine.getInt("kolicina"));
-          ps.setString(14, rLine.getString("jMere"));
-          ps.executeUpdate();
-          rs = ps.getGeneratedKeys();
-          int id = 0;
-          if (rs.isBeforeFirst()) {
-            rs.next();
-            id = rs.getInt(1);
-          }
-
-        } catch (SQLException e) {
-          jObj.put("Error", e.getMessage());
-          e.printStackTrace();
-        }
-
-      }
-
-      try {
-        rs.close();
-        ps.close();
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }
-
-      send_object(jObj);
-      return;
-    }
-
-    if (rLine.getString("action").equals("zaduzi_uslugu")) {
-      //zaduzivanje usluga unapred
-      jObj = new JSONObject();
-      JSONObject Message = new JSONObject();
-      if (!ServicesFunctions.check_service_exist(rLine.getInt("id_ServiceUser"),
-          rLine.getInt("userID"), rLine.getString("zaMesec"), db)) {
-        Message.put("serviceExist", ServicesFunctions.addService(rLine, getOperName(), db));
-        PreparedStatement ps;
-        ResultSet rs;
-        String query;
-        query = "SELECT * FROM servicesUser WHERE id_service =?";
-        try {
-          ps = db.conn.prepareStatement(query);
-          ps.setInt(1, rLine.getInt("id_ServiceUser"));
-          rs = ps.executeQuery();
-          if (rs.isBeforeFirst()) {
-            ServicesFunctions servicesFunctions = new ServicesFunctions(db);
-            rs.next();
-            servicesFunctions
-                .produziService(rs.getInt("id"), rs.getString("endDate"), rs.getInt("produzenje"),
-                    getOperName(), false);
-          }
-          ps.close();
-          rs.close();
-        } catch (SQLException e) {
-          jObj.put("Error", e.getMessage());
-          e.printStackTrace();
-        }
-
-
-        jObj.put("Message", "Usluga za mesec " + rLine.getString("zaMesec") + " zaduzena");
-      } else {
-        jObj.put("Error", "Usluga za mesec " + rLine.getString("zaMesec") + " postoji!");
-      }
-
-      send_object(jObj);
-      return;
-    }
-
     if (rLine.getString("action").equals("add_new_ugovor")) {
       query = "INSERT INTO ugovori_types "
           + "(naziv,  text_ugovor)"
@@ -1566,6 +1278,7 @@ public class ClientWorker implements Runnable {
       send_object(jObj);
       return;
     }
+
     if (rLine.getString("action").equals("get_ugovori")) {
       query = "SELECT * FROM ugovori_types";
       try {
@@ -2860,9 +2573,25 @@ public class ClientWorker implements Runnable {
 
     }
 
+    if (rLine.getString("action").equals("getDigitalTVAddonCards")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db, getOperName());
+      object = dtvPaketFunctions.getDTVAddonCards();
+      if (dtvPaketFunctions.isError()) {
+        object.put("ERROR", dtvPaketFunctions.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+    }
+
     if (rLine.get("action").equals("getDigitalTVPaketi")) {
       jObj = new JSONObject();
-      query = "SELECT * FROM  digitalniTVPaketi";
+      if (rLine.has("showAddons")) {
+        query = "SELECT * FROM  digitalniTVPaketi";
+      } else {
+        query = "SELECT * FROM digitalniTVPaketi WHERE dodatak=false and dodatnakartica=false";
+      }
 
       try {
         ps = db.conn.prepareStatement(query);
@@ -2879,6 +2608,8 @@ public class ClientWorker implements Runnable {
             dtv.put("pdv", rs.getDouble("pdv"));
             dtv.put("idPaket", rs.getInt("idPaket"));
             dtv.put("opis", rs.getString("opis"));
+            dtv.put("dodatak", rs.getBoolean("dodatak"));
+            dtv.put("dodatnaKartica", rs.getBoolean("dodatnaKartica"));
             jObj.put(String.valueOf(i), dtv);
             i++;
           }
@@ -2894,68 +2625,44 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.get("action").equals("add_dtv_paket")) {
-      jObj = new JSONObject();
-      query = "INSERT INTO digitalniTVPaketi (naziv, cena, idPaket, opis, pdv) VALUES "
-          + "(?, ?, ?, ?, ?)";
-
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setString(1, rLine.getString("naziv"));
-        ps.setDouble(2, rLine.getDouble("cena"));
-        ps.setInt(3, rLine.getInt("idPaket"));
-        ps.setString(4, rLine.getString("opis"));
-        ps.setDouble(5, rLine.getDouble("pdv"));
-        ps.executeUpdate();
-        jObj.put("Message", "DTV_PAKET_SAVED");
-      } catch (SQLException e) {
-        jObj.put("Message", "ERROR");
-        jObj.put("ERROR", e.getMessage());
-        e.printStackTrace();
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db, getOperName());
+      dtvPaketFunctions.addDTVPaket(rLine);
+      if (dtvPaketFunctions.isError()) {
+        object.put("ERROR", dtvPaketFunctions.getErrorMSG());
       }
-
-      send_object(jObj);
+      send_object(object);
       return;
 
     }
 
     if (rLine.get("action").equals("edit_dtv_paket")) {
-      jObj = new JSONObject();
-      query = "UPDATE digitalniTVPaketi SET cena=?, idPaket=?, opis=?, pdv=? WHERE id=?";
-
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setDouble(1, rLine.getDouble("cena"));
-        ps.setInt(2, rLine.getInt("idPaket"));
-        ps.setString(3, rLine.getString("opis"));
-        ps.setDouble(4, rLine.getDouble("pdv"));
-        ps.setInt(5, rLine.getInt("id"));
-
-        ps.executeUpdate();
-
-        jObj.put("Message", "PACKET_EDIT_SAVED");
-      } catch (SQLException e) {
-        jObj.put("Message", "ERROR");
-        jObj.put("ERROR", e.getMessage());
-        e.printStackTrace();
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db, getOperName());
+      dtvPaketFunctions.editDTVPaket(rLine);
+      if (dtvPaketFunctions.isError()) {
+        object.put("ERROR", dtvPaketFunctions.getErrorMSG());
       }
 
-      send_object(jObj);
+      send_object(object);
       return;
 
     }
 
     if (rLine.getString("action").equals("delete_dtv_paket")) {
       JSONObject obj = new JSONObject();
-      DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db);
-      boolean deleted = dtvPaketFunctions.deleteDTVPaket(rLine.getInt("id"));
-      if (deleted) {
-        obj.put("MESSAGE", "DELETED");
+      DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db, getOperName());
+      dtvPaketFunctions.deleteDTVPaket(rLine.getInt("id"));
+      if (dtvPaketFunctions.isError()) {
+        obj.put("ERROR", dtvPaketFunctions.getErrorMSG());
       } else {
-        obj.put("ERROR", dtvPaketFunctions.error);
+        obj.put("MESSAGE", "DELETED");
+
       }
       send_object(obj);
 
     }
+
 
     if (rLine.get("action").equals("save_Box_Paket")) {
       jObj = new JSONObject();
@@ -3130,12 +2837,12 @@ public class ClientWorker implements Runnable {
 
     if (rLine.get("action").equals("delete_fiksna_paket")) {
       JSONObject obj = new JSONObject();
-      FIXFunctions fixFunctions = new FIXFunctions(db);
+      FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
       boolean delete = fixFunctions.deleteFixPaket(rLine.getInt("id"));
       if (delete) {
         obj.put("MESSAGE", "DELETED");
       } else {
-        obj.put("ERROR", fixFunctions.error);
+        obj.put("ERROR", fixFunctions.getErrorMSG());
       }
       send_object(obj);
       return;
@@ -3167,23 +2874,31 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("get_FIX_account_saobracaj")) {
       jObj = new JSONObject();
-      jObj = FIXFunctions.getAccountSaobracaj(
+      FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
+      jObj = fixFunctions.getAccountSaobracaj(
           rLine.getInt("id_ServiceUser"),
-          rLine.getString("zaMesec"),
-          db);
+          rLine.getString("zaMesec"));
+      if (fixFunctions.isError()) {
+        jObj.put("ERROR", fixFunctions.getErrorMSG());
+      }
       send_object(jObj);
       return;
     }
 
     if (rLine.getString("action").equals("addFixUslugu")) {
       jObj = new JSONObject();
-      if (FIXFunctions.check_TELBr_bussy(rLine.getString("brojTel"), db)) {
+      FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
+      if (fixFunctions.check_TELBr_bussy(rLine.getString("brojTel"))) {
         jObj.put("ERROR", String.format("Broj telefona %s je zauzet", rLine.getString("brojTel")));
         send_object(jObj);
         return;
       }
-      String message = ServicesFunctions.addServiceFIX(rLine, getOperName(), db);
-      jObj.put("Message", message);
+
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+      servicesFunctions.addServiceFIX(rLine);
+      if (servicesFunctions.isError()) {
+        jObj.put("ERROR", servicesFunctions.getErrorMSG());
+      }
       send_object(jObj);
       return;
 
@@ -3244,11 +2959,25 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("get_csv_data_account")) {
-      FIXFunctions fixFunctions = new FIXFunctions(db);
+      FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
       JSONObject poziviZaMesec = new JSONObject();
       poziviZaMesec = fixFunctions
           .getPoziviZaMesec(rLine.getString("zaMesec"), rLine.getString("account"));
+      if (fixFunctions.isError()) {
+        poziviZaMesec.put("ERROR", fixFunctions.getErrorMSG());
+      }
       send_object(poziviZaMesec);
+      return;
+    }
+
+    if (rLine.getString("action").equals("obracunaj_FIX_za_mesec")) {
+      JSONObject object = new JSONObject();
+      FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
+      fixFunctions.obracunajZaMesec(rLine.getString("zaMesec"));
+      if (fixFunctions.isError()) {
+        object.put("ERROR", fixFunctions.getErrorMSG());
+      }
+      send_object(object);
       return;
     }
 
@@ -3256,7 +2985,7 @@ public class ClientWorker implements Runnable {
     //IPTV
 
     if (rLine.getString("action").equals("check_iptv_is_alive")) {
-      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db, getOperName());
       JSONObject object = new JSONObject();
 
       if (!stalkerRestAPI2.isHostAlive()) {
@@ -3330,7 +3059,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getIPTVPakets")) {
       jObj = new JSONObject();
-      StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
+      StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db, getOperName());
       send_object(stAPI2.getPakets_ALL());
       return;
 
@@ -3370,13 +3099,13 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getIPTVUsers")) {
       jObj = new JSONObject();
-      StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
+      StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db, getOperName());
 
     }
 
     if (rLine.getString("action").equals("save_IPTV_USER")) {
       JSONObject jObj = new JSONObject();
-      StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db);
+      StalkerRestAPI2 stAPI2 = new StalkerRestAPI2(db, getOperName());
       if (stAPI2.checkUser(rLine.getString("STB_MAC"))) {
         jObj.put("ERROR", String.format("MAC Adresa %s je zauzeta", rLine.getString("STB_MAC")));
         send_object(jObj);
@@ -3384,7 +3113,8 @@ public class ClientWorker implements Runnable {
       }
       jObj = stAPI2.saveUSER(rLine);
       if (!jObj.has("ERROR")) {
-        ServicesFunctions.addServiceIPTV(rLine, operName, db);
+        ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+        servicesFunctions.addServiceIPTV(rLine);
       }
       send_object(jObj);
       return;
@@ -3445,7 +3175,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("get_iptv_mac_info")) {
       JSONObject object = new JSONObject();
-      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db, getOperName());
       if (stalkerRestAPI2.isError()) {
         object.put("ERROR", stalkerRestAPI2.getErrorMSG());
       } else {
@@ -3458,7 +3188,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("change_iptv_pass")) {
       JSONObject object = new JSONObject();
-      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db, getOperName());
       if (stalkerRestAPI2.isError()) {
         object.put("ERROR", stalkerRestAPI2.getErrorMSG());
       }
@@ -3468,7 +3198,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("changeIPTVEndDate")) {
       JSONObject object = new JSONObject();
-      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db, getOperName());
       stalkerRestAPI2.setEndDate(rLine.getString("MAC"), rLine.getString("endDate"));
       if (stalkerRestAPI2.isError()) {
         object.put("ERROR", stalkerRestAPI2.getErrorMSG());
@@ -3478,7 +3208,7 @@ public class ClientWorker implements Runnable {
     }
     if (rLine.getString("action").equals("save_iptv_acc_data")) {
       JSONObject object = new JSONObject();
-      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db, getOperName());
       stalkerRestAPI2.saveAccountInfo(rLine);
       if (stalkerRestAPI2.isError()) {
         object.put("ERROR", stalkerRestAPI2.getErrorMSG());
@@ -3487,41 +3217,7 @@ public class ClientWorker implements Runnable {
       return;
     }
 
-    if (rLine.getString("action").equals("check_fix_obracun")) {
-      jObj = new JSONObject();
-      boolean exist = false;
-      PreparedStatement ps;
-      ResultSet rs;
 
-      String query = "SELECT * FROM userDebts WHERE zaMesec=? AND paketType='FIX_SAOBRACAJ'";
-
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setString(1, rLine.getString("zaMesec"));
-        rs = ps.executeQuery();
-        if (rs.isBeforeFirst()) {
-          exist = true;
-        }
-        ps.close();
-        rs.close();
-      } catch (SQLException e) {
-        jObj.put("Error", e.getMessage());
-        e.printStackTrace();
-      }
-
-      jObj.put("exist", exist);
-
-      send_object(jObj);
-      return;
-    }
-
-    if (rLine.getString("action").equals("obracunaj_FIX_za_mesec")) {
-      jObj = new JSONObject();
-      jObj = FIXFunctions.obracunajZaMesec(db, rLine.getString("zaMesec"), getOperName());
-
-      send_object(jObj);
-      return;
-    }
 
     if (rLine.getString("action").equals("getOstaleUslugeData")) {
       JSONObject jObj = new JSONObject();
@@ -3556,7 +3252,7 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("delete_IPTV_paket")) {
       JSONObject obj = new JSONObject();
-      IPTVFunctions iptvFunctions = new IPTVFunctions(db);
+      IPTVFunctions iptvFunctions = new IPTVFunctions(db, getOperName());
       boolean deleted = iptvFunctions.deletePaket(rLine.getInt("id"));
       if (deleted) {
         obj.put("MESSAGE", "DELETED");
@@ -3614,26 +3310,24 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("save_OstaleUsluge_USER")) {
-      String Message = ServicesFunctions.addServiceOstalo(rLine, operName, db);
-      JSONObject jObj = new JSONObject();
-      if (!Message.equals("SERVICE_ADDED")) {
-        jObj.put("ERROR", Message);
-      } else {
-        jObj.put("INFO", "SERVICE_ADDED");
+      JSONObject object = new JSONObject();
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+      servicesFunctions.addServiceOstalo(rLine);
+      if (servicesFunctions.isError()) {
+        object.put("ERROR", servicesFunctions.getErrorMSG());
       }
-
-      send_object(jObj);
+      send_object(object);
       return;
     }
 
     if (rLine.getString("action").equals("delete_OstaleUsluge_paket")) {
       JSONObject obj = new JSONObject();
-      ServicesFunctions servicesFunctions = new ServicesFunctions(db);
-      boolean deleted = servicesFunctions.deletePaketOstalo(rLine.getInt("id"));
-      if (deleted) {
-        obj.put("MESSAGE", "IZBRISANO");
-      } else {
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+      servicesFunctions.deletePaketOstalo(rLine.getInt("id"));
+      if (servicesFunctions.isError()) {
         obj.put("ERROR", servicesFunctions.getErrorMSG());
+      } else {
+        obj.put("MESSAGE", "IZBRISANO");
       }
 
       send_object(obj);
@@ -3811,6 +3505,7 @@ public class ClientWorker implements Runnable {
         e.printStackTrace();
       }
       send_object(jsonObject);
+      return;
     }
 
     if (rLine.getString("action").equals("getMagacin")) {
@@ -3835,8 +3530,9 @@ public class ClientWorker implements Runnable {
         jsonObject.put("ERROR", e.getMessage());
         e.printStackTrace();
       }
-
       send_object(jsonObject);
+      return;
+
     }
 
     if (rLine.getString("action").equals("deleteMagacin")) {
@@ -3873,13 +3569,34 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("getMesecniObracun")) {
       JSONObject jsonObject = new JSONObject();
-      MesecniObracun mesecniObracun = new MesecniObracun();
-      jsonObject = mesecniObracun.getMesecniObracun(rLine.getInt("brOd"), rLine.getInt("brDo"),
-          rLine.getString("odDatuma"), rLine.getString("doDatum"), getOperName(), db);
+      MesecniObracun mesecniObracun = new MesecniObracun(db, getOperName());
+      jsonObject = mesecniObracun.getMesecniObracunPDV(rLine.getInt("brOd"), rLine.getInt("brDo"),
+          rLine.getString("odDatuma"), rLine.getString("doDatum"), getOperName());
       if (mesecniObracun.hasError) {
         jsonObject.put("ERROR", mesecniObracun.errorMessage);
       }
       send_object(jsonObject);
+    }
+
+    if (rLine.getString("action").equals("obracunZaMesec")) {
+      JSONObject object = new JSONObject();
+      FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
+      fixFunctions.obracunajZaMesec(rLine.getString("zaMesec"));
+      if (fixFunctions.isError()) {
+        object.put("ERROR", fixFunctions.getErrorMSG());
+        send_object(object);
+        return;
+      }
+      MesecniObracun mesecniObracun = new MesecniObracun(db, getOperName());
+      double ukupanDUG = mesecniObracun.obracunajZaMesec(rLine.getString("zaMesec"));
+      if (mesecniObracun.isError()) {
+        object.put("ERROR", mesecniObracun.getErrorMSG());
+        ukupanDUG = 0.00;
+      } else {
+        object.put("ukupno", ukupanDUG);
+      }
+      send_object(object);
+      return;
     }
 
     if (rLine.getString("action").equals("getUserRacun")) {
@@ -4198,7 +3915,7 @@ public class ClientWorker implements Runnable {
     }
 
     if (rLine.getString("action").equals("getWifiSignalData")) {
-      JSONObject object = new JSONObject();
+      JSONObject object;
 
       WiFiData wiFiData = new WiFiData(db);
       object = wiFiData.getWifiData();
@@ -4227,10 +3944,231 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("disconnectUser")) {
+      JSONObject object = new JSONObject();
+      Radius radius = new Radius(db, getOperName());
+      String s = radius.disconnectUser(rLine.getString("username"), rLine.getString("userIP"),
+          rLine.getString("nasIP"));
+      object.put("info", s);
+      if (radius.isError()) {
+        object.put("ERROR", radius.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("changeBwLimit")) {
+      JSONObject object = new JSONObject();
+      Radius radius = new Radius(db, getOperName());
+      String s = radius.changeMTRateLimit(rLine.getString("username"), rLine.getString("userIP"),
+          rLine.getString("nasIP"), rLine.getString("bwLimit"));
+      object.put("info", s);
+      if (radius.isError()) {
+        object.put("ERROR", radius.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+
+    }
+
+
     if (rLine.getString("action").equals("sendMessage")) {
       JSONObject object = new JSONObject();
 
     }
+
+    if (rLine.getString("action").equals("getUserServiceDTVKartice")) {
+      JSONObject object;
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+      object = dtvFunctions.getUserServiceKartice(rLine.getInt("idService"));
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getDTVCard")) {
+      JSONObject object = new JSONObject();
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+      object = dtvFunctions.getUserCard(rLine.getInt("serviceID"));
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+
+    }
+
+    if (rLine.getString("action").equals("get_user_DTV_addons")) {
+      JSONObject object = new JSONObject();
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+      int dtvMain = rLine.getInt("dtv_main");
+      int userID = rLine.getInt("userID");
+      //if is box Service then we ne to sort out DTVPaketFrom box and then proceed with DTVPaketID;
+      if (rLine.getBoolean("isBox")) {
+        ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+        dtvMain = servicesFunctions.getBoxIDOfDTVLinkedPaket(dtvMain, userID);
+        object = dtvFunctions.getUserAddonsID(dtvMain, userID, true);
+      } else {
+        object = dtvFunctions.getUserAddonsID(dtvMain, userID, false);
+      }
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("addDTVAddonCard")) {
+      JSONObject object = new JSONObject();
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+
+      //ako kartica postoji
+      Boolean cardExist = dtvFunctions.check_card_busy(rLine.getInt("cardID"));
+      if (cardExist) {
+        object.put("ERROR", String.format("Kartica sa brojem %d postoji", rLine.getInt("cardID")));
+        send_object(object);
+        return;
+      }
+
+      dtvFunctions.addAddonCard(rLine);
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getAllDTVCards")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvFunctions = new DTVPaketFunctions(db, getOperName());
+      object = dtvFunctions.getAllCards();
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getAllCAS")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvFunctions = new DTVPaketFunctions(db, getOperName());
+      object = dtvFunctions.getAllCAS();
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("addCAS")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvFunctions = new DTVPaketFunctions(db, getOperName());
+      dtvFunctions.addCASCode();
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("deleteCAS")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvFunctions = new DTVPaketFunctions(db, getOperName());
+      dtvFunctions.deleteCASCode(rLine.getInt("id"));
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("updateCASCode")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvFunctions = new DTVPaketFunctions(db, getOperName());
+      dtvFunctions.updateCode(rLine.getInt("id"), rLine.getInt("code"));
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("updateCASPaketID")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvFunctions = new DTVPaketFunctions(db, getOperName());
+      dtvFunctions.updatePaketID(rLine.getInt("id"), rLine.getInt("paketID"));
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getDTVDodatke")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db, getOperName());
+      object = dtvPaketFunctions.getDTVAddons();
+      if (dtvPaketFunctions.isError()) {
+        object.put("ERROR", dtvPaketFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getDTVPaketID")) {
+      JSONObject object = new JSONObject();
+      DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db, getOperName());
+      ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+      ServiceData service = servicesFunctions.getServiceData(rLine.getInt("idService"));
+      object.put("paketID", dtvPaketFunctions.getPacketID(service.getId_service()));
+
+      if (dtvPaketFunctions.isError()) {
+        object.put("ERROR", dtvPaketFunctions.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("updateUserDTVPaketID")) {
+      JSONObject object = new JSONObject();
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+      dtvFunctions.updateUserDTVPaketID(rLine.getInt("paketID"), rLine.getInt("serviceID"));
+      if (dtvFunctions.isError()) {
+        object.put("ERROR", dtvFunctions.getErrorMSG());
+      }
+      send_object(object);
+      return;
+
+    }
+
+    if (rLine.getString("action").equals("addDTVPaketDodatakToUser")) {
+      JSONObject object = new JSONObject();
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+      dtvFunctions.addAddonPaket(rLine.getInt("serviceID"), rLine.getInt("dodatakID"),
+          rLine.getInt("userID"));
+
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("removeDTVPaketDodatakFromUser")) {
+      JSONObject object = new JSONObject();
+      DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+      dtvFunctions.removeAddonPaket(rLine.getInt("serviceID"), rLine.getString("naziv"),
+          rLine.getInt("userID"));
+      send_object(object);
+      return;
+    }
+
+
+
 
   }
 
@@ -4247,55 +4185,6 @@ public class ClientWorker implements Runnable {
     }
   }
 
-  private Double get_userDebt(int userID) {
-    PreparedStatement ps;
-    ResultSet rs;
-    String query = "SELECT * FROM userDebts WHERE userID=? ";
-    double dug = 0;
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setInt(1, userID);
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        double cena;
-        double popust;
-        double pdv;
-        double ukupno;
-        double osnovica;
-        int kolicina = 0;
-        while (rs.next()) {
-          cena = rs.getDouble("cena");
-          popust = rs.getDouble("popust");
-          pdv = rs.getDouble("PDV");
-          kolicina = rs.getInt("kolicina");
-          osnovica = cena * kolicina;
-          osnovica = osnovica - valueToPercent.getPDVOfValue(osnovica, popust);
-          dug += osnovica + valueToPercent.getPDVOfValue(osnovica, pdv);
-
-        }
-      }
-      rs.close();
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-    query = "SELECT SUM(uplaceno) as uplaceno FROM uplate WHERE userID=?";
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setInt(1, userID);
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        rs.next();
-        dug = dug - rs.getDouble("uplaceno");
-      }
-      rs.close();
-      ps.close();
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-    return dug;
-  }
 
   private String get_paket_naziv(String nazivPaketa, int dtv_id) {
     String naziv = "";
@@ -4324,16 +4213,16 @@ public class ClientWorker implements Runnable {
   }
 
   private void delete_user(JSONObject mes) {
+    JSONObject object = new JSONObject();
     int userId = mes.getInt("userId");
 
-    boolean deleted = UserFunc.deleteUser(userId, db);
+    UserFunc userFunc = new UserFunc(db, getOperName());
+    userFunc.deleteUser(userId);
 
-    jObj = new JSONObject();
-    if (deleted) {
-      jObj.put("message", "USER_DELETED");
-    } else {
-      jObj.put("ERROR", "Doslo je do greske prilikom brisanja korisnika!");
+    if (userFunc.isError()) {
+      object.put("ERROR", userFunc.getErrorMSG());
     }
+
     send_object(jObj);
     return;
   }

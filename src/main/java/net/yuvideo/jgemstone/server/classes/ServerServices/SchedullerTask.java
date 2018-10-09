@@ -54,9 +54,7 @@ public class SchedullerTask implements Runnable {
       check_scheduler_tasks();
 
       //show connected clients
-      if (DEBUG_VAL == 2) {
-        show_clients();
-      }
+      show_clients();
 
       //run every half hour
 
@@ -119,7 +117,6 @@ public class SchedullerTask implements Runnable {
   }
 
   private void show_clients() {
-    System.out.println("Ukupno klijenta: " + clientWorkerArrayList.size());
     for (int i = 0; i < clientWorkerArrayList.size(); i++) {
       info = String.format("\n************U S E R  I N F O************" +
               "\nUser Name: %s, \nIP: %s, \nUID: %s" +
@@ -128,9 +125,10 @@ public class SchedullerTask implements Runnable {
           clientWorkerArrayList.get(i).get_socket().getInetAddress(),
           clientWorkerArrayList.get(i).hashCode()
       );
-      if (DEBUG > 1) {
+      if (DEBUG > 2) {
         LOGGER.info(info);
       }
+
       if (clientWorker.get_socket().isClosed()) {
         query = "UPDATE onlineOperaters SET online=0 WHERE uniqueID=?";
         try {
@@ -166,6 +164,8 @@ public class SchedullerTask implements Runnable {
 
 
           } catch (SQLException e) {
+            LOGGER.error(e.getMessage());
+            close_client_socket(i);
             e.printStackTrace();
           }
 
@@ -176,12 +176,13 @@ public class SchedullerTask implements Runnable {
   }
 
   private void close_client_socket(int i) {
-    System.out.println(String.format("Client %s IP: %s disconected..",
+    LOGGER.info(String.format("Client  %s IP: %s disconnected..",
         clientWorkerArrayList.get(i).getOperName(),
         clientWorkerArrayList.get(i).get_socket().getInetAddress()).replaceFirst("/", ""));
     try {
       clientWorkerArrayList.get(i).get_socket().close();
     } catch (IOException e) {
+      LOGGER.error(e.getMessage());
       e.printStackTrace();
     }
     clientWorkerArrayList.remove(i);
@@ -191,6 +192,12 @@ public class SchedullerTask implements Runnable {
   public void add_client(ClientWorker client) {
     clientWorker = client;
     clientWorkerArrayList.add(clientWorker);
+    for (ClientWorker cw : clientWorkerArrayList) {
+      System.out.println(String
+          .format("active Clients:  OPER:%s socket %s, isConn: %s", cw.getOperName(),
+              cw.get_socket().getInetAddress().toString(), cw.get_socket().isConnected()));
+    }
+
   }
 
   public void add_thread_clientWorker(Thread th) {

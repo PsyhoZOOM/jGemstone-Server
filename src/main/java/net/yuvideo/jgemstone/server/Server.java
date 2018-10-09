@@ -42,12 +42,12 @@ public class Server {
     int portNumber = 8543;
 
     for (int i = 0; i < args.length; i++) {
-      if (args[i].contains("debug=1")) {
-        DEBUG = 1;
+      if (args[i].contains("debug")) {
+        DEBUG = Integer.parseInt(args[i].replace("debug=", ""));
+        System.out.println(args[i]);
       }
     }
 
-    DEBUG = 1;
     database db;
 
     // SSL SOCKET INIT
@@ -111,6 +111,7 @@ public class Server {
     // SCHEDULER MONTHLY ..
     SchedullerTask st;
     st = new SchedullerTask(1);
+    st.DEBUG = DEBUG;
     st.db = db;
 
     st.DEBUG = DEBUG;
@@ -167,7 +168,7 @@ public class Server {
       try {
         // Scheduler tasks timout in minutes
         //       cw = new ClientWorker((SSLSocket) serverSock.accept());
-        cw = new ClientWorker((SSLSocket) serverSocket.accept(), db);
+        cw = new ClientWorker((SSLSocket) serverSocket.accept());
         cw.DEBUG = DEBUG;
         cw.LOGGER = LOGGER;
         cw.scheduler = st;

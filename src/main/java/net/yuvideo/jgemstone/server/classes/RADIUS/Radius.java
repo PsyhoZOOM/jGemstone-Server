@@ -1,5 +1,8 @@
 package net.yuvideo.jgemstone.server.classes.RADIUS;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,13 +11,15 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
+import net.yuvideo.jgemstone.server.classes.MIKROTIK_API.MikrotikAPI;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
+import org.apache.log4j.PropertyConfigurator;
 import org.json.JSONObject;
 
 public class Radius {
 
-  private final database db;
+  private database db;
 
   private final DateTimeFormatter dtfRadcheck = DateTimeFormatter.ofPattern("dd MMM yyyy");
   private final DateTimeFormatter dtfRadreply = DateTimeFormatter
@@ -29,6 +34,7 @@ public class Radius {
     this.db = db;
     this.operName = operName;
   }
+
 
   public JSONObject getUsers(String userName) {
     JSONObject users = new JSONObject();
@@ -175,12 +181,8 @@ public class Radius {
     for (String key : rLine.keySet()) {
       switch (key) {
         case "endDate":
-          boolean updated = changeUserEndDate(rLine.getString("username"),
+          setEndDate(rLine.getString("username"),
               rLine.getString("endDate"));
-          if (!updated) {
-            object.put("ERROR", "Ne mogu da izmenim datum isteka!");
-            return object;
-          }
           break;
         case "IPAddress":
           changeUserIPAddress(rLine.getString("username"), rLine.getString("IPAddress"));
@@ -402,7 +404,7 @@ public class Radius {
     return error;
   }
 
-  public boolean changeUserEndDate(String username, String endDate) {
+  public void setEndDate(String username, String endDate) {
     boolean updated = false;
 
     LocalTime time = LocalTime.of(00, 00, 00);
@@ -418,13 +420,10 @@ public class Radius {
       ps.setString(1, username);
       ps.executeUpdate();
       ps.close();
-      updated = true;
     } catch (SQLException e) {
-      updated = false;
-      errorMSG = e.getMessage();
-      error = true;
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
-      return updated;
     }
 
     query = "DELETE FROM radreply where username=? and attribute  = 'WISPR-Session-Terminate-Time'";
@@ -433,13 +432,10 @@ public class Radius {
       ps.setString(1, username);
       ps.executeUpdate();
       ps.close();
-      updated = true;
     } catch (SQLException e) {
-      updated = false;
-      error = true;
-      errorMSG = e.getMessage();
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
-      return updated;
     }
 
     query = "INSERT INTO radcheck (username, attribute, op, value) VALUES (?,?,?,?)";
@@ -452,10 +448,9 @@ public class Radius {
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
-      error = true;
-      errorMSG = e.getMessage();
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
-      return updated;
     }
 
     query = "INSERT INTO radreply (username, attribute, op, value) VALUES (?,?,?,?)";
@@ -467,15 +462,11 @@ public class Radius {
       ps.setString(4, LocalDateTime.parse(endDateFormated).minusSeconds(1).format(dtfRadreply));
       ps.executeUpdate();
       ps.close();
-      updated = true;
     } catch (SQLException e) {
-      error = true;
-      errorMSG = e.getMessage();
-      updated = false;
+      setErrorMSG(e.getMessage());
+      setError(true);
       e.printStackTrace();
-      return updated;
     }
-    return updated;
   }
 
 
@@ -701,7 +692,8 @@ public class Radius {
     if (reply.trim().equals("Access-Accept")) {
       return "Korisnik ulogovan";
     } else if (reply.contains("Access-Reject")) {
-      boolean userExist = NETFunctions.check_userName_busy(userName, db);
+      NETFunctions netFunctions = new NETFunctions(db, getOperName());
+      boolean userExist = netFunctions.check_userName_busy(userName);
       if (!userExist) {
         return "Korisničko ime ne postoji";
       } else {
@@ -804,6 +796,100 @@ public class Radius {
     }
     return groupName;
   }
+
+  public String changeMTRateLimit(String userName, String ipAddres, String nasIP, String bwLimit) {
+    String response = "";
+    String data = "nema";
+    String[] cmd = {"sh", "-c",
+        String.format("rateLimit.sh %s %s %s %s %s", userName, ipAddres, nasIP, getNasSecret(nasIP),
+            bwLimit)};
+
+    try {
+      Process exec = new ProcessBuilder(cmd).start();
+      exec.waitFor();
+
+      BufferedReader bfReader = new BufferedReader(new InputStreamReader(exec.getInputStream()));
+
+      while ((response = bfReader.readLine()) != null) {
+        if (response.contains("CoA-ACK")) {
+          data = response;
+        }
+      }
+    } catch (IOException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+
+    if (data == null) {
+      data = "nema";
+    }
+
+    return data;
+
+  }
+
+  public String disconnectUser(String userName, String ipAddress, String nasIP) {
+    String[] cmd = {"sh", "-c",
+        String.format("disconnect.sh %s %s %s %s", userName, ipAddress, nasIP,
+            getNasSecret(nasIP))};
+
+    String response = "";
+    String data = null;
+    try {
+      Process exec = new ProcessBuilder(cmd).start();
+      exec.waitFor();
+
+      BufferedReader bfReader = new BufferedReader(new InputStreamReader(exec.getInputStream()));
+
+      while ((response = bfReader.readLine()) != null) {
+        if (response.contains("rad_recv")) {
+          data = response;
+        }
+      }
+    } catch (IOException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+    if (data == null) {
+      data = "nemaaa";
+    }
+    return data;
+  }
+
+  String getNasSecret(String nasIP) {
+    String secret = "";
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT  secret from nas WHERE nasname=?";
+    try {
+      ps = db.connRad.prepareStatement(query);
+      ps.setString(1, nasIP);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        secret = rs.getString("secret");
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+    return secret;
+  }
+
+
 
   public String getErrorMSG() {
     return errorMSG;

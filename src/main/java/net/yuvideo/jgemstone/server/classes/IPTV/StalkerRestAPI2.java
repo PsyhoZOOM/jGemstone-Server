@@ -41,9 +41,11 @@ public class StalkerRestAPI2 {
 
   private boolean error;
   private String errorMSG;
+  private String operName;
 
-  public StalkerRestAPI2(database db) {
+  public StalkerRestAPI2(database db, String operName) {
     this.db = db;
+    this.operName = operName;
     setupAPI();
   }
 
@@ -438,10 +440,10 @@ public class StalkerRestAPI2 {
     }
     changeMac(Integer.parseInt(accountInfo.getString("accountID")),
         accountInfo.getString("MAC_CHANGE"));
-    ServicesFunctions servicesFunctions = new ServicesFunctions(db);
+    ServicesFunctions servicesFunctions = new ServicesFunctions(db, operName);
     String old_MAC = accountInfo.getString("MAC");
     String new_MAC = accountInfo.getString("MAC_CHANGE");
-    IPTVFunctions iptvFunctions = new IPTVFunctions(db);
+    IPTVFunctions iptvFunctions = new IPTVFunctions(db, getOperName());
     iptvFunctions.changeMAC(old_MAC, new_MAC);
     return;
   }
@@ -477,5 +479,13 @@ public class StalkerRestAPI2 {
 
   public void setErrorMSG(String errorMSG) {
     this.errorMSG = errorMSG;
+  }
+
+  public String getOperName() {
+    return operName;
+  }
+
+  public void setOperName(String operName) {
+    this.operName = operName;
   }
 }

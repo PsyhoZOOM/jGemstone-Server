@@ -5,11 +5,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
 
 /**
  * Created by zoom on 9/9/16.
@@ -18,23 +21,13 @@ public class monthlyScheduler {
 
   private final Logger LOGGER = Logger.getLogger("MONTHLY_SCHEDULER");
   public database db;
-  private SimpleDateFormat format_first_day_in_month = new SimpleDateFormat("yyyy-MM-01");
-  private SimpleDateFormat forma_normal_date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-  private SimpleDateFormat format_date = new SimpleDateFormat("yyyy-MM-dd");
+  private DateTimeFormatter format_date = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private DateTimeFormatter format_month = DateTimeFormatter.ofPattern("yyyy-MM");
-  private Users users;
-  private ArrayList<Users> usersArrayList = new ArrayList<>();
-  private PreparedStatement ps;
-  private PreparedStatement psUpdateDebts;
-  private ResultSet rs;
-  private ResultSet rsUpdateDebts;
-  private List id_service = new ArrayList();
-  private Double ukupna_cena = 0.00;
-  private user_debts userDebt;
-  private ArrayList<user_debts> userDebts;
-  private String query;
 
   public void monthlyScheduler() {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query;
     int userID = 0;
     query = "SELECT *  FROM servicesUser WHERE obracun=1 AND aktivan=1 AND linkedService=0  ";
     //koji je mesec zaduzenja. posto je sada novi mesec kada se zaduzuje korisnik onda idemo mesec dana u nazad.
@@ -48,83 +41,78 @@ public class monthlyScheduler {
       if (rs.isBeforeFirst()) {
         while (rs.next()) {
           query =
-              "INSERT INTO userDebts (id_ServiceUser, nazivPaketa, datumZaduzenja, userID, popust, paketType, cena, dug, zaMesec, PDV)"
+              "INSERT INTO zaduzenja (datum, cena, pdv, popust, naziv, zaduzenOd, userID, paketType, dug, zaMesec)"
                   + "VALUES "
                   + "(?,?,?,?,?,?,?,?,?,?)";
-          psUpdateDebts = db.conn.prepareStatement(query);
-          psUpdateDebts.setInt(1, rs.getInt("id"));
-          psUpdateDebts.setString(2, rs.getString("nazivPaketa"));
-          psUpdateDebts
-              .setDate(3, java.sql.Date.valueOf(format_first_day_in_month.format(new Date())));
-          psUpdateDebts.setInt(4, rs.getInt("userID"));
-          psUpdateDebts.setDouble(5, rs.getDouble("popust"));
-          psUpdateDebts.setString(6, rs.getString("paketType"));
+          ps = db.conn.prepareStatement(query);
+          ps.setString(1, LocalDate.now().format(format_date));
+          ps.setDouble(2, rs.getDouble("cena"));
+          ps.setDouble(3, rs.getDouble("PDV"));
+          ps.setDouble(4, rs.getDouble("popust"));
+          ps.setString(5, rs.getString("nazivPaketa"));
+          ps.setString(6, "SYSTEM");
+          ps.setInt(7, rs.getInt("userID"));
+          ps.setString(8, rs.getString("paketType"));
+
           double cena = rs.getDouble("cena");
           double pdv = rs.getDouble("pdv");
           double popust = rs.getDouble("popust");
           double dug = cena - valueToPercent.getPDVOfSum(cena, popust);
           dug = dug + valueToPercent.getPDVOfValue(dug, pdv);
-          psUpdateDebts.setDouble(7, cena);
-          //cena+pdv-popust=dug
-          psUpdateDebts.setDouble(8, dug);
-          psUpdateDebts.setString(9, date.format(format_month));
-          psUpdateDebts.setDouble(10, rs.getDouble("pdv"));
+          ps.setDouble(9, dug);
+          ps.setString(10, date.format(format_month));
+
+          //ako je je nov servis preskociti zaduzivanje i updejtovati newService=0, to je u slucaju
+          //da je vec zaduzen (npr Delimicna cena na pola meseca..) da se ne bi duplirala zaduzenja.
+          //
           if (!rs.getBoolean("newService")) {
-            //ako servis je vec zaduzen onda preskociti zaduzenje od strane servera :)
-            if (!check_skip_userDebt(rs.getInt("id"), rs.getInt("userID"),
-                date.format(format_month))) {
-              psUpdateDebts.executeUpdate();
+            ps.executeUpdate();
+            //ako je servis obelezen za brisanje, posto smo ga zaduzili sada cemo ga izbrisati ;)
+            if (rs.getBoolean("markForDelete")) {
+
+              deleteMarkForDeleteService(rs.getInt("id"));
+
             }
           } else {
-            setOldService(rs.getInt("id"));
+            setNewService(rs.getInt("id"), false);
           }
-          userID = rs.getInt("userID");
         }
       }
       rs.close();
-      if (psUpdateDebts != null) {
-        psUpdateDebts.close();
-      }
-      rs.close();
+      ps.close();
     } catch (SQLException e) {
       e.printStackTrace();
     }
 
   }
 
-
-  private void setOldService(int id) {
-    query = "UPDATE servicesUser set newService=0 WHERE id=?";
+  private void deleteMarkForDeleteService(int id) {
+    PreparedStatement ps;
+    String query = "DELETE FROM servicesUser WHERE id=?";
     try {
-      PreparedStatement ps2 = db.conn.prepareStatement(query);
-      ps2.setInt(1, id);
-      ps2.executeUpdate();
-      ps2.close();
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, id);
+      ps.executeUpdate();
     } catch (SQLException e) {
       e.printStackTrace();
     }
   }
 
-  private Boolean check_skip_userDebt(int id_service, int userID, String zaMesec) {
-    PreparedStatement psCheck;
-    ResultSet rsCheck;
-    Boolean check = false;
 
-    String queryCheck = "SELECT * FROM userDebts WHERE id_ServiceUser=? AND userID=? and zaMesec=?";
+  private void setNewService(int id, boolean active) {
+    PreparedStatement ps;
+    String query = "UPDATE servicesUser SET newService=? WHERE id=?";
     try {
-      psCheck = db.conn.prepareStatement(queryCheck);
-      psCheck.setInt(1, id_service);
-      psCheck.setInt(2, userID);
-      psCheck.setString(3, zaMesec);
-      rsCheck = psCheck.executeQuery();
-      check = rsCheck.isBeforeFirst();
-      psCheck.close();
-      rsCheck.close();
+      ps = db.conn.prepareStatement(query);
+      ps.setBoolean(1, active);
+      ps.setInt(2, id);
+      ps.executeUpdate();
+      ps.close();
+
     } catch (SQLException e) {
       e.printStackTrace();
     }
-
-    return check;
   }
+
 
 }

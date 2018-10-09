@@ -20,13 +20,26 @@ import org.json.JSONObject;
  */
 public class addBoxService {
 
+  private final String operName;
   public database db;
-  private ResultSet rs;
   private PreparedStatement ps;
   private String query;
 
   private int BOX_Service_ID;
   private SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
+
+  public addBoxService(database db, String operName) {
+    this.db = db;
+    this.operName = operName;
+  }
+
+  public boolean checkIPTVAlive() {
+    StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db, getOperName());
+    if (!stalkerRestAPI2.isHostAlive()) {
+      return false;
+    }
+    return true;
+  }
 
   public boolean addBox(JSONObject rLine, String opername) {
 
@@ -52,8 +65,8 @@ public class addBoxService {
       ps.setBoolean(10, false);
       ps.setInt(11, rLine.getInt("produzenje"));
       ps.setBoolean(12, true);
-      if (rLine.has("DTVKartica")) {
-        ps.setInt(13, rLine.getInt("DTVKartica"));
+      if (rLine.has("cardID")) {
+        ps.setInt(13, rLine.getInt("cardID"));
       } else {
         ps.setString(13, "");
       }
@@ -87,17 +100,14 @@ public class addBoxService {
       rsBoxId.next();
       BOX_Service_ID = rsBoxId.getInt(1);
 
-      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db);
-      if (!stalkerRestAPI2.isHostAlive()) {
-        return false;
-      }
+
       if (rLine.has("STB_MAC")) {
         add_iptv(rLine, opername);
       }
       if (rLine.has("groupName")) {
         add_internet(rLine, opername);
       }
-      if (rLine.has("DTVKartica")) {
+      if (rLine.has("cardID")) {
         add_dtv(rLine, opername);
       }
       if (rLine.has("FIX_TEL")) {
@@ -105,6 +115,10 @@ public class addBoxService {
           add_fix(rLine, opername);
         }
       }
+
+      ps.close();
+      rsBoxId.close();
+
 
     } catch (SQLException e) {
       e.printStackTrace();
@@ -116,11 +130,13 @@ public class addBoxService {
   }
 
   private String add_iptv(JSONObject rLine, String opername) {
-    JSONObject json = IPTVFunctions.add_account(rLine, this.db);
+    IPTVFunctions iptvFunctions = new IPTVFunctions(db, getOperName());
+    JSONObject json = iptvFunctions.add_account(rLine);
     if (json.has("ERROR")) {
       return json.getString("ERROR");
     }
-    ServicesFunctions.addServiceIPTVLinked(rLine, opername, BOX_Service_ID, this.db);
+    ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+    servicesFunctions.addServiceIPTVLinked(rLine, getOperName(), BOX_Service_ID);
     return "OK";
   }
 
@@ -129,20 +145,30 @@ public class addBoxService {
   }
 
   private void add_internet(JSONObject rLine, String opername) {
-    NETFunctions.addUser(rLine, this.db);
-    ServicesFunctions.addServiceNETLinked(rLine, opername, BOX_Service_ID, this.db);
+    NETFunctions netFunctions = new NETFunctions(db, getOperName());
+    netFunctions.addUser(rLine);
+    ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+    servicesFunctions.addServiceNETLinked(rLine, getOperName(), BOX_Service_ID);
 
   }
 
   private void add_dtv(JSONObject rLine, String opername) {
 
-    DTVFunctions.addCard(rLine, opername, this.db);
-    ServicesFunctions.addServiceDTVLinked(rLine, opername, BOX_Service_ID, this.db);
+    DTVFunctions dtvFunctions = new DTVFunctions(db, getOperName());
+    dtvFunctions.addCard(rLine);
+    ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+    servicesFunctions.addServiceDTVLinked(rLine, getOperName(), BOX_Service_ID);
   }
 
   private void add_fix(JSONObject rLine, String opername) {
-    FIXFunctions.addBroj(rLine, opername, this.db);
-    ServicesFunctions.addServiceFIXLinked(rLine, opername, BOX_Service_ID, this.db);
+    FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
+    fixFunctions.addBroj(rLine);
+    ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+    servicesFunctions.addServiceFIXLinked(rLine, BOX_Service_ID);
+  }
+
+  public String getOperName() {
+    return operName;
   }
 
 }

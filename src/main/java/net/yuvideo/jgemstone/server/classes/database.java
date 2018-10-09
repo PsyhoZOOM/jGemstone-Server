@@ -19,23 +19,12 @@ public class database {
   public String query;
   public Connection conn;
   public Connection connRad;
-  public Connection connRad2;
-  public Connection connIPTV;
-  //public Connection connCSV;
   public PreparedStatement ps;
   private String JDBC_DRIVER = "com.mysql.jdbc.Driver";
   private String DB_URL = "jdbc:mysql://127.0.0.1/jgemstone?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
-  private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
-  private String DB_URL_RADIUS2 = "jdbc:mysql://127.0.01/radius2?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
-  private String DB_URL_IPTV = "jdbc:mysql://127.0.0.1/stalker_db?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
-  private String DV_URL_CSV = "jdbc:mysql://127.0.0.1/CSV?useUnicode=true&characterEncoding=UTF-8&autoreconnect=true";
+  private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8";
   private String UserName = "jgemstone";
   private String Password = "jgemstone";
-  private Statement stmt;
-  private Statement stmtRad;
-  private Statement stmtIPTV;
-  private Statement stmtCSV;
-  private ResultSet rs;
   private Logger LOGGER = Logger.getLogger("DATABASE");
 
   public database() {
@@ -59,37 +48,10 @@ public class database {
     } catch (SQLException e) {
       e.printStackTrace();
     }
-    System.out.println("Database initialized.");
+    LOGGER.info("Database initialized..");
 
 
   }
 
-  public void executeUpdate() {
-
-    try {
-      stmt.executeUpdate(query);
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-  }
-
-  public void closeDatabase() {
-    try {
-      if (rs != null) {
-
-        rs.close();
-      }
-      if (stmt != null) {
-        stmt.close();
-      }
-      if (conn != null) {
-        conn.close();
-      }
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-
-  }
 
 }

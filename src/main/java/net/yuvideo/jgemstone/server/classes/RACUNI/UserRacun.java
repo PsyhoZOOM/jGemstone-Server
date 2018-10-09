@@ -31,8 +31,16 @@ public class UserRacun {
   private double ukupnoOsnovica = 0.00;
   private double ukupnoPDV = 0.00;
   private UsersData user;
+  private String operName;
+  private boolean error;
+  private String errorMSG;
 
   private JSONObject racun;
+
+  public UserRacun(database db, String operName) {
+    this.db = db;
+    this.operName = operName;
+  }
 
 
   public UserRacun(JSONObject rLine, String operName, database db) {
@@ -62,7 +70,7 @@ public class UserRacun {
   private void getDataZaMesec(int userID, String zaMesec) {
     PreparedStatement ps;
     ResultSet rs;
-    String query = "SELECT * FROM userDebts WHERE userID=? AND zaMesec=?";
+    String query = "SELECT * FROM zaduzenja WHERE userID=? AND zaMesec=?";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -77,8 +85,8 @@ public class UserRacun {
         int i = 0;
         while (rs.next()) {
           JSONObject racunSingle = new JSONObject();
-          nazivUsluge = rs.getString("nazivPaketa");
-          datumZaduzenja = rs.getString("datumZaduzenja");
+          nazivUsluge = rs.getString("naziv");
+          datumZaduzenja = rs.getString("datum");
           double cena = rs.getDouble("cena");
           double stopaPopust = rs.getDouble("popust");
           double stopaPDV = rs.getDouble("PDV");
@@ -139,6 +147,36 @@ public class UserRacun {
     } catch (SQLException e) {
       e.printStackTrace();
     }
+  }
+
+  public JSONObject getAllUserDebts(int userID) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "";
+    JSONObject zaduzenjaZaMesec = new JSONObject();
+    query = "SELECT SUM(dug) as dug, zaMesec FROM userDebts WHERE userID=? GROUP by zaMesec";
+
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        int i = 0;
+        while (rs.next()) {
+          JSONObject object = new JSONObject();
+          object.put("zaMesec", rs.getString("zaMesec"));
+          object.put("dug", rs.getDouble("dug"));
+          zaduzenjaZaMesec.put(String.valueOf(i), object);
+          i++;
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    System.out.println(zaduzenjaZaMesec.toString());
+
+    return zaduzenjaZaMesec;
+
   }
 
   private JSONObject calculateSUM(JSONObject racun) {
@@ -244,12 +282,32 @@ public class UserRacun {
     return tmp;
   }
 
+  public double getUkupanDug(int userID) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "select sum(duguje) as uplaceno, sum(potrazuje) as dug from uplate where userID=?";
+    double dug = 0;
+    double uplaceno = 0;
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        uplaceno = rs.getDouble("uplaceno");
+        dug = rs.getDouble("dug");
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return dug - uplaceno;
+  }
 
   private double getPrethodniDug(int userID, String zaMesec) {
     PreparedStatement ps;
     ResultSet rs;
     double ukupnoUplaceno = 0;
-    String query = "SELECT SUM(uplaceno) as uplaceno FROM uplate WHERE userID=?";
+    String query = "SELECT SUM(duguje) as uplaceno FROM uplate WHERE userID=?";
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, userID);
@@ -262,7 +320,7 @@ public class UserRacun {
       e.printStackTrace();
     }
 
-    query = "SELECT * FROM userDebts WHERE zaMesec < ? AND userID=?";
+    query = "SELECT * FROM zaduzenja WHERE zaMesec < ? AND userID=?";
     double prethodniDug = 0;
     try {
       ps = db.conn.prepareStatement(query);
@@ -295,5 +353,22 @@ public class UserRacun {
 
   public JSONObject getData() {
     return this.racun;
+  }
+
+
+  public boolean isError() {
+    return error;
+  }
+
+  public void setError(boolean error) {
+    this.error = error;
+  }
+
+  public String getErrorMSG() {
+    return errorMSG;
+  }
+
+  public void setErrorMSG(String errorMSG) {
+    this.errorMSG = errorMSG;
   }
 }
