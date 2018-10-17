@@ -15,9 +15,12 @@ import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
+import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
 import org.json.JSONObject;
+import org.w3c.dom.UserDataHandler;
+import sun.security.util.Resources_de;
 
 /**
  * Created by zoom on 2/27/17.
@@ -48,10 +51,10 @@ public class ServicesFunctions {
     PreparedStatement ps;
     String query =
         "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added,  idDTVCard,"
-            + "  userID, produzenje, operName, linkedService, paketType, endDate, PDV, opis,"
+            + "  userID, operName, linkedService, paketType, endDate, PDV, opis,"
             + " brojUgovora, newService) "
             + "VALUES"
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -61,15 +64,14 @@ public class ServicesFunctions {
       ps.setString(4, dtf.format(LocalDateTime.now()));
       ps.setString(5, String.valueOf(rLine.getInt("cardID")));
       ps.setInt(6, rLine.getInt("userID"));
-      ps.setInt(7, rLine.getInt("produzenje"));
-      ps.setString(8, opername);
-      ps.setBoolean(9, true);
-      ps.setString(10, "LINKED_DTV");
-      ps.setString(11, "2000-01-01");
-      ps.setDouble(12, rLine.getDouble("pdv"));
-      ps.setString(13, rLine.getString("komentar"));
-      ps.setString(14, rLine.getString("brojUgovora"));
-      ps.setBoolean(15, false);
+      ps.setString(7, opername);
+      ps.setBoolean(8, true);
+      ps.setString(9, "LINKED_DTV");
+      ps.setString(10, "2000-01-01");
+      ps.setDouble(11, rLine.getDouble("pdv"));
+      ps.setString(12, rLine.getString("komentar"));
+      ps.setString(13, rLine.getString("brojUgovora"));
+      ps.setBoolean(14, false);
       ps.executeUpdate();
 
     } catch (SQLException e) {
@@ -81,11 +83,11 @@ public class ServicesFunctions {
   public void addServiceNETLinked(JSONObject rLine, String opername, int BOX_Service_ID) {
     PreparedStatement ps;
     String query =
-        "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje,"
+        "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, "
             + " operName, UserName, GroupName, linkedService, paketType, endDate, PDV, opis, "
             + "brojUgovora, newService) "
             + "VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, rLine.getInt("NET_service_ID"));
@@ -93,17 +95,16 @@ public class ServicesFunctions {
       ps.setString(3, rLine.getString("nazivPaketaNET"));
       ps.setString(4, dtf.format(LocalDateTime.now()));
       ps.setInt(5, rLine.getInt("userID"));
-      ps.setInt(6, rLine.getInt("produzenje"));
-      ps.setString(7, opername);
-      ps.setString(8, rLine.getString("userName"));
-      ps.setString(9, rLine.getString("groupName"));
-      ps.setBoolean(10, true);
-      ps.setString(11, "LINKED_NET");
-      ps.setString(12, "2000-01-01");
-      ps.setDouble(13, rLine.getDouble("pdv"));
-      ps.setString(14, rLine.getString("komentar"));
-      ps.setString(15, rLine.getString("brojUgovora"));
-      ps.setBoolean(16, false);
+      ps.setString(6, opername);
+      ps.setString(7, rLine.getString("userName"));
+      ps.setString(8, rLine.getString("groupName"));
+      ps.setBoolean(9, true);
+      ps.setString(10, "LINKED_NET");
+      ps.setString(11, "2000-01-01");
+      ps.setDouble(12, rLine.getDouble("pdv"));
+      ps.setString(13, rLine.getString("komentar"));
+      ps.setString(14, rLine.getString("brojUgovora"));
+      ps.setBoolean(15, false);
       ps.executeUpdate();
     } catch (SQLException e) {
       e.printStackTrace();
@@ -146,10 +147,10 @@ public class ServicesFunctions {
   public void addServiceIPTVLinked(JSONObject rLIne, String opername, int box_service_id) {
     PreparedStatement ps;
     String query =
-        "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID, produzenje, opername,"
+        "INSERT INTO servicesUser (id_service, box_id, nazivPaketa, date_added, userID,  opername,"
             + "IPTV_MAC, linkedService, paketType, endDate, PDV, opis, brojUgovora, newService) "
             + "VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -158,16 +159,15 @@ public class ServicesFunctions {
       ps.setString(3, rLIne.getString("tariff_plan"));
       ps.setString(4, dtf.format(LocalDateTime.now()));
       ps.setInt(5, rLIne.getInt("userID"));
-      ps.setInt(6, rLIne.getInt("produzenje"));
-      ps.setString(7, opername);
-      ps.setString(8, rLIne.getString("STB_MAC"));
-      ps.setBoolean(9, true);
-      ps.setString(10, "LINKED_IPTV");
-      ps.setString(11, "2000-01-01");
-      ps.setDouble(12, rLIne.getDouble("pdv"));
-      ps.setString(13, rLIne.getString("komentar"));
-      ps.setString(14, rLIne.getString("brojUgovora"));
-      ps.setBoolean(15, false);
+      ps.setString(6, opername);
+      ps.setString(7, rLIne.getString("STB_MAC"));
+      ps.setBoolean(8, true);
+      ps.setString(9, "LINKED_IPTV");
+      ps.setString(10, "2000-01-01");
+      ps.setDouble(11, rLIne.getDouble("pdv"));
+      ps.setString(12, rLIne.getString("komentar"));
+      ps.setString(13, rLIne.getString("brojUgovora"));
+      ps.setBoolean(14, false);
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
@@ -178,14 +178,14 @@ public class ServicesFunctions {
 
   public void addServiceDTV(int id_service, String nazivPaketa, int userID,
       String opername, double popust, double cena, Boolean obracun,
-      String brojUgovora, int produzenje, String idDTVCard, int paketID, double pdv, String opis) {
+      String brojUgovora, String idDTVCard, int paketID, double pdv, String opis) {
 
     PreparedStatement ps;
     String query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena,"
-            + " obracun, brojUgovora, produzenje, newService, idDTVCard, linkedService, paketType, endDate, PDV, opis)"
+            + " obracun, brojUgovora, newService, idDTVCard, linkedService, paketType, endDate, PDV, opis)"
             + "VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -198,14 +198,13 @@ public class ServicesFunctions {
       ps.setDouble(7, cena);
       ps.setBoolean(8, obracun);
       ps.setString(9, brojUgovora);
-      ps.setInt(10, produzenje);
-      ps.setBoolean(11, true);
-      ps.setString(12, idDTVCard);
-      ps.setBoolean(13, false);
-      ps.setString(14, "DTV");
-      ps.setString(15, "2000-01-01");
-      ps.setDouble(16, pdv);
-      ps.setString(17, opis);
+      ps.setBoolean(10, true);
+      ps.setString(11, idDTVCard);
+      ps.setBoolean(12, false);
+      ps.setString(13, "DTV");
+      ps.setString(14, "2000-01-01");
+      ps.setDouble(15, pdv);
+      ps.setString(16, opis);
       ps.executeUpdate();
       ps.close();
 
@@ -250,8 +249,8 @@ public class ServicesFunctions {
     PreparedStatement ps;
     String query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, "
-            + "obracun, brojUgovora, aktivan, produzenje, newService, UserName, GroupName, paketType, endDate, PDV, opis) VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
+            + "obracun, brojUgovora, aktivan,  newService, UserName, GroupName, paketType, endDate, PDV, opis) VALUES "
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -265,14 +264,13 @@ public class ServicesFunctions {
       ps.setBoolean(8, rLine.getBoolean("obracun"));
       ps.setString(9, rLine.getString("brojUgovora"));
       ps.setBoolean(10, false);
-      ps.setInt(11, rLine.getInt("produzenje"));
-      ps.setBoolean(12, true);
-      ps.setString(13, rLine.getString("userName"));
-      ps.setString(14, rLine.getString("groupName"));
-      ps.setString(15, "NET");
-      ps.setString(16, "2000-01-01");
-      ps.setDouble(17, rLine.getDouble("pdv"));
-      ps.setString(18, rLine.getString("komentar"));
+      ps.setBoolean(11, true);
+      ps.setString(12, rLine.getString("userName"));
+      ps.setString(13, rLine.getString("groupName"));
+      ps.setString(14, "NET");
+      ps.setString(15, "2000-01-01");
+      ps.setDouble(16, rLine.getDouble("pdv"));
+      ps.setString(17, rLine.getString("komentar"));
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
@@ -288,9 +286,9 @@ public class ServicesFunctions {
     PreparedStatement ps;
     String query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, endDate, userID, operName, popust, cena, "
-            + "obracun, brojUgovora, aktivan, produzenje, newService, FIKSNA_TEL, paketType, PDV, opis) "
+            + "obracun, brojUgovora, aktivan,  newService, FIKSNA_TEL, paketType, PDV, opis) "
             + "VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -305,12 +303,11 @@ public class ServicesFunctions {
       ps.setBoolean(9, rLine.getBoolean("obracun"));
       ps.setString(10, rLine.getString("brojUgovora"));
       ps.setBoolean(11, false);
-      ps.setInt(12, 0);
-      ps.setBoolean(13, true);
-      ps.setString(14, rLine.getString("brojTel"));
-      ps.setString(15, "FIX");
-      ps.setDouble(16, rLine.getDouble("pdv"));
-      ps.setString(17, rLine.getString("komentar"));
+      ps.setBoolean(12, true);
+      ps.setString(13, rLine.getString("brojTel"));
+      ps.setString(14, "FIX");
+      ps.setDouble(15, rLine.getDouble("pdv"));
+      ps.setString(16, rLine.getString("komentar"));
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
@@ -322,9 +319,9 @@ public class ServicesFunctions {
     PreparedStatement ps;
     String query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena,"
-            + "obracun, brojUgovora, aktivan, produzenje, newService,  IPTV_MAC, paketType, endDate, PDV, opis)"
+            + "obracun, brojUgovora, aktivan,  newService,  IPTV_MAC, paketType, endDate, PDV, opis)"
             + "VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, rLine.getInt("id"));
@@ -337,13 +334,12 @@ public class ServicesFunctions {
       ps.setBoolean(8, rLine.getBoolean("obracun"));
       ps.setString(9, rLine.getString("brojUgovora"));
       ps.setBoolean(10, false);
-      ps.setInt(11, rLine.getInt("produzenje"));
-      ps.setBoolean(12, true);
-      ps.setString(13, rLine.getString("STB_MAC"));
-      ps.setString(14, "IPTV");
-      ps.setString(15, "2000-01-01");
-      ps.setDouble(16, rLine.getDouble("pdv"));
-      ps.setString(17, rLine.getString("komentar"));
+      ps.setBoolean(11, true);
+      ps.setString(12, rLine.getString("STB_MAC"));
+      ps.setString(13, "IPTV");
+      ps.setString(14, "2000-01-01");
+      ps.setDouble(15, rLine.getDouble("pdv"));
+      ps.setString(16, rLine.getString("komentar"));
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
@@ -753,32 +749,28 @@ public class ServicesFunctions {
 
   }
 
-  public void activateNewService(int serviceID, String operName) {
+  /**
+   * <b>Aktiviranje novog servisa</b> <p>Aktiviranje novog servisa zavisi od produzivanje serviser
+   * (prekoracenje meseci), zaduzivanje usluga (cena do kraja meseca), update newService=0 i
+   * aktivated=1</p>
+   *
+   * @param serviceID id servisa
+   * @param userID userID (da bi dobili int prekoracenja)
+   * @param operName (operater koji aktivira nov servis)
+   */
+  public void activateNewService(int serviceID, int userID, String operName) {
     PreparedStatement ps;
-    ResultSet rs;
-    String query = "SELECT * FROM servicesUser WHERE id=?";
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setInt(1, serviceID);
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        rs.next();
-        int produzenje = rs.getInt("produzenje");
-        String endDate = LocalDate.now().plusMonths(produzenje).withDayOfMonth(1)
-            .format(dtfNormalDate);
-        activateService(serviceID, endDate, operName);
+    String query;
 
-      } else {
-        setError(true);
-        setErrorMSG("SERVIS NE POSTOJI");
-        return;
-      }
-    } catch (SQLException e) {
-      setError(true);
-      setErrorMSG(e.getMessage());
-      e.printStackTrace();
-      return;
-    }
+    UsersData usersData = new UsersData(db, getOperName());
+    JSONObject userData = usersData.getUserData(userID);
+    int prekoracenje = userData.getInt("prekoracenje");
+
+    String endDate = LocalDate.now().plusMonths(prekoracenje).withDayOfMonth(1)
+        .format(dtfNormalDate);
+    activateService(serviceID, endDate, operName);
+
+
 
     query = "UPDATE servicesUser set aktivan=1, date_activated=? WHERE id=? or box_id=? or dtv_main=?";
     try {
@@ -788,6 +780,19 @@ public class ServicesFunctions {
       ps.setInt(3, serviceID);
       ps.setInt(4, serviceID);
 
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+    query = "UPDATE users set endDate=? where id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, endDate);
+      ps.setInt(2, userID);
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
@@ -977,7 +982,7 @@ public class ServicesFunctions {
     }
   }
 
-  public void produziService(int serviceID, String endDateStr, int produzenje, String operName,
+  public void produziService(int serviceID, String endDateStr, int prekoracenje, String operName,
       boolean skipProduzenje) {
     PreparedStatement ps;
     ResultSet rs;
@@ -1009,22 +1014,22 @@ public class ServicesFunctions {
         if (newService) {
           //ako produzeni service je 0 onda stavljamo 1 zbog mesec dana  unapred.
           //Nadam se samo u slucaju Ostalih servica.
-          if (produzenje == 0) {
-            produzenje = 1;
+          if (prekoracenje == 0) {
+            prekoracenje = 1;
           }
           endDate = LocalDate.now();
-          endDate = endDate.plusMonths(produzenje);
+          endDate = endDate.plusMonths(prekoracenje);
           endDate = endDate.with(TemporalAdjusters.firstDayOfMonth());
         } else {
           endDate = LocalDate.parse(LocalDate.parse(rs.getString("endDate")).format(dtfNormalDate));
-          produzenje = 1;
-          endDate = endDate.plusMonths(produzenje);
+          prekoracenje = 1;
+          endDate = endDate.plusMonths(prekoracenje);
           endDate = endDate.with(TemporalAdjusters.firstDayOfMonth());
         }
         if (skipProduzenje) {
           endDate = LocalDate.parse(LocalDate.parse(rs.getString("endDate")).format(dtfNormalDate));
-          produzenje = 0;
-          endDate.plusMonths(produzenje);
+          prekoracenje = 0;
+          endDate.plusMonths(prekoracenje);
           endDate = endDate.with(TemporalAdjusters.firstDayOfMonth());
 
         }
@@ -1532,9 +1537,9 @@ public class ServicesFunctions {
 
     String query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, cena, obracun, brojUgovora, "
-            + "aktivan, produzenje, newService, idDTVCard, linkedService, paketType, endDate, PDV, opis, dtv_main) "
+            + "aktivan, newService, idDTVCard, linkedService, paketType, endDate, PDV, opis, dtv_main) "
             + "VALUES "
-            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     try {
       ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
       ps.setInt(1, rLine.getInt("serviceID"));
@@ -1547,16 +1552,15 @@ public class ServicesFunctions {
       ps.setBoolean(8, rLine.getBoolean("obracun"));
       ps.setString(9, rLine.getString("brUgovora"));
       ps.setBoolean(10, rLine.getBoolean("aktivan"));
-      ps.setInt(11, rLine.getInt("produzenje"));
-      ps.setBoolean(12, true);
-      ps.setInt(13, rLine.getInt("cardID"));
-      ps.setBoolean(14, false);
-      ps.setString(15, rLine.getString("paketType"));
-      ps.setString(16, rLine.getString("endDate"));
-      ps.setDouble(17, rLine.getDouble("pdv"));
-      ps.setString(18,
+      ps.setBoolean(11, true);
+      ps.setInt(12, rLine.getInt("cardID"));
+      ps.setBoolean(13, false);
+      ps.setString(14, rLine.getString("paketType"));
+      ps.setString(15, rLine.getString("endDate"));
+      ps.setDouble(16, rLine.getDouble("pdv"));
+      ps.setString(17,
           String.format("Dodatna kartica vezana za %s", mainDTVServiceID.getIdDTVCard()));
-      ps.setInt(19, rLine.getInt("mainDTVServiceID"));
+      ps.setInt(18, rLine.getInt("mainDTVServiceID"));
 
       ps.executeUpdate();
 
@@ -1633,6 +1637,60 @@ public class ServicesFunctions {
     } catch (SQLException e) {
       setError(true);
       setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+  }
+
+  public void produziAllService(int userID, String endDate) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM servicesUser WHERE userID=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        while (rs.next()) {
+          String type = rs.getString("paketType");
+          String UserName = rs.getString("UserName");
+          String IPTV_MAC = rs.getString("IPTV_MAC");
+          String idCard = rs.getString("idDTVCard");
+          switch (type) {
+            case "NET":
+            case "LINKED_NET":
+              setEndDateNET(UserName, LocalDate.parse(endDate));
+              break;
+
+            case "IPTV":
+            case "LINKED_IPTV":
+              setEndDateIPTV(IPTV_MAC, LocalDate.parse(endDate));
+              break;
+
+            case "DTV":
+            case "LINKED_DTV":
+              setEndDateDTV(Integer.valueOf(idCard), LocalDate.parse(endDate), db);
+              break;
+          }
+
+          query = "UPDATE servicesUser SET endDate=?,  aktivan=? WHERE id=?";
+          try {
+            ps = db.conn.prepareStatement(query);
+            ps.setString(1, endDate);
+            ps.setBoolean(2, true);
+            ps.setInt(3, rs.getInt("id"));
+            ps.executeUpdate();
+            ps.close();
+          } catch (SQLException e) {
+            setError(true);
+            setErrorMSG(e.getMessage());
+            e.printStackTrace();
+          }
+
+
+        }
+      }
+    } catch (SQLException e) {
       e.printStackTrace();
     }
 

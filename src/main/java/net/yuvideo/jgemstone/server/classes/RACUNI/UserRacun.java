@@ -149,35 +149,6 @@ public class UserRacun {
     }
   }
 
-  public JSONObject getAllUserDebts(int userID) {
-    PreparedStatement ps;
-    ResultSet rs;
-    String query = "";
-    JSONObject zaduzenjaZaMesec = new JSONObject();
-    query = "SELECT SUM(dug) as dug, zaMesec FROM userDebts WHERE userID=? GROUP by zaMesec";
-
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setInt(1, userID);
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        int i = 0;
-        while (rs.next()) {
-          JSONObject object = new JSONObject();
-          object.put("zaMesec", rs.getString("zaMesec"));
-          object.put("dug", rs.getDouble("dug"));
-          zaduzenjaZaMesec.put(String.valueOf(i), object);
-          i++;
-        }
-      }
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-    System.out.println(zaduzenjaZaMesec.toString());
-
-    return zaduzenjaZaMesec;
-
-  }
 
   private JSONObject calculateSUM(JSONObject racun) {
     JSONObject racunNew = new JSONObject();

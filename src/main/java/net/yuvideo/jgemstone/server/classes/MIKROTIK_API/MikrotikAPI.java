@@ -108,6 +108,8 @@ public class MikrotikAPI {
       isConnected = apiConnection.isConnected();
     } catch (MikrotikApiException e) {
       e.printStackTrace();
+      setError(true);
+      setErrorMSG(e.getMessage());
       LOGGER.info(String.format("IP: %s - %s", ip, e.getMessage()));
     }
 

@@ -94,7 +94,6 @@ public class ServiceData {
         serviceData.setBrojUgovora(rs.getString("brojUgovora"));
         serviceData.setAktivan(rs.getBoolean("aktivan"));
         serviceData.setDateActivated(rs.getString("date_activated"));
-        serviceData.setProduzenje(rs.getInt("produzenje"));
         serviceData.setNewService(rs.getBoolean("newService"));
         serviceData.setIdDTVCard(rs.getString("idDTVCard"));
         serviceData.setUserName(rs.getString("UserName"));

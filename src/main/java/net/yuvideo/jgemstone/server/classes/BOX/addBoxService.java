@@ -46,10 +46,10 @@ public class addBoxService {
     query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, "
             +
-            "cena, obracun, brojUgovora, aktivan, produzenje, newService, idDTVCard, username, GroupName, IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType, PDV, opis, endDate)"
+            "cena, obracun, brojUgovora, aktivan, newService, idDTVCard, username, GroupName, IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType, PDV, opis, endDate)"
             +
             "VALUES " +
-            "(?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?,?)";
+            "(?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
@@ -63,37 +63,36 @@ public class addBoxService {
       ps.setBoolean(8, rLine.getBoolean("obracun"));
       ps.setString(9, rLine.getString("brojUgovora"));
       ps.setBoolean(10, false);
-      ps.setInt(11, rLine.getInt("produzenje"));
-      ps.setBoolean(12, true);
+      ps.setBoolean(11, true);
       if (rLine.has("cardID")) {
-        ps.setInt(13, rLine.getInt("cardID"));
+        ps.setInt(12, rLine.getInt("cardID"));
       } else {
-        ps.setString(13, "");
+        ps.setString(12, "");
       }
       if (rLine.has("userName") && rLine.has("groupName")) {
-        ps.setString(14, rLine.getString("userName"));
-        ps.setString(15, rLine.getString("groupName"));
+        ps.setString(13, rLine.getString("userName"));
+        ps.setString(14, rLine.getString("groupName"));
       } else {
-        ps.setString(14, "");
         ps.setString(15, "");
-      }
-      if (rLine.has("IPTV_MAC")) {
-        ps.setString(16, rLine.getString("IPTV_MAC"));
-      } else {
         ps.setString(16, "");
       }
-      if (rLine.has("FIX_TEL")) {
-        ps.setString(17, rLine.getString("FIX_TEL"));
+      if (rLine.has("IPTV_MAC")) {
+        ps.setString(17, rLine.getString("IPTV_MAC"));
       } else {
         ps.setString(17, "");
       }
+      if (rLine.has("FIX_TEL")) {
+        ps.setString(18, rLine.getString("FIX_TEL"));
+      } else {
+        ps.setString(18, "");
+      }
 
-      ps.setBoolean(18, false);
-      ps.setBoolean(19, true);
-      ps.setString(20, "BOX");
-      ps.setDouble(21, rLine.getDouble("pdv"));
-      ps.setString(22, rLine.getString("opis"));
-      ps.setString(23, "2000-01-01");
+      ps.setBoolean(19, false);
+      ps.setBoolean(20, true);
+      ps.setString(21, "BOX");
+      ps.setDouble(22, rLine.getDouble("pdv"));
+      ps.setString(23, rLine.getString("opis"));
+      ps.setString(24, "2000-01-01");
 
       ps.executeUpdate();
       ResultSet rsBoxId = ps.getGeneratedKeys();

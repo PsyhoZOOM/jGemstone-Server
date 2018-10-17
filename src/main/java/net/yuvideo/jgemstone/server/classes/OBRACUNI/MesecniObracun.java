@@ -3,11 +3,12 @@ package net.yuvideo.jgemstone.server.classes.OBRACUNI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
-import net.yuvideo.jgemstone.server.classes.Users;
+import net.yuvideo.jgemstone.server.classes.Uplate;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
 import org.json.JSONObject;
@@ -171,6 +172,7 @@ public class MesecniObracun {
 
 
   private void zaduziKorisnika(int userID, double dug, String zaMesec) {
+    DecimalFormat df = new DecimalFormat("#.00");
     PreparedStatement ps;
     String query;
     DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("MM/YY");
@@ -182,17 +184,19 @@ public class MesecniObracun {
         LocalDate.parse(zaMesec + "-01", dtfNormal).format(dateTimeFormatter));
 
     query = "INSERT INTO uplate "
-        + "(datum, potrazuje, operater, opis, userID, obracunZaMesec) "
+        + "(datum, potrazuje, operater, opis, userID, obracunZaMesec, realDate) "
         + "VALUES "
-        + "(?,?,?,?,?,?)";
+        + "(?,?,?,?,?,?,?)";
     try {
       ps = db.conn.prepareStatement(query);
       ps.setString(1, LocalDate.now().format(dtfNormal));
-      ps.setDouble(2, dug);
+      ps.setDouble(2, Double.parseDouble(df.format(dug)));
       ps.setString(3, getOperName());
       ps.setString(4, opis);
       ps.setInt(5, userID);
       ps.setString(6, zaMesec);
+      ps.setString(7,
+          LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
       ps.executeUpdate();
       ps.close();
     } catch (SQLException e) {
@@ -200,9 +204,41 @@ public class MesecniObracun {
       setError(true);
       e.printStackTrace();
     }
+    net.yuvideo.jgemstone.server.classes.RACUNI.Uplate uplate = new net.yuvideo.jgemstone.server.classes.RACUNI.Uplate(
+        getOperName(), db);
+    uplate.produzivanjeServisa(userID);
 
   }
 
+  /**
+   * <b>Provera da li postoji obracun za mesec</b> <p>Provera da li postoji obracun za mesec kako ne
+   * bi doslo do dupliranja ili promena datuma zaduzenja. ako postoji vraca true u suprotnom vraca
+   * false</p>
+   *
+   * @param zaMesec Mesec koji se provera
+   * @return Boolean dali postoji ili ne
+   */
+  public boolean checkIfExistObracun(String zaMesec) {
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT obracunZaMesec from uplate where obracunZaMesec=? LIMIT 1";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, zaMesec);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        return true;
+      }
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+      return true;
+    }
+
+    return false;
+
+  }
 
   public boolean isError() {
     return error;
@@ -227,4 +263,5 @@ public class MesecniObracun {
   public void setOperName(String operName) {
     this.operName = operName;
   }
+
 }

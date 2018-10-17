@@ -13,8 +13,8 @@ import org.json.JSONObject;
 public class UsersData {
 
   private database db;
-  private String ERROR;
-  private boolean isERROR;
+  private String errorMSG;
+  private boolean error;
 
 
   public UsersData(database db, String operName) {
@@ -91,6 +91,7 @@ public class UsersData {
         user.put("adresaFirme", rs.getString("adresaFirme"));
         user.put("mestoFirme",  rs.getString("mestoFirme"));
         user.put("oprema", getUserOprema(userID));
+        user.put("prekoracenje", rs.getInt("prekoracenje"));
 
       }
     } catch (SQLException e) {
@@ -138,28 +139,102 @@ public class UsersData {
         }
       }
     } catch (SQLException e) {
-      this.setERROR(e.getMessage());
-      this.setERROR(true);
+      setError(true);
+      setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
 
     return userOpremaArr;
   }
 
-
-  public String getERROR() {
-    return ERROR;
+  public double getUkupnoUplaceno(int userID) {
+    double uplaceno = 0;
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT sum(duguje) as uplaceno from uplate where userID=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        uplaceno = rs.getDouble("uplaceno");
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+    return uplaceno;
   }
 
-  public void setERROR(String ERROR) {
-    this.ERROR = ERROR;
+  public JSONObject getUkupnoZaduzenjePoMesecima(int userID) {
+    JSONObject object = new JSONObject();
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT potrazuje as dug, obracunZaMesec as zaMesec FROM uplate where userID=? AND  obracunZaMesec IS NOT NULL ORDER BY obracunZaMesec ASC";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        int i = 0;
+        while (rs.next()) {
+          JSONObject zaduzenje = new JSONObject();
+          zaduzenje.put("zaMesec", rs.getString("zaMesec"));
+          zaduzenje.put("dug", rs.getString("dug"));
+          object.put(String.valueOf(i), zaduzenje);
+          i++;
+        }
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+    return object;
   }
 
-  public boolean isERROR() {
-    return isERROR;
+  public int getPrekoracenje(int userID) {
+    int prekoracenje = 1; //default
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT prekoracenje FROM users WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        rs.next();
+        prekoracenje = rs.getInt("prekoracenje");
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+    return prekoracenje;
   }
 
-  public void setERROR(boolean ERROR) {
-    isERROR = ERROR;
+  public String getErrorMSG() {
+    return errorMSG;
+  }
+
+  public void setErrorMSG(String errorMSG) {
+    this.errorMSG = errorMSG;
+  }
+
+  public boolean isError() {
+    return error;
+  }
+
+  public void setError(boolean error) {
+    this.error = error;
   }
 }

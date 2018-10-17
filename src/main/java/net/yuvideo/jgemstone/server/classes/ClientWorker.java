@@ -657,8 +657,8 @@ public class ClientWorker implements Runnable {
       JSONObject jsonObject = new JSONObject();
       UsersData usersData = new UsersData(db, getOperName());
       jsonObject = usersData.getUserOprema(rLine.getInt("userID"));
-      if (usersData.isERROR()) {
-        jsonObject.put("ERROR", usersData.getERROR());
+      if (usersData.isError()) {
+        jsonObject.put("ERROR", usersData.getErrorMSG());
       }
       send_object(jsonObject);
 
@@ -778,7 +778,6 @@ public class ClientWorker implements Runnable {
             service.put("FIKSNA_TEL", rs.getString("FIKSNA_TEL"));
             service.put("obracun", rs.getBoolean("obracun"));
             service.put("aktivan", rs.getBoolean("aktivan"));
-            service.put("produzenje", rs.getInt("produzenje"));
             service.put("id_service", rs.getInt("id_service"));
             service.put("box", rs.getBoolean("BOX_service"));
             service.put("box_ID", rs.getInt("box_id"));
@@ -829,7 +828,6 @@ public class ClientWorker implements Runnable {
             service.put("box_ID", rs2.getInt("box_id"));
             service.put("nazivPaketa", rs2.getString("nazivPaketa"));
             service.put("naziv", rs2.getString("nazivPaketa"));
-            service.put("produzenje", rs2.getInt("produzenje"));
             service.put("groupName", rs2.getString("GroupName"));
             service.put("userName", rs2.getString("UserName"));
             service.put("idDTVCard", rs2.getString("idDTVCard"));
@@ -942,7 +940,7 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
       int service_id = rLine.getInt("service_id");
       ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
-      servicesFunctions.activateNewService(service_id, getOperName());
+      servicesFunctions.activateNewService(service_id, rLine.getInt("userID"), getOperName());
       if (servicesFunctions.isError()) {
         jObj.put("ERROR", servicesFunctions.getErrorMSG());
       }
@@ -1140,7 +1138,7 @@ public class ClientWorker implements Runnable {
           .addServiceDTV(rLine.getInt("id"), rLine.getString("nazivPaketa"),
               rLine.getInt("userID"), getOperName(), rLine.getDouble("servicePopust"),
               rLine.getDouble("cena"), rLine.getBoolean("obracun"), rLine.getString("brojUgovora"),
-              rLine.getInt("produzenje"), rLine.getString("idUniqueName"), rLine.getInt("packetID"),
+              rLine.getString("idUniqueName"), rLine.getInt("packetID"),
               rLine.getDouble("pdv"), rLine.getString("komentar"));
 
       if (servicesFunctions.isError()) {
@@ -1204,12 +1202,27 @@ public class ClientWorker implements Runnable {
       JSONObject object = new JSONObject();
       Uplate uplate = new Uplate(getOperName(), db);
       uplate
-          .novaUplata(rLine.getInt("userID"), rLine.getDouble("uplaceno"), rLine.getString("opis"));
+          .novaUplata(rLine.getInt("userID"), rLine.getDouble("uplaceno"), rLine.getString("opis"),
+              rLine.getString("datumUplate"));
       if (uplate.isError()) {
         object.put("ERROR", uplate.getErrorMSG());
       }
       send_object(object);
       return;
+    }
+
+    //TODO remove me test
+    if (rLine.getString("action").equals("testProduziKorisnik")) {
+      JSONObject object = new JSONObject();
+      Uplate uplate = new Uplate(getOperName(), db);
+      String endDate = uplate.produzivanjeServisa(rLine.getInt("userID"));
+      object.put("endDate", endDate);
+      if (uplate.isError()) {
+        object.put("ERROR", uplate.getErrorMSG());
+      }
+      send_object(object);
+      return;
+
     }
 
     if (rLine.getString("action").equals("uplata_delete")) {
@@ -3580,6 +3593,17 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("obracunZaMesec")) {
       JSONObject object = new JSONObject();
+      MesecniObracun mesecniObracun = new MesecniObracun(db, getOperName());
+      //check if exist obracun
+      //if exist return warning that obracun exist
+      //else obracunaj
+      boolean exist = mesecniObracun.checkIfExistObracun(rLine.getString("zaMesec"));
+      if (exist) {
+        object
+            .put("ERROR", String.format("Obračun za mesec %s postoji", rLine.getString("zaMesec")));
+        send_object(object);
+        return;
+      }
       FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
       fixFunctions.obracunajZaMesec(rLine.getString("zaMesec"));
       if (fixFunctions.isError()) {
@@ -3587,7 +3611,6 @@ public class ClientWorker implements Runnable {
         send_object(object);
         return;
       }
-      MesecniObracun mesecniObracun = new MesecniObracun(db, getOperName());
       double ukupanDUG = mesecniObracun.obracunajZaMesec(rLine.getString("zaMesec"));
       if (mesecniObracun.isError()) {
         object.put("ERROR", mesecniObracun.getErrorMSG());
@@ -4235,7 +4258,7 @@ public class ClientWorker implements Runnable {
         + "mestoRacuna = ?, jAdresaBroj=?, jAdresa = ?, jMesto=?, jBroj=?, "
         + "komentar = ?, firma=?, nazivFirme=?, kontaktOsoba=?, kontaktOsobaTel=?, kodBanke=?, tekuciRacun=?, PIB=?, maticniBroj = ?, "
         +
-        "fax=?, adresaFirme=?, mestoFirme=?, email=? WHERE id = ? ";
+        "fax=?, adresaFirme=?, mestoFirme=?, email=?, prekoracenjeMeseci=? WHERE id = ? ";
 
     try {
       ps = db.conn.prepareStatement(query);
@@ -4269,7 +4292,8 @@ public class ClientWorker implements Runnable {
       ps.setString(26, jObju.getString("adresaFirme"));
       ps.setString(27, jObju.getString("mestoFirme"));
       ps.setString(28, jObju.getString("email"));
-      ps.setInt(29, userID);
+      ps.setInt(29, jObju.getInt("prekoracenjeMeseci"));
+      ps.setInt(30, userID);
       ps.executeUpdate();
       jObj.put("Message", String.format("USER: %s UPDATED", userID));
       ps.close();
