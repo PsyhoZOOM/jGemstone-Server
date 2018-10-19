@@ -20,43 +20,18 @@ public class CSVIzvestajImport {
     this.db = db;
   }
 
-  private boolean checkIfExist(String filename) {
-    PreparedStatement ps;
-    ResultSet rs;
-    String query = "SELECT fileName from csv where fileName=?";
-    try {
-      ps = db.conn.prepareStatement(query);
-      ps.setString(1, filename);
-      rs = ps.executeQuery();
-      if (rs.isBeforeFirst()) {
-        ps.close();
-        rs.close();
-        System.out.println(String.format("%s postoji", filename));
-        return true;
-      }
-    } catch (SQLException e) {
-      errorMsg = e.getMessage();
-      error = true;
-      e.printStackTrace();
-    }
-    return false;
-  }
 
   public void importFile(JSONObject rLine) {
     JSONObject jObj = new JSONObject();
     CsvReader csvReader = null;
     PreparedStatement ps = null;
     String query =
-        "INSERT INTO csv (account,  `from`, `to`, country, description, connectTime, chargedTimeMS, "
+        "INSERT IGNORE csv (account,  `from`, `to`, country, description, connectTime, chargedTimeMS, "
             + "chargedTimeS, chargedAmountRSD, serviceName, chargedQuantity, serviceUnit, customerID, fileName)"
             + "VALUES"
             + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     for (String key : rLine.keySet()) {
-      //ako postoji fajl  u bazi onda nema potrebe za importom, nastavljamo dalje
-      if (checkIfExist(key)) {
-        return;
-      }
       try {
         csvReader = new CsvReader(new StringReader((String) rLine.getString(key)));
         csvReader.setDelimiter(',');

@@ -338,6 +338,7 @@ public class ClientWorker implements Runnable {
           jObj.put("adresaFirme", rs.getString("adresaFirme"));
           jObj.put("mestoFirme", rs.getString("mestoFirme"));
           jObj.put("email", rs.getString("email"));
+          jObj.put("prekoracenje", rs.getInt("prekoracenje"));
 
         } else {
           jObj.put("Message", "NO_SUCH_USER");
@@ -2983,6 +2984,18 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("deleteCSV_ID")) {
+      JSONObject object = new JSONObject();
+      FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
+      fixFunctions.deleteCSV_ID(rLine.getJSONArray("intArrays"));
+      if (fixFunctions.isError()) {
+        object.put("ERROR", fixFunctions.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+    }
+
     if (rLine.getString("action").equals("obracunaj_FIX_za_mesec")) {
       JSONObject object = new JSONObject();
       FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
@@ -4258,7 +4271,7 @@ public class ClientWorker implements Runnable {
         + "mestoRacuna = ?, jAdresaBroj=?, jAdresa = ?, jMesto=?, jBroj=?, "
         + "komentar = ?, firma=?, nazivFirme=?, kontaktOsoba=?, kontaktOsobaTel=?, kodBanke=?, tekuciRacun=?, PIB=?, maticniBroj = ?, "
         +
-        "fax=?, adresaFirme=?, mestoFirme=?, email=?, prekoracenjeMeseci=? WHERE id = ? ";
+        "fax=?, adresaFirme=?, mestoFirme=?, email=?, prekoracenje=? WHERE id = ? ";
 
     try {
       ps = db.conn.prepareStatement(query);

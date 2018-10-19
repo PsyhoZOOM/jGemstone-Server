@@ -21,8 +21,8 @@ public class database {
   public Connection connRad;
   public PreparedStatement ps;
   private String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-  private String DB_URL = "jdbc:mysql://127.0.0.1/jgemstone?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true";
-  private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8";
+  private String DB_URL = "jdbc:mysql://127.0.0.1/jgemstone?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&connectTimeout=0";
+  private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&connectTimeout=0";
   private String UserName = "jgemstone";
   private String Password = "jgemstone";
   private Logger LOGGER = Logger.getLogger("DATABASE");

@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -370,4 +371,20 @@ public class FIXFunctions {
     this.errorMSG = errorMSG;
   }
 
+  public void deleteCSV_ID(JSONArray intArrays) {
+    PreparedStatement ps;
+    String query = "DELETE FROM csv WHERE id=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      for (int i = 0; i < intArrays.length(); i++) {
+        ps.setInt(1, intArrays.getInt(i));
+        ps.executeUpdate();
+      }
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+
+  }
 }
