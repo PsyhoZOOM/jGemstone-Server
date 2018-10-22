@@ -923,7 +923,7 @@ public class ServicesFunctions {
     PreparedStatement ps;
     ResultSet rs;
     String query = "SELECT * FROM servicesUser WHERE id=?";
-    String zaMesec= LocalDate.now().minusMonths(1).format(dtfMesecZaduzenja);
+    String zaMesec = LocalDate.now().format(dtfMesecZaduzenja);
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, serviceID);

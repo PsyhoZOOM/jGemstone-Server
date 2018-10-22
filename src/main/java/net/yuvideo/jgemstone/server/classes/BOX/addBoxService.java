@@ -46,10 +46,11 @@ public class addBoxService {
     query =
         "INSERT INTO servicesUser (id_service, nazivPaketa, date_added, userID, operName, popust, "
             +
-            "cena, obracun, brojUgovora, aktivan, newService, idDTVCard, username, GroupName, IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType, PDV, opis, endDate)"
+            "cena, obracun, brojUgovora, aktivan, newService, idDTVCard, username, GroupName,"
+            + " IPTV_MAC, FIKSNA_TEL, linkedService, BOX_service, paketType, PDV, opis, endDate)"
             +
             "VALUES " +
-            "(?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?)";
+            "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
@@ -73,26 +74,26 @@ public class addBoxService {
         ps.setString(13, rLine.getString("userName"));
         ps.setString(14, rLine.getString("groupName"));
       } else {
-        ps.setString(15, "");
-        ps.setString(16, "");
+        ps.setString(13, "");
+        ps.setString(14, "");
       }
       if (rLine.has("IPTV_MAC")) {
-        ps.setString(17, rLine.getString("IPTV_MAC"));
+        ps.setString(15, rLine.getString("IPTV_MAC"));
       } else {
-        ps.setString(17, "");
+        ps.setString(15, "");
       }
       if (rLine.has("FIX_TEL")) {
-        ps.setString(18, rLine.getString("FIX_TEL"));
+        ps.setString(16, rLine.getString("FIX_TEL"));
       } else {
-        ps.setString(18, "");
+        ps.setString(16, "");
       }
 
-      ps.setBoolean(19, false);
-      ps.setBoolean(20, true);
-      ps.setString(21, "BOX");
-      ps.setDouble(22, rLine.getDouble("pdv"));
-      ps.setString(23, rLine.getString("opis"));
-      ps.setString(24, "2000-01-01");
+      ps.setBoolean(17, false);
+      ps.setBoolean(18, true);
+      ps.setString(19, "BOX");
+      ps.setDouble(20, rLine.getDouble("pdv"));
+      ps.setString(21, rLine.getString("opis"));
+      ps.setString(22, "2000-01-01");
 
       ps.executeUpdate();
       ResultSet rsBoxId = ps.getGeneratedKeys();
