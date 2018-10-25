@@ -1,7 +1,7 @@
 package net.yuvideo.jgemstone.server.classes.RACUNI;
 
-import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -47,6 +47,8 @@ public class Uplate {
       setError(true);
       e.printStackTrace();
     }
+    //produzivanje serisa
+    produzivanjeServisa(userID);
   }
 
   public void deleteUplata(int idUplate) {
@@ -105,13 +107,13 @@ public class Uplate {
       endDate = ukupnoZaduzenjePoMesecima.getJSONObject(String.valueOf(i)).getString("zaMesec");
       dug = ukupnoZaduzenjePoMesecima.getJSONObject(String.valueOf(i)).getDouble("dug");
       date = LocalDate.parse(endDate + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-          .plusMonths(2);
+          .plusMonths(prekoracenje);
 
       System.out.println(String.format("uplaceno: %f dug: %f", ukupnoUplaceno, dug));
       if (ukupnoUplaceno >= dug) {
         ukupnoUplaceno = ukupnoUplaceno - dug;
         date = LocalDate.parse(endDate + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            .plusMonths(2);
+            .plusMonths(prekoracenje + 1);
         System.out.println(ukupnoUplaceno);
         meseci++;
 
@@ -139,6 +141,78 @@ public class Uplate {
 
     return date.toString();
 
+  }
+
+  public JSONObject getMesecnaZaduzenja(int userID) {
+    JSONObject object = new JSONObject();
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = " SELECT sum(dug) as dug, zaMesec FROM zaduzenja WHERE userID=? group by zaMesec";
+
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        int i = 0;
+        while (rs.next()) {
+          JSONObject data = new JSONObject();
+          data.put("zaMesec", rs.getString("zaMesec"));
+          data.put("dug", rs.getDouble("dug"));
+          object.put(String.valueOf(i), data);
+          i++;
+        }
+      }
+
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+    return object;
+
+  }
+
+  public JSONObject getMesecnaZaduzenjaServisi(int userID, String zaMesec) {
+    JSONObject object = new JSONObject();
+
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT *  FROM zaduzenja WHERE userID=? and zaMesec=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      ps.setString(2, zaMesec);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        int i = 0;
+        while (rs.next()) {
+          JSONObject data = new JSONObject();
+          data.put("id", rs.getInt("id"));
+          data.put("datum", rs.getString("datum"));
+          data.put("cena", rs.getDouble("cena"));
+          data.put("kolicina", rs.getInt("kolicina"));
+          data.put("jMere", rs.getString("jMere"));
+          data.put("pdv", rs.getDouble("pdv"));
+          data.put("popust", rs.getDouble("popust"));
+          data.put("naziv", rs.getString("naziv"));
+          data.put("opis", rs.getString("opis"));
+          data.put("zaduzenOd", rs.getString("zaduzenOd"));
+          data.put("userID", rs.getInt("userID"));
+          data.put("paketType", rs.getString("paketType"));
+          data.put("dug", rs.getDouble("dug"));
+          data.put("zaMesec", rs.getString("zaMesec"));
+          object.put(String.valueOf(i), data);
+          i++;
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return object;
   }
 
   public String getOperName() {

@@ -299,6 +299,7 @@ public class DTVFunctions {
           servicesFunctions.setEndDate(rs.getInt("id"), endDate);
           servicesFunctions.setAktivateService(rs.getInt("id"), true);
           servicesFunctions.zaduziKorisnika(rs.getInt("id"));
+          activateCards(rs.getInt("id"), endDate);
         }
       }
     } catch (SQLException e) {

@@ -19,8 +19,6 @@ import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
 import org.json.JSONObject;
-import org.w3c.dom.UserDataHandler;
-import sun.security.util.Resources_de;
 
 /**
  * Created by zoom on 2/27/17.
@@ -861,7 +859,8 @@ public class ServicesFunctions {
           }
         }
 
-        if (rs.getString("paketType").equals("IPTV")) {
+        if (rs.getString("paketType").equals("IPTV") || rs.getString("paketType")
+            .equals("LINKED_IPTV")) {
           StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db, getOperName());
           if (stalkerRestAPI2.isError()) {
             setErrorMSG(stalkerRestAPI2.getErrorMSG());
@@ -1668,6 +1667,7 @@ public class ServicesFunctions {
               break;
 
             case "DTV":
+            case "DTV_ADDON":
             case "LINKED_DTV":
               setEndDateDTV(Integer.valueOf(idCard), LocalDate.parse(endDate), db);
               break;

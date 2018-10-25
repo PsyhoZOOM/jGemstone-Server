@@ -3638,6 +3638,32 @@ public class ClientWorker implements Runnable {
     if (rLine.getString("action").equals("getUserRacun")) {
       UserRacun userRacun = new UserRacun(rLine, getOperName(), db);
       send_object(userRacun.getData());
+      return;
+    }
+
+    if (rLine.getString("action").equals("getUserMesecnaZaduzenja")) {
+      JSONObject object = new JSONObject();
+      Uplate uplate = new Uplate(getOperName(), db);
+      object = uplate.getMesecnaZaduzenja(rLine.getInt("userID"));
+      if (uplate.isError()) {
+        object.put("ERROR", uplate.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getUserMesecnaZaduzenjaZaMesec")) {
+      JSONObject object = new JSONObject();
+      Uplate uplate = new Uplate(getOperName(), db);
+      object = uplate
+          .getMesecnaZaduzenjaServisi(rLine.getInt("userID"), rLine.getString("zaMesec"));
+      if (uplate.isError()) {
+        object.put("ERROR", uplate.getErrorMSG());
+      }
+
+      send_object(object);
+      return;
     }
 
     if (rLine.getString("action").equals("OPTIONS_SAVE")) {

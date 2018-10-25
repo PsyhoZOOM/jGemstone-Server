@@ -3,6 +3,7 @@ package net.yuvideo.jgemstone.server.classes.FIX;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
@@ -21,6 +22,7 @@ public class FIXFunctions {
   private boolean error;
   private String errorMSG;
 
+  private DecimalFormat df = new DecimalFormat("#.00");
   public FIXFunctions(database db, String operName) {
     this.db = db;
     this.operName = operName;
@@ -270,7 +272,8 @@ public class FIXFunctions {
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()){
         rs.next();
-        pdv = rs.getDouble("pdv");
+        //zaduzivanje saobracaja korisnika bez pdv
+        //pdv = rs.getDouble("pdv");
         userID = rs.getInt("userID");
 
       } else {
@@ -286,7 +289,8 @@ public class FIXFunctions {
       e.printStackTrace();
     }
 
-    cena = ukupno - valueToPercent.getPDVOfValue(ukupno, pdv);
+    //zaduzivanje saobracaja korisnika bez pdv
+    //cena = ukupno - valueToPercent.getPDVOfValue(ukupno, pdv);
 
     query = "INSERT INTO zaduzenja "
         + "(datum, cena, pdv, naziv, opis, zaduzenOd, userID, paketType, dug, zaMesec) "
@@ -296,7 +300,8 @@ public class FIXFunctions {
     try {
       ps = db.conn.prepareStatement(query);
       ps.setString(1, LocalDate.now().format(dtf));
-      ps.setDouble(2, cena);
+      //ako zuduzujemo korisnika sa pdvom umesto ukupno upisati cenu  ^^ pogledaj gore komentar
+      ps.setDouble(2, Double.parseDouble(df.format(ukupno)));
       ps.setDouble(3, pdv);
       ps.setString(4, String.format("Saobraćaj-%s", brojTelefona));
       ps.setString(5,
@@ -304,7 +309,7 @@ public class FIXFunctions {
       ps.setString(6, getOperName());
       ps.setInt(7, userID);
       ps.setString(8, "FIX_SAOBRACAJ");
-      ps.setDouble(9, ukupno);
+      ps.setDouble(9, Double.parseDouble(df.format(ukupno)));
       ps.setString(10, zaMesec);
       ps.executeUpdate();
       ps.close();

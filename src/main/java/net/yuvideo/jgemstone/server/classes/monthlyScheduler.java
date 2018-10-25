@@ -3,16 +3,11 @@ package net.yuvideo.jgemstone.server.classes;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-import net.yuvideo.jgemstone.server.classes.OBRACUNI.MesecniObracun;
+import net.yuvideo.jgemstone.server.classes.RACUNI.Uplate;
 
 /**
  * Created by zoom on 9/9/16.
@@ -23,6 +18,7 @@ public class monthlyScheduler {
   public database db;
   private DateTimeFormatter format_date = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private DateTimeFormatter format_month = DateTimeFormatter.ofPattern("yyyy-MM");
+  private DecimalFormat df = new DecimalFormat("#.00");
 
   public void monthlyScheduler() {
     PreparedStatement ps;
@@ -59,7 +55,7 @@ public class monthlyScheduler {
           double popust = rs.getDouble("popust");
           double dug = cena - valueToPercent.getPDVOfSum(cena, popust);
           dug = dug + valueToPercent.getPDVOfValue(dug, pdv);
-          ps.setDouble(9, dug);
+          ps.setDouble(9, Double.parseDouble(df.format(dug)));
           ps.setString(10, date.format(format_month));
 
           //ako je je nov servis preskociti zaduzivanje i updejtovati newService=0, to je u slucaju
@@ -73,6 +69,13 @@ public class monthlyScheduler {
               deleteMarkForDeleteService(rs.getInt("id"));
 
             }
+            //SET END DATE USER IF HAVE OVERPAID SERVICE
+            //Next function have a job to do to fix endDate if overDate or has overpaid service;
+            Uplate uplate = new Uplate("SYSTEM", db);
+            uplate.produzivanjeServisa(rs.getInt("userID"));
+
+
+
           } else {
             setNewService(rs.getInt("id"), false);
           }
