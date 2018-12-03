@@ -21,9 +21,10 @@ public class WiFiTracker {
   private ArrayList<NetworkDevices> networkDevices = new ArrayList<>();
   database db;
 
-  public WiFiTracker(database db) {
-    this.db = db;
+  public WiFiTracker() {
+    this.db = new database();
     this.networkDevices = getSNMPDevices();
+    LOGGER.info("UPDATING WIFI SNMP CLIENT DATA");
     Thread wifiTrackThread = new Thread() {
       @Override
       public void run() {
@@ -72,6 +73,8 @@ public class WiFiTracker {
       LOGGER.error(e.getMessage());
       e.printStackTrace();
     }
+
+    db.closeDB();
 
   }
 

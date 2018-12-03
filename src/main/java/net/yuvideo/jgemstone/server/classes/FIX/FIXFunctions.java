@@ -173,13 +173,13 @@ public class FIXFunctions {
   public void obracunajZaMesec(String zaMesec) {
     PreparedStatement ps;
     ResultSet rs;
-    String query = "SELECT FIKSNA_TEL FROM servicesUser WHERE paketType LIKE '%FIX%' ";
+    String query = "SELECT * FROM servicesUser WHERE paketType LIKE '%FIX%' ";
     try {
       ps = db.conn.prepareStatement(query);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         while (rs.next()) {
-          zaduziFixSaobracaj(rs.getString("FIKSNA_TEL"), zaMesec);
+          zaduziFixSaobracaj(rs.getString("FIKSNA_TEL"), zaMesec, rs.getDouble("PDV"));
         }
       }
     } catch (SQLException e) {
@@ -191,11 +191,11 @@ public class FIXFunctions {
   /**
    * Zaduzivanje korisnika sa Fiksnim saobracajem. Ako postoji zaduzenje za prosledjeni mesec boti
    * ce obrisani i ponovo sracunati
-   *
-   * @param brojTelefona broj telefona koji se zaduzuje
+   *  @param brojTelefona broj telefona koji se zaduzuje
    * @param mesec mesec koji za koji se zaduzuje
+   * @param pdv
    */
-  public void zaduziFixSaobracaj(String brojTelefona, String mesec) {
+  public void zaduziFixSaobracaj(String brojTelefona, String mesec, double pdv) {
     //brisanje zaduzivanje ako postoji
     deleteZaduzivanja(brojTelefona, mesec);
 
@@ -209,7 +209,10 @@ public class FIXFunctions {
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()){
         rs.next();
-        zaduziKorisnika(brojTelefona, rs.getDouble("ukupno"), mesec);
+        double ukupno = rs.getDouble("ukupno");
+        double cena = ukupno - valueToPercent.getPDVOfSum(ukupno, pdv);
+
+        zaduziKorisnika(brojTelefona, pdv, cena, ukupno, mesec);
       }
 
       ps.close();
@@ -255,14 +258,13 @@ public class FIXFunctions {
     }
   }
 
-  private void zaduziKorisnika(String brojTelefona, Double ukupno, String zaMesec) {
+  private void zaduziKorisnika(String brojTelefona, Double pdv, Double cena, Double ukupno,
+      String zaMesec) {
     PreparedStatement ps;
     ResultSet rs = null;
     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     String query;
 
-    double pdv = 0;
-    double cena = 0;
     int userID = 0;
 
     query = "SELECT * FROM servicesUser WHERE FIKSNA_TEL=?";
@@ -289,8 +291,6 @@ public class FIXFunctions {
       e.printStackTrace();
     }
 
-    //zaduzivanje saobracaja korisnika bez pdv
-    //cena = ukupno - valueToPercent.getPDVOfValue(ukupno, pdv);
 
     query = "INSERT INTO zaduzenja "
         + "(datum, cena, pdv, naziv, opis, zaduzenOd, userID, paketType, dug, zaMesec) "
@@ -301,7 +301,7 @@ public class FIXFunctions {
       ps = db.conn.prepareStatement(query);
       ps.setString(1, LocalDate.now().format(dtf));
       //ako zuduzujemo korisnika sa pdvom umesto ukupno upisati cenu  ^^ pogledaj gore komentar
-      ps.setDouble(2, Double.parseDouble(df.format(ukupno)));
+      ps.setDouble(2, Double.parseDouble(df.format(cena)));
       ps.setDouble(3, pdv);
       ps.setString(4, String.format("Saobraćaj-%s", brojTelefona));
       ps.setString(5,

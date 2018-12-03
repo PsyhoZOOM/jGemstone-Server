@@ -24,7 +24,6 @@ public class SchedullerTask implements Runnable {
   //final int MINUTES = (60 * 1000); //for normal use
   final int MINUTES = (1000); //for debuging use
   public int timeout;
-  public database db;
   public int DEBUG;
   public int DEBUG_VAL;
   SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -40,6 +39,7 @@ public class SchedullerTask implements Runnable {
   private String info;
   private JSONObject pppoeInterface = new JSONObject();
   private boolean first_run = true;
+  database db = new database();
 
 
   public SchedullerTask(int timeout) {
@@ -52,16 +52,16 @@ public class SchedullerTask implements Runnable {
     while (true) {
       LocalDateTime dateTime = LocalDateTime.now();
       check_scheduler_tasks();
+      System.out.println("CHECKING MONTH SCHE..");
 
       //show connected clients
       show_clients();
 
-      //run every half hour
-
+      //run every half hour (00 minutes, 30minutes)
       //run wifi tracker
       if (dateTime.getMinute() == 30 || dateTime.getMinute() == 00 || first_run == true) {
         first_run = false;
-        WiFiTracker wiFiTracker = new WiFiTracker(db);
+        WiFiTracker wiFiTracker = new WiFiTracker();
         if (wiFiTracker.isError()) {
           LOGGER.error(wiFiTracker.getErrorMSG());
         }
@@ -70,6 +70,7 @@ public class SchedullerTask implements Runnable {
       try {
         Thread.sleep(timeout * MINUTES);
       } catch (InterruptedException e) {
+        LOGGER.error(e.getMessage());
         e.printStackTrace();
       }
     }
@@ -77,7 +78,6 @@ public class SchedullerTask implements Runnable {
 
   private void check_scheduler_tasks() {
     monthlyScheduler = new monthlyScheduler();
-    monthlyScheduler.db = db;
     format = new SimpleDateFormat("yyyy-MM-01");
     check_date = format.format(new Date());
     query = "SELECT date FROM scheduler WHERE name=? AND date =? ";
@@ -161,12 +161,12 @@ public class SchedullerTask implements Runnable {
             ps.setInt(6, i);
             ps.executeUpdate();
             ps.close();
-
-
           } catch (SQLException e) {
             LOGGER.error(e.getMessage());
             close_client_socket(i);
             e.printStackTrace();
+          } finally {
+            LOGGER.error("ERROR IN SCHEDULER");
           }
 
           clientWorkerArrayList.get(i).client_db_update = true;

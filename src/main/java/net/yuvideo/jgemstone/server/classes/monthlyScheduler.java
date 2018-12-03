@@ -14,13 +14,15 @@ import net.yuvideo.jgemstone.server.classes.RACUNI.Uplate;
  */
 public class monthlyScheduler {
 
+  database db;
+
   private final Logger LOGGER = Logger.getLogger("MONTHLY_SCHEDULER");
-  public database db;
   private DateTimeFormatter format_date = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private DateTimeFormatter format_month = DateTimeFormatter.ofPattern("yyyy-MM");
   private DecimalFormat df = new DecimalFormat("#.00");
 
   public void monthlyScheduler() {
+    db = new database();
     PreparedStatement ps;
     ResultSet rs;
     String query;
@@ -69,8 +71,8 @@ public class monthlyScheduler {
               deleteMarkForDeleteService(rs.getInt("id"));
 
             }
-            //SET END DATE USER IF HAVE OVERPAID SERVICE
-            //Next function have a job to do to fix endDate if overDate or has overpaid service;
+            //SET END DATE IF USER HAS OVERPAID SERVICE
+            //Next function has a job to fix endDate if overDate or user has overpaid service;
             Uplate uplate = new Uplate("SYSTEM", db);
             uplate.produzivanjeServisa(rs.getInt("userID"));
 

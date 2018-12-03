@@ -48,7 +48,6 @@ public class Server {
       }
     }
 
-    database db;
 
     // SSL SOCKET INIT
     try {
@@ -93,7 +92,7 @@ public class Server {
 
 
     // ONLINE OPERS OFFLINE
-    db = new database();
+    database db = new database();
 
     //   System.out.println("COPYING DATABASES:");
 //convertOldUsers convert = new convertOldUsers(db);
@@ -104,6 +103,7 @@ public class Server {
       ps.setInt(1, 0);
       ps.executeUpdate();
       ps.close();
+      db.closeDB();
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -111,9 +111,6 @@ public class Server {
     // SCHEDULER MONTHLY ..
     SchedullerTask st;
     st = new SchedullerTask(1);
-    st.DEBUG = DEBUG;
-    st.db = db;
-
     st.DEBUG = DEBUG;
     Thread scheduller = new Thread(st);
     scheduller.start();
@@ -126,6 +123,7 @@ public class Server {
     int EMMTimeout = 1000;
     boolean runEMMServce = false;
     try {
+      db = new database();
       ps = db.conn.prepareStatement(query);
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
@@ -144,6 +142,9 @@ public class Server {
           }
         }
       }
+      ps.close();
+      rs.close();
+      db.closeDB();
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -157,7 +158,7 @@ public class Server {
     }
 
     GPSReceiver gpsReceiver = new GPSReceiver();
-    gpsReceiver.setDatabase(db);
+    gpsReceiver.setDatabase(new database());
     Thread gpsTH = new Thread(gpsReceiver);
     gpsTH.start();
 

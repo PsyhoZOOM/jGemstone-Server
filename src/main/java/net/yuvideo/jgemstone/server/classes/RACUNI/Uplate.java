@@ -147,7 +147,7 @@ public class Uplate {
     JSONObject object = new JSONObject();
     PreparedStatement ps;
     ResultSet rs;
-    String query = " SELECT sum(dug) as dug, zaMesec FROM zaduzenja WHERE userID=? group by zaMesec";
+    String query = " SELECT sum(dug) as dug, zaMesec FROM zaduzenja WHERE userID=? group by zaMesec order by zaMesec desc";
 
     try {
       ps = db.conn.prepareStatement(query);

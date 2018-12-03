@@ -22,6 +22,7 @@ import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.DTV.DTVPaketFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.CSVIzvestajImport;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
+import net.yuvideo.jgemstone.server.classes.GROUP.GroupOper;
 import net.yuvideo.jgemstone.server.classes.INTERNET.InternetPaket;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
@@ -2828,7 +2829,7 @@ public class ClientWorker implements Runnable {
     }
 
     //FIKSNA TLEFONIJA PAKETI
-    if (rLine.get("action").equals("add_fixTel_paket")) {
+    if (rLine.get("action").equals("dd_fixTel_paket")) {
       jObj = new JSONObject();
       try {
         ps = db.conn.prepareStatement("INSERT INTO FIX_paketi"
@@ -3965,16 +3966,6 @@ public class ClientWorker implements Runnable {
       return;
     }
 
-    if (rLine.getString("action").equals("testSNMP")) {
-      JSONObject object = new JSONObject();
-
-      WiFiTracker wiFiTracker = new WiFiTracker(db);
-      if (wiFiTracker.isError()) {
-        object.put("ERROR", wiFiTracker.getErrorMSG());
-      }
-
-      send_object(object);
-    }
 
     if (rLine.getString("action").equals("getWifiSignalData")) {
       JSONObject object;
@@ -4229,6 +4220,18 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if (rLine.getString("action").equals("getGroupOpers")) {
+      JSONObject object = new JSONObject();
+      GroupOper groupOper = new GroupOper(this.db);
+      if (groupOper.isError()) {
+        object.put("ERROR", groupOper.getErrorMSG());
+      } else {
+        object = groupOper.getGroupJSON();
+      }
+      send_object(object);
+      return;
+    }
+
 
 
 
@@ -4357,6 +4360,10 @@ public class ClientWorker implements Runnable {
     this.setOperName(username);
 
     try {
+      //check if connection is timed-out
+      if (!db.conn.isValid(1)) {
+        db = new database();
+      }
       ps = db.conn.prepareStatement(
           "SELECT id, username,password, aktivan FROM operateri WHERE username=? AND password=?");
       ps.setString(1, username);

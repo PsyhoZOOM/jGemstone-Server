@@ -184,17 +184,17 @@ public class GetWifiSignal {
               response.put(binding.getOid().toString(), binding.getVariable().toString());
             }
           } else {
-            LOGGER.error(String
-                .format("ERROR %s Status: %d, Index: %d, Error, %s ", target, errorStatus,
-                    errorIndex,
-                    errorStratusText));
+            //LOGGER.error(String
+            //    .format("ERROR %s Status: %d, Index: %d, Error, %s ", target, errorStatus,
+            //        errorIndex,
+            //        errorStratusText));
 
           }
         } else {
-          LOGGER.error(String.format("ERROR  %s response is NULL", target));
+          //LOGGER.error(String.format("ERROR  %s response is NULL", target));
         }
       } else {
-        LOGGER.info("ERROR TIMEOUT TO:" + target.getAddress());
+        //LOGGER.info("ERROR TIMEOUT TO:" + target.getAddress());
       }
       snmp.close();
       transportMapping.close();

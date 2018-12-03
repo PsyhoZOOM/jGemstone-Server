@@ -325,7 +325,6 @@ public class DTVFunctions {
           if (!rs.getString("paketType").equals("DTV_ADDON_PROGRAM")) {
             setEndDate(rs.getInt("idDTVCard"), endDate, operName);
           }
-          servicesFunctions.zaduziKorisnika(rs.getInt("id"));
 
 
         }

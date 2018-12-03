@@ -311,6 +311,12 @@ public class ServicesFunctions {
     } catch (SQLException e) {
       e.printStackTrace();
     }
+
+    FIXFunctions fixFunctions = new FIXFunctions(db, getOperName());
+    JSONObject object = new JSONObject();
+    object.put("FIX_TEL", rLine.getString("brojTel"));
+    object.put("userID", rLine.getInt("userID"));
+    fixFunctions.addBroj(object);
   }
 
   public void addServiceIPTV(JSONObject rLine) {
