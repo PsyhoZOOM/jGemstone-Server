@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.RestoreAction;
+import jdk.nashorn.internal.runtime.arrays.ArrayLikeIterator;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
@@ -58,7 +60,6 @@ public class GroupOper {
       JSONObject object = new JSONObject();
       object.put("id", groupOperArrayList.get(i).getId());
       object.put("groupName", groupOperArrayList.get(i).getGroupName());
-      object.put("operater", groupOperArrayList.get(i).getOper());
       object.put("operaters", getJSONGroupOpers(groupOperArrayList.get(i).getGroupName()));
       groupJSON.put(String.valueOf(i), object);
 
@@ -84,6 +85,7 @@ public class GroupOper {
           object.put("operID", rs.getInt("id"));
           object.put("operName", getOperName(rs.getInt("operater")));
           operaters.put(String.valueOf(i), object);
+          i++;
 
         }
       }
@@ -157,6 +159,54 @@ public class GroupOper {
     }
 
     return object;
+  }
+
+
+  public JSONObject getGroupOperaters(String groupName){
+    PreparedStatement ps;
+    ResultSet rs;
+    JSONObject  opers = new JSONObject();
+    String query = "SELECT * FROM groups WHERE groupName=?";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, groupName);
+      rs = ps.executeQuery();
+      if(rs.isBeforeFirst()){
+        int i =0;
+        while (rs.next()){
+          JSONObject oper = new JSONObject();
+          oper.put("id", rs.getInt("operater"));
+          oper.put("username",getOperName(rs.getInt("operater")));
+          opers.put(String.valueOf(i), oper);
+          i++;
+
+        }
+      }
+      ps.close();
+      rs.close();
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+    return opers;
+  }
+
+  public void addOperToGroup(String groupName, int operID){
+    PreparedStatement ps;
+    String query = "INSERT INTO groups (groupName, operater) VALUES (?,?)";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setString(1, groupName);
+      ps.setInt(2, operID);
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+
   }
 
   public int getId() {

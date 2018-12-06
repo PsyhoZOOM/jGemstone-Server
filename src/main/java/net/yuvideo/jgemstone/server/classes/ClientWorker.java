@@ -4232,6 +4232,29 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+    if(rLine.getString("action").equals("getGroupOperaters")){
+      JSONObject object = new JSONObject();
+      GroupOper groupOper = new GroupOper(this.db);
+      object = groupOper.getGroupOperaters(rLine.getString("groupName"));
+      if(groupOper.isError()){
+        object.put("ERROR", groupOper.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if(rLine.getString("action").equals("addOperToGroup")){
+      JSONObject object = new JSONObject();
+
+      GroupOper groupOper = new GroupOper(this.db);
+      groupOper.addOperToGroup(rLine.getString("groupName"), rLine.getInt("operID"));
+      if(groupOper.isError())
+        object.put("ERROR", groupOper.getErrorMSG());
+
+      send_object(object);
+      return;
+    }
+
 
 
 
