@@ -4220,7 +4220,19 @@ public class ClientWorker implements Runnable {
       return;
     }
 
-    if (rLine.getString("action").equals("getGroupOpers")) {
+    if (rLine.getString("action").equals("addGroup")) {
+      JSONObject object = new JSONObject();
+      GroupOper groupOper = new GroupOper(this.db);
+      groupOper.addGroup(rLine.getString("groupName"));
+
+      if (groupOper.isError()) {
+        object.put("ERROR", groupOper.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("getGroups")) {
       JSONObject object = new JSONObject();
       GroupOper groupOper = new GroupOper(this.db);
       if (groupOper.isError()) {
@@ -4235,8 +4247,32 @@ public class ClientWorker implements Runnable {
     if(rLine.getString("action").equals("getGroupOperaters")){
       JSONObject object = new JSONObject();
       GroupOper groupOper = new GroupOper(this.db);
-      object = groupOper.getGroupOperaters(rLine.getString("groupName"));
+      object = groupOper.getGroupOperaters(rLine.getInt("groupID"));
       if(groupOper.isError()){
+        object.put("ERROR", groupOper.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    //AVAILABLE OPERS
+    if (rLine.getString("action").equals("getAvOpers")) {
+      JSONObject object = new JSONObject();
+      GroupOper groupOper = new GroupOper(this.db);
+      object = groupOper.getAvOpers();
+      if (groupOper.isError()) {
+        object.put("ERROR", groupOper.getErrorMSG());
+      }
+      send_object(object);
+      return;
+    }
+
+    if (rLine.getString("action").equals("removeOperFromGroup")) {
+      JSONObject object = new JSONObject();
+      GroupOper groupOper = new GroupOper(this.db);
+      groupOper.removeOperaterFromGroup(rLine.getInt("operID"));
+
+      if (groupOper.isError()) {
         object.put("ERROR", groupOper.getErrorMSG());
       }
       send_object(object);
@@ -4247,7 +4283,7 @@ public class ClientWorker implements Runnable {
       JSONObject object = new JSONObject();
 
       GroupOper groupOper = new GroupOper(this.db);
-      groupOper.addOperToGroup(rLine.getString("groupName"), rLine.getInt("operID"));
+      groupOper.addOperToGroup(rLine.getInt("groupID"), rLine.getInt("operID"));
       if(groupOper.isError())
         object.put("ERROR", groupOper.getErrorMSG());
 
