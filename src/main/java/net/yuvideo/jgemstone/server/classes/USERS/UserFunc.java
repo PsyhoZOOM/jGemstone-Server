@@ -71,7 +71,18 @@ public class UserFunc {
     }
 
     //TODO delete all payments (becouse another user will take that userID
+    query = "DELETE * FROM zaduzezenja  WHRE userID=?";
 
+    try {
+      ps =db.conn.prepareStatement(query);
+      ps.setInt(1, userId);
+      ps.executeUpdate();
+
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
 
 
   }

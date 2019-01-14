@@ -45,6 +45,8 @@ public class mysqlMIsc {
     } catch (SQLException e) {
       e.printStackTrace();
     }
+    if(id==0)
+      id=1;
     return id;
 
   }
