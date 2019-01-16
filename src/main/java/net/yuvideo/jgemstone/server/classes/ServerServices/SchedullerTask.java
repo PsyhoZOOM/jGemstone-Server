@@ -52,7 +52,6 @@ public class SchedullerTask implements Runnable {
     while (true) {
       LocalDateTime dateTime = LocalDateTime.now();
       check_scheduler_tasks();
-      System.out.println("CHECKING MONTH SCHE..");
 
       //show connected clients
       show_clients();
@@ -143,7 +142,7 @@ public class SchedullerTask implements Runnable {
         close_client_socket(i);
 
       } else {
-        if (clientWorkerArrayList.get(i).client_db_update == false) {
+        if (clientWorkerArrayList.get(i).client_db_update == false ) {
           SimpleDateFormat datum_oper = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
           query =
               "INSERT INTO onlineOperaters (username, remote_address, date, online, uniqueID, arrayID) "
@@ -154,7 +153,7 @@ public class SchedullerTask implements Runnable {
             ps = db.conn.prepareStatement(query);
             ps.setString(1, clientWorkerArrayList.get(i).getOperName());
             ps.setString(2,
-                clientWorkerArrayList.get(i).get_socket().getRemoteSocketAddress().toString());
+                clientWorkerArrayList.get(i).get_socket().getRemoteSocketAddress().toString().replace("/", ""));
             ps.setString(3, datum_oper.format(new Date()));
             ps.setInt(4, 1);
             ps.setInt(5, clientWorkerArrayList.get(i).hashCode());
@@ -165,8 +164,6 @@ public class SchedullerTask implements Runnable {
             LOGGER.error(e.getMessage());
             close_client_socket(i);
             e.printStackTrace();
-          } finally {
-            LOGGER.error("ERROR IN SCHEDULER");
           }
 
           clientWorkerArrayList.get(i).client_db_update = true;
