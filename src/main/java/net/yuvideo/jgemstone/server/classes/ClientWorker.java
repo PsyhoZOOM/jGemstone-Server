@@ -4108,6 +4108,7 @@ public class ClientWorker implements Runnable {
       return;
     }
 
+
     if (rLine.getString("action").equals("getAllCAS")) {
       JSONObject object = new JSONObject();
       DTVPaketFunctions dtvFunctions = new DTVPaketFunctions(db, getOperName());

@@ -124,7 +124,7 @@ public class SchedullerTask implements Runnable {
           clientWorkerArrayList.get(i).get_socket().getInetAddress(),
           clientWorkerArrayList.get(i).hashCode()
       );
-      if (DEBUG > 2) {
+      if (DEBUG > 3) {
         LOGGER.info(info);
       }
 
