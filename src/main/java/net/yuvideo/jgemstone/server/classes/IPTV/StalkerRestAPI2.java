@@ -449,6 +449,7 @@ public class StalkerRestAPI2 {
   }
 
 
+
   public boolean isHostAlive() {
     return isHostAlive;
   }

@@ -51,7 +51,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.204";
+  private static final String S_VERSION = "0.205";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -668,12 +668,23 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("new_user")) {
 
-      query = "INSERT INTO users (id, ime, datumRodjenja, operater, postBr, mesto, brLk, JMBG, "
-          + "adresa,  komentar, telFiksni, telMobilni, datumKreiranja, jBroj)"
-          + "VALUES (?, ?, ?, ?, ?, ?, ? ,? ,? ,? ,?, ?, ?, ?)";
+      boolean editUser = rLine.getBoolean("editUser");
+      if(rLine.getBoolean("editUser")){
+        query = "UPDATE users SET id=?, ime=?, datumRodjenja=?, operater=?, postBr=?, mesto=?, brLk=?, "
+            + "JMBG=?, adresa=?, komentar=?, telFiksni=?, telMobilni=?, datumKreiranja=?, jBroj=? WHERE id=?";
+      }else {
+        query = "INSERT INTO users (id, ime, datumRodjenja, operater, postBr, mesto, brLk, JMBG, "
+            + "adresa,  komentar, telFiksni, telMobilni, datumKreiranja, jBroj)"
+            + "VALUES (?, ?, ?, ?, ?, ?, ? ,? ,? ,? ,?, ?, ?, ?)";
+      }
 
       try {
-        ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+
+        if(editUser) {
+          ps = db.conn.prepareStatement(query);
+        }else{
+          ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+        }
 
         ps.setInt(1, rLine.getInt("freeID"));
         ps.setString(2, rLine.getString("fullName"));
@@ -689,22 +700,30 @@ public class ClientWorker implements Runnable {
         ps.setString(12, rLine.getString("telMobilni"));
         ps.setString(13, mysql_date_format.format(new Date()));
         ps.setString(14, rLine.getString("jBroj"));
+        if (rLine.getBoolean("editUser")){
+          ps.setInt(15, rLine.getInt("freeID"));
+        }
 
         ps.executeUpdate();
 
       } catch (SQLException e) {
         jObj = new JSONObject();
-        jObj.put("Message", "ERROR");
-        jObj.put("ERROR_MESSAGE", e.getMessage());
+        jObj.put("ERROR", e.getMessage());
         e.printStackTrace();
       }
 
       jObj = new JSONObject();
       try {
-        rs = ps.getGeneratedKeys();
-        rs.next();
         jObj.put("Message", "user_saved");
-        jObj.put("userID", rLine.getInt("freeID"));
+        if(!editUser) {
+          rs = ps.getGeneratedKeys();
+          rs.next();
+          System.out.println(rs.getInt(1));
+          jObj.put("userID", rLine.getInt("freeID"));
+        }else{
+          jObj.put("userID", rLine.getInt("freeID"));
+
+        }
         rs.close();
         ps.close();
       } catch (SQLException e) {
@@ -4288,6 +4307,17 @@ public class ClientWorker implements Runnable {
       if(groupOper.isError())
         object.put("ERROR", groupOper.getErrorMSG());
 
+      send_object(object);
+      return;
+    }
+
+    if(rLine.getString("action").equals("changeMAC_IPTV")){
+      JSONObject object = new JSONObject();
+      StalkerRestAPI2 stalkerRestAPI2 = new StalkerRestAPI2(db, getOperName());
+      stalkerRestAPI2.changeMac(594, "B0:EE:7B:42:87:8F" );
+      if(stalkerRestAPI2.isError()){
+        object.put("ERROR", stalkerRestAPI2.getErrorMSG());
+      }
       send_object(object);
       return;
     }

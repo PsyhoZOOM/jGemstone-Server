@@ -71,7 +71,7 @@ public class UserFunc {
     }
 
     //TODO delete all payments (becouse another user will take that userID
-    query = "DELETE * FROM zaduzezenja  WHRE userID=?";
+    query = "DELETE FROM zaduzenja  WHERE userID=?";
 
     try {
       ps =db.conn.prepareStatement(query);
