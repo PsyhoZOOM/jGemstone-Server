@@ -36,9 +36,9 @@ public class ZaduziCustom {
     LocalDate zaMesecDatum = LocalDate.parse(zaMesec+"-01", dtfNormal);
 
     for (int i = 0; i<rate;i++) {
-      String sqlNaziv=  "";
+      String sqlNaziv=  naziv;
       if (rate > 1) {
-        sqlNaziv = String.format("%s rata %d od %d", naziv, i + 1, i);
+        sqlNaziv = String.format("%s rata %d od %d", naziv, i + 1, rate);
       }
       Double cenaZaSQL = (cena*kolicina)/rate;
       Double dugZaSQL =  cenaZaSQL+valueToPercent.getPDVOfValue(cenaZaSQL, pdv);
