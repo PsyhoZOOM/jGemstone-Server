@@ -52,7 +52,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.206";
+  private static final String S_VERSION = "0.207";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -125,7 +125,7 @@ public class ClientWorker implements Runnable {
         String A = Bfr.readLine();
 
         if (A == null) {
-          client.close();
+          //client.close();
           LOGGER.info(String
               .format("Client %s %s disconnected", client.getRemoteSocketAddress().toString(),
                   getOperName()));
@@ -135,11 +135,7 @@ public class ClientWorker implements Runnable {
         jObj = new JSONObject(A);
       } catch (IOException e) {
         e.printStackTrace();
-        try {
-          client.close();
-        } catch (IOException e1) {
-          e1.printStackTrace();
-        }
+        //client.close();
         break;
       } catch (Exception e) {
         e.printStackTrace();
@@ -195,19 +191,11 @@ public class ClientWorker implements Runnable {
         jObj = new JSONObject();
         jObj.put("Message", "WRONG_VERSION");
         send_object(jObj);
-        try {
-          client.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+        //client.close();
 
       }
     }else{
-      try {
-        client.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+      //client.close();
 
     }
 
@@ -228,12 +216,8 @@ public class ClientWorker implements Runnable {
         jObj = new JSONObject();
         jObj.put("Message", "LOGIN_OK");
         send_object(jObj);
-        try {
-          if (keepAlive == false) {
-            client.close();
-          }
-        } catch (IOException e) {
-          e.printStackTrace();
+        if (keepAlive == false) {
+          //client.close();
         }
         return;
       }
@@ -251,12 +235,8 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
       jObj.put("Message", "LOGIN_FAILED");
       send_object(jObj);
-      try {
-        client.close();
+      //client.close();
 
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
       return;
     }
     setOperName(rLine.getString("userNameLogin"));
@@ -4504,12 +4484,8 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
       jObj.put("Message", "LOGIN_FAILED");
       send_object(jObj);
-      try {
 
-        client.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+      //client.close();
     }
 
     return client_authenticated;
@@ -4526,7 +4502,7 @@ public class ClientWorker implements Runnable {
     if (client.isClosed()) {
       LOGGER.info("CLIENT DISCONNECTED!!");
       try {
-        client.close();
+        //client.close();
         Bfr.close();
         Bfw.close();
         return;
@@ -4549,7 +4525,7 @@ public class ClientWorker implements Runnable {
       if (keepAlive == false) {
         Bfw.close();
         Bfr.close();
-        client.close();
+        //client.close();
       }
     } catch (IOException e) {
       e.printStackTrace();
