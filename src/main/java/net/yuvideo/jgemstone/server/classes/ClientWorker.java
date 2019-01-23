@@ -42,6 +42,7 @@ import net.yuvideo.jgemstone.server.classes.ServerServices.WiFiTracker;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.WiFi.WiFiData;
+import net.yuvideo.jgemstone.server.classes.ZADUZENJA.ZaduziCustom;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
@@ -51,7 +52,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.205";
+  private static final String S_VERSION = "0.206";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -1228,6 +1229,19 @@ public class ClientWorker implements Runnable {
       if (uplate.isError()) {
         object.put("ERROR", uplate.getErrorMSG());
       }
+      send_object(object);
+      return;
+    }
+
+    if(rLine.getString("action").equals("zaduziKorisnikaCustom")){
+      JSONObject object = new JSONObject();
+
+      ZaduziCustom zaduziCustom = new ZaduziCustom(getOperName(), db);
+      zaduziCustom.zaduziKorisnika(rLine);
+      if(zaduziCustom.isError()){
+        object.put("ERROR", zaduziCustom.getErrorMSG());
+      }
+
       send_object(object);
       return;
     }

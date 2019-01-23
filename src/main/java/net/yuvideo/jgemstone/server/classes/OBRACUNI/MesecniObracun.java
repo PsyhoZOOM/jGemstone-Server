@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
-import net.yuvideo.jgemstone.server.classes.Uplate;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
 import org.json.JSONObject;

@@ -3,13 +3,8 @@ package net.yuvideo.jgemstone.server.classes.USERS;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
-import net.yuvideo.jgemstone.server.classes.Users;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
@@ -88,38 +83,6 @@ public class UserFunc {
   }
 
 
-  public void createUser(Users user) {
-    PreparedStatement ps;
-    String query;
-    query = "INSERT INTO users (ime, datumRodjenja, operater, postBr, mesto, brLk, JMBG, "
-        + "adresa,  komentar, telFiksni, telMobilni, datumKreiranja)"
-        + "VALUES (?, ?, ?, ?, ?, ?, ? ,? ,? ,? ,?, ?)";
-
-    try {
-      ps = db.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-
-      ps.setString(1, user.getIme());
-      ps.setString(2, user.getDatum_rodjenja());
-      ps.setString(3, "SYSTEM-" + LocalDate.now().toString());
-      ps.setString(4, user.getPostanski_broj());
-      ps.setString(5, user.getMesto());
-      ps.setString(6, user.getBr_lk());
-      ps.setString(7, user.getJMBG());
-      ps.setString(8, user.getAdresa());
-      ps.setString(9, "AUTOMATSKI PREBACEN IZ STARE BAZE");
-      ps.setString(10, user.getFiksni());
-      ps.setString(11, user.getMobilni());
-      ps.setString(12,
-          LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss")));
-
-      ps.executeUpdate();
-      ps.close();
-
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-  }
 
   public JSONObject getAllUsers(JSONObject rLine) {
     String query = "SELECT * FROM users WHERE  ime LIKE ? or id LIKE ? or jBroj LIKE ? or nazivFirme LIKE ? or mesto LIKE ? ";
