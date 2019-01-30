@@ -94,7 +94,7 @@ public class ServicesFunctions {
       ps.setString(4, dtf.format(LocalDateTime.now()));
       ps.setInt(5, rLine.getInt("userID"));
       ps.setString(6, opername);
-      ps.setString(7, rLine.getString("userName"));
+      ps.setString(7, rLine.getString("userName").toLowerCase());
       ps.setString(8, rLine.getString("groupName"));
       ps.setBoolean(9, true);
       ps.setString(10, "LINKED_NET");
@@ -263,7 +263,7 @@ public class ServicesFunctions {
       ps.setString(9, rLine.getString("brojUgovora"));
       ps.setBoolean(10, false);
       ps.setBoolean(11, true);
-      ps.setString(12, rLine.getString("userName"));
+      ps.setString(12, rLine.getString("userName").toLowerCase());
       ps.setString(13, rLine.getString("groupName"));
       ps.setString(14, "NET");
       ps.setString(15, "2000-01-01");

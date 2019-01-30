@@ -175,7 +175,7 @@ public class StalkerRestAPI2 {
 
     JSONObject jobj = new JSONObject();
     jobj
-        .put("login", rLine.getString("login"))
+        .put("login", rLine.getString("login").toLowerCase())
         .put("full_name", rLine.getString("full_name"))
         .put("account_number", rLine.getInt("userID"))
         .put("end_date",
