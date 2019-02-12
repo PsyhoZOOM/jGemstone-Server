@@ -47,7 +47,7 @@ public class monthlyScheduler {
           ps.setDouble(2, rs.getDouble("cena"));
           ps.setDouble(3, rs.getDouble("PDV"));
           ps.setDouble(4, rs.getDouble("popust"));
-          ps.setString(5, rs.getString("nazivPaketa"));
+          ps.setString(5, rs.getString("nazivPaketa").toUpperCase());
           ps.setString(6, "SYSTEM");
           ps.setInt(7, rs.getInt("userID"));
           ps.setString(8, rs.getString("paketType"));

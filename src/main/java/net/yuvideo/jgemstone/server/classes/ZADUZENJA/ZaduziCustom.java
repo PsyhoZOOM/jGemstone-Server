@@ -57,7 +57,7 @@ public class ZaduziCustom {
         ps.setString(4, "kom.");
         ps.setDouble(5, pdv);
         ps.setDouble(6, 0);
-        ps.setString(7, sqlNaziv);
+        ps.setString(7, sqlNaziv.toUpperCase());
         ps.setString(8, oper);
         ps.setInt(9, userID);
         ps.setString(10, "CUSTOM");
@@ -76,6 +76,24 @@ public class ZaduziCustom {
 
   }
 
+  public void izmeniZaduzenje(JSONObject rLine) {
+    String query = "UPDATE zaduzenja set cena=?, pdv=?, dug=? WHERE id=?";
+    PreparedStatement ps;
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setDouble(1, rLine.getDouble("cena"));
+      ps.setDouble(2, rLine.getDouble("pdv"));
+      ps.setDouble(3, rLine.getDouble("dug"));
+      ps.setInt(4, rLine.getInt("id"));
+      ps.executeUpdate();
+      ps.close();
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+
+  }
 
   public boolean isError() {
     return error;
@@ -92,4 +110,6 @@ public class ZaduziCustom {
   public void setErrorMSG(String errorMSG) {
     this.errorMSG = errorMSG;
   }
+
+
 }

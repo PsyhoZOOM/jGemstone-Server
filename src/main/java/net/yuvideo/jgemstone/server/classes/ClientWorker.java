@@ -52,7 +52,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.209";
+  private static final String S_VERSION = "0.210";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -1225,6 +1225,19 @@ public class ClientWorker implements Runnable {
       send_object(object);
       return;
     }
+
+
+   if (rLine.getString("action").equals("IzmeniKorisnikZaduzenje")){
+     JSONObject object = new JSONObject();
+
+     ZaduziCustom zaduziCustom = new ZaduziCustom(getOperName(),db);
+     zaduziCustom.izmeniZaduzenje(rLine);
+     if(zaduziCustom.isError()){
+       object.put("ERROR", zaduziCustom.getErrorMSG());
+     }
+     send_object(object);
+     return;
+   }
 
     //TODO remove me test
     if (rLine.getString("action").equals("testProduziKorisnik")) {
