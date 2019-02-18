@@ -40,8 +40,9 @@ public class ZaduziCustom {
       if (rate > 1) {
         sqlNaziv = String.format("%s rata %d od %d", naziv, i + 1, rate);
       }
-      Double cenaZaSQL = (cena*kolicina)/rate;
+      Double cenaZaSQL = cena/rate;
       Double dugZaSQL =  cenaZaSQL+valueToPercent.getPDVOfValue(cenaZaSQL, pdv);
+      dugZaSQL *=kolicina;
 
       String query =
           "INSERT INTO zaduzenja (datum, cena, kolicina, jMere, pdv, popust, naziv, zaduzenOd, userID, paketType, dug, zaMesec, opis) "
@@ -52,7 +53,7 @@ public class ZaduziCustom {
 
         ps = db.conn.prepareStatement(query);
         ps.setString(1, LocalDateTime.now().format(dtfNormal));
-        ps.setDouble(2, (cena*kolicina)/rate);
+        ps.setDouble(2, cena/rate);
         ps.setInt(3, object.getInt("kolicina"));
         ps.setString(4, "kom.");
         ps.setDouble(5, pdv);

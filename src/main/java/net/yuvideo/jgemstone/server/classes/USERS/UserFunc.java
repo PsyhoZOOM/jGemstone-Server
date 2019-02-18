@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
+import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
@@ -23,18 +24,30 @@ public class UserFunc {
 
 
   public void deleteUser(int userId) {
-    String query = "DELETE FROM users WHERE id=?";
-    PreparedStatement ps;
 
+    String query;
+    PreparedStatement ps = null;
+
+    ServicesFunctions servicesFunctions = new ServicesFunctions(db, operName);
+
+    query = "SELECT id from servicesUser WHERE userID=?";
     try {
-      ps = db.conn.prepareStatement(query);
+      ps= db.conn.prepareStatement(query);
       ps.setInt(1, userId);
-      ps.executeUpdate();
-    } catch (Exception e) {
+      ResultSet rs = ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        while (rs.next()){
+          servicesFunctions.deleteService(rs.getInt("id"), userId);
+        }
+      }
+      rs.close();
+
+    } catch (SQLException e) {
       setError(true);
       setErrorMSG(e.getMessage());
       e.printStackTrace();
     }
+
 
     //delete from Services_user
     query = "DELETE FROM servicesUser  WHERE  userID=?";
@@ -51,7 +64,6 @@ public class UserFunc {
       e.printStackTrace();
     }
 
-
     query = "DELETE FROM ugovori_korisnik WHERE userID=?";
 
     try {
@@ -65,11 +77,10 @@ public class UserFunc {
       e.printStackTrace();
     }
 
-    //TODO delete all payments (becouse another user will take that userID
     query = "DELETE FROM zaduzenja  WHERE userID=?";
 
     try {
-      ps =db.conn.prepareStatement(query);
+      ps = db.conn.prepareStatement(query);
       ps.setInt(1, userId);
       ps.executeUpdate();
 
@@ -79,9 +90,36 @@ public class UserFunc {
       e.printStackTrace();
     }
 
+    query =  "DELETE FROM uplate WHERE userID=?";
+    try {
+      ps =db.conn.prepareStatement(query);
+      ps.executeUpdate();
+    } catch (SQLException e) {
+      setErrorMSG(e.getMessage());
+      setError(true);
+      e.printStackTrace();
+    }
+
+    query = "DELETE FROM users WHERE id=?";
+
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userId);
+      ps.executeUpdate();
+    } catch (Exception e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+    try {
+      ps.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
 
   }
-
 
 
   public JSONObject getAllUsers(JSONObject rLine) {

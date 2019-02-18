@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -52,7 +53,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.210";
+  private static final String S_VERSION = "0.211";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -108,7 +109,7 @@ public class ClientWorker implements Runnable {
 
       if (Isr == null) {
         try {
-          Isr = new InputStreamReader(client.getInputStream());
+          Isr = new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8);
           Bfr = new BufferedReader(Isr);
         } catch (IOException e) {
           System.out.println(e.getMessage());
@@ -175,7 +176,7 @@ public class ClientWorker implements Runnable {
 
     if (Osw == null) {
       try {
-        Osw = new OutputStreamWriter(client.getOutputStream());
+        Osw = new OutputStreamWriter(client.getOutputStream(), StandardCharsets.UTF_8);
         Bfw = new BufferedWriter(Osw);
 
       } catch (IOException e) {
