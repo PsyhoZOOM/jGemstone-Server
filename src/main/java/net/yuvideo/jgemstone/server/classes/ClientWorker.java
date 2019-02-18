@@ -42,6 +42,7 @@ import net.yuvideo.jgemstone.server.classes.ServerServices.SchedullerTask;
 import net.yuvideo.jgemstone.server.classes.ServerServices.WiFiTracker;
 import net.yuvideo.jgemstone.server.classes.USERS.UserFunc;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
+import net.yuvideo.jgemstone.server.classes.Ugovori.Ugovori;
 import net.yuvideo.jgemstone.server.classes.WiFi.WiFiData;
 import net.yuvideo.jgemstone.server.classes.ZADUZENJA.ZaduziCustom;
 import org.apache.log4j.Logger;
@@ -1568,6 +1569,21 @@ public class ClientWorker implements Runnable {
 
       send_object(jObj);
       return;
+    }
+
+    if (rLine.getString("action").equals("deleteUserUgovor")){
+      JSONObject object = new JSONObject();
+      Ugovori ugovori = new Ugovori(db, getOperName());
+      ugovori.deleteUserUgovor(rLine.getInt("id"), rLine.getInt("userID"), rLine.getString("brojUgovora"));
+      if(ugovori.isExist()){
+        object.put("ERROR", "Ugovor ne moze biti obrisan jer je vec povezan sa nekim od usluga!");
+      }
+      if(ugovori.isError()){
+        object.put("ERROR", ugovori.getErrorMSG());
+      }
+      send_object(object);
+      return;
+
     }
 
     if (rLine.getString("action").equals("saveOprema")) {
