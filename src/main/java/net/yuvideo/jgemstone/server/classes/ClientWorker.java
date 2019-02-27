@@ -55,7 +55,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.211";
+  private static final String S_VERSION = "0.212";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
