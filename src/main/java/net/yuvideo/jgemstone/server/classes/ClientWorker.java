@@ -28,6 +28,7 @@ import net.yuvideo.jgemstone.server.classes.INTERNET.InternetPaket;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.IPTVFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
+import net.yuvideo.jgemstone.server.classes.IZVESTAJI.Izvestaji;
 import net.yuvideo.jgemstone.server.classes.LOCATION.LocationsClients;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.MIKROTIK_API.MikrotikAPI;
@@ -3677,6 +3678,18 @@ public class ClientWorker implements Runnable {
       }
       send_object(object);
       return;
+    }
+
+    if (rLine.getString("action").equals("getIzvestajPoDatumu")){
+        JSONObject object = new JSONObject();
+      Izvestaji izvestaji = new Izvestaji(db, getOperName());
+      object = izvestaji.getIzvestajPoDatumu(rLine);
+      if (izvestaji.isError()){
+        object.put("ERROR", izvestaji.getErrorMSG());
+      }
+      send_object(object);
+      return;
+
     }
 
     if (rLine.getString("action").equals("getUserRacun")) {
