@@ -663,6 +663,8 @@ public class ArtikliFunctions {
         object.put("naziv", rs.getString("naziv"));
         object.put("opis", rs.getString("opis"));
         object.put("glavniMagacin", rs.getBoolean("glavniMagacin"));
+      }else{
+        object = getUserInfo(id);
       }
 
       ps.close();
@@ -712,15 +714,18 @@ public class ArtikliFunctions {
   public JSONObject getArtikliTracking(int ArtikalID, int magID, int uniqueID) {
     PreparedStatement ps;
     ResultSet rs;
-    String query = "SELECT * FROM ArtikliTracking WHERE uniqueID=? AND sourceID=? OR uniqueID=? AND destinationID=? ";
+    //String query = "SELECT * FROM ArtikliTracking WHERE uniqueID=? AND sourceID=? OR uniqueID=? AND destinationID=? ";
+    String query = "SELECT * FROM ArtikliTracking WHERE uniqueID=? ";
     JSONObject obj = new JSONObject();
 
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, uniqueID);
+      /*
       ps.setInt(2, magID);
       ps.setInt(3, uniqueID);
       ps.setInt(4, magID);
+      */
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         int i = 0;

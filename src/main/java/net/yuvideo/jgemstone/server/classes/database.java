@@ -24,7 +24,7 @@ public class database {
   private String DB_URL = "jdbc:mysql://127.0.0.1/jgemstone?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&connectTimeout=0";
   private String DB_URL_RADIUS = "jdbc:mysql://127.0.0.1/radius?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&connectTimeout=0";
   private String UserName = "jgemstone";
-  private String Password = "jgemstone";
+  private String Password = "jg3mst0n3";
   private Logger LOGGER = Logger.getLogger("DATABASE");
 
   public database() {
