@@ -808,7 +808,7 @@ public class ServicesFunctions {
   }
 
 
-  public void activateBoxService(int serviceID, String endDate, String operName) {
+  public void activateBoxService(int serviceID, String endDate, String operName, boolean obracun) {
 
     PreparedStatement ps;
     ResultSet rs = null;
@@ -828,6 +828,7 @@ public class ServicesFunctions {
           setAktivateService(serviceID, true);
           //fix for zaduzenje addon programs
           if (rs.getString("paketType").contains("DTV_ADDON")) {
+            if (rs.getBoolean("obracun"))
             zaduziKorisnika(rs.getInt("id"));
           }
         }
@@ -840,6 +841,7 @@ public class ServicesFunctions {
       e.printStackTrace();
     }
 
+    if (obracun)
     zaduziKorisnika(serviceID);
 
 
@@ -855,6 +857,7 @@ public class ServicesFunctions {
       rs = ps.executeQuery();
       if (rs.isBeforeFirst()) {
         rs.next();
+        boolean obracun = rs.getBoolean("obracun");
 
         if (rs.getString("paketType").equals("DTV")) {
           DTVFunctions dtvFunctions = new DTVFunctions(db, operName);
@@ -877,12 +880,16 @@ public class ServicesFunctions {
           stalkerRestAPI2.setEndDate(rs.getString("IPTV_MAC"), endDate);
           setAktivateService(serviceID, true);
           setEndDate(serviceID, endDate);
+
+          if (obracun)
           zaduziKorisnika(serviceID);
         }
 
         if(rs.getString("paketType").equals("FIX")) {
           setAktivateService(serviceID, true);
           setEndDate(serviceID, endDate);
+
+          if (obracun)
           zaduziKorisnika(serviceID);
         }
         if (rs.getString("paketType").equals("NET")) {
@@ -891,6 +898,7 @@ public class ServicesFunctions {
           radius.setEndDate(rs.getString("UserName"), endDate);
           setAktivateService(serviceID, true);
           setEndDate(serviceID, endDate);
+          if (obracun)
           zaduziKorisnika(serviceID);
           if (radius.isError()) {
             setErrorMSG(radius.getErrorMSG());
@@ -901,11 +909,13 @@ public class ServicesFunctions {
         if(rs.getString("paketType").equals("OSTALE_USLUGE")) {
           setAktivateService(serviceID, true);
           setEndDate(serviceID, endDate);
+
+          if (obracun)
           zaduziKorisnika(serviceID);
         }
 
         if (rs.getString("paketType").equals("BOX")) {
-          activateBoxService(serviceID, endDate, operName);
+          activateBoxService(serviceID, endDate, operName, obracun);
         }
 
 
@@ -1591,7 +1601,7 @@ public class ServicesFunctions {
     }
 
     //ako je servis aktivan onda aktiviraj i obracunaj dodatnu karticu
-    if (rLine.getBoolean("aktivan")) {
+    if (rLine.getBoolean("aktivan") && mainDTVServiceID.isObracun()) {
       zaduziKorisnika(ID_OF_INSERTED_ROW);
     }
 

@@ -285,7 +285,7 @@ public class DTVFunctions {
   public void activateDTV(int serviceID, String endDate, int userID) {
     PreparedStatement ps;
     ResultSet rs;
-    String query = "SELECT id, idDTVCard, paketType FROM servicesUser WHERE id=?  and userID=? or dtv_main=? and userID=?";
+    String query = "SELECT id, idDTVCard, paketType, obracun FROM servicesUser WHERE id=?  and userID=? or dtv_main=? and userID=?";
     try {
       ps = db.conn.prepareStatement(query);
       ps.setInt(1, serviceID);
@@ -298,6 +298,8 @@ public class DTVFunctions {
         while (rs.next()) {
           servicesFunctions.setEndDate(rs.getInt("id"), endDate);
           servicesFunctions.setAktivateService(rs.getInt("id"), true);
+
+          if (rs.getBoolean("obracun"))
           servicesFunctions.zaduziKorisnika(rs.getInt("id"));
           activateCards(rs.getInt("id"), endDate);
         }
