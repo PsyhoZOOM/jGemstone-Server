@@ -3,6 +3,7 @@ package net.yuvideo.jgemstone.server.classes.USERS;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import net.yuvideo.jgemstone.server.classes.MESTA.MestaFuncitons;
 import net.yuvideo.jgemstone.server.classes.RACUNI.UserRacun;
 import net.yuvideo.jgemstone.server.classes.SERVICES.ServicesFunctions;
@@ -200,7 +201,24 @@ public class UserFunc {
           jObj.put("email", rs.getString("email"));
           jObj.put("datumKreiranja", rs.getString("datumKreiranja"));
 
-          jUsers.put(String.valueOf(i), jObj);
+          //provera advancesSearch  filter da li postoji servis
+          if (rLine.has("advancedSearch") && rLine.has("chkNET") || rLine.has("chkKTV") || rLine.has("chkIPTV") || rLine.has("chkFIX")){
+            boolean haveService=false;
+
+
+            ServicesFunctions servicesFunctions = new ServicesFunctions(db, operName);
+
+              haveService = servicesFunctions.isUserHaveGlobalService(rLine,  rs.getInt("id"));
+
+            if (haveService){
+              jUsers.put(String.valueOf(i), jObj);
+            }else continue;
+
+
+
+          }else {
+            jUsers.put(String.valueOf(i), jObj);
+          }
           i++;
         } catch (SQLException e) {
           e.printStackTrace();

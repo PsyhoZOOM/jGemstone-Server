@@ -1712,6 +1712,54 @@ public class ServicesFunctions {
 
   }
 
+  public boolean isUserHaveGlobalService(JSONObject rLine, int userID) {
+    boolean have = false;
+
+    String search = "";
+
+    if(rLine.getBoolean("chkKTV"))
+      search="%DTV%";
+
+    else if(rLine.getBoolean("chkNET"))
+      search="%NET%";
+
+    else if(rLine.getBoolean("chkIPTV"))
+      search = "%IPTV%";
+
+    else if(rLine.getBoolean("chkFIX"))
+      search = "%FI%";
+
+    else search ="%";
+
+    String query = "SELECT id FROM servicesUser WHERE userID=? AND paketType like ?";
+
+    PreparedStatement ps;
+    ResultSet rs;
+
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      ps.setString(2, search);
+      rs=ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        ps.close();
+        rs.close();
+        return true;
+      }
+
+      ps.close();
+      rs.close();
+
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+
+    return false;
+
+  }
+
   public boolean isError() {
     return error;
   }

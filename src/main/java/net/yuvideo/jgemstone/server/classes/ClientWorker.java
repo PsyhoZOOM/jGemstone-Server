@@ -55,7 +55,7 @@ import org.json.JSONObject;
 public class ClientWorker implements Runnable {
 
   public Logger LOGGER;
-  private static final String S_VERSION = "0.214";
+  private static final String S_VERSION = "0.216";
   private String C_VERSION;
   private final SimpleDateFormat date_format_full = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final SimpleDateFormat mysql_date_format = new SimpleDateFormat("yyy-MM-dd hh:mm:ss");
@@ -1234,8 +1234,31 @@ public class ClientWorker implements Runnable {
      JSONObject object = new JSONObject();
 
      ZaduziCustom zaduziCustom = new ZaduziCustom(getOperName(),db);
-     zaduziCustom.izmeniZaduzenje(rLine);
+     zaduziCustom.izmeniZaduzenje(rLine, getOperName());
      if(zaduziCustom.isError()){
+       object.put("ERROR", zaduziCustom.getErrorMSG());
+     }
+
+     send_object(object);
+     return;
+   }
+
+   if(rLine.getString("action").equals("IzbrisiZaduzenjeZaMesecKorisnik")){
+     JSONObject object = new JSONObject();
+     ZaduziCustom zaduziCustom = new ZaduziCustom(getOperName(), db);
+     zaduziCustom.deleteZaMesecZaduzenje(rLine.getInt("userID"), rLine.getString("zaMesec"), getOperName());
+     if (zaduziCustom.isError()){
+       object.put("ERROR", zaduziCustom.getErrorMSG());
+     }
+     send_object(object);
+     return;
+   }
+
+   if (rLine.getString("action").equals("IzbrisiZaduzenjeKorisnik")){
+     JSONObject object = new JSONObject();
+     ZaduziCustom zaduziCustom = new ZaduziCustom(getOperName(), db);
+     zaduziCustom.deleteZaduzenje(rLine.getInt("id"), getOperName());
+     if (zaduziCustom.isError()){
        object.put("ERROR", zaduziCustom.getErrorMSG());
      }
      send_object(object);
