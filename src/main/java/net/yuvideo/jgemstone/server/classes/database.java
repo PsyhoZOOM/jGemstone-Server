@@ -36,6 +36,7 @@ public class database {
     try {
       conn.close();
       connRad.close();
+      LOGGER.info("Database closed..");
     } catch (SQLException e) {
       e.printStackTrace();
     }

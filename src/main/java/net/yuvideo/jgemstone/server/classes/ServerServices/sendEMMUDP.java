@@ -58,9 +58,6 @@ public class sendEMMUDP {
     //	byte[] bytes = ByteBuffer.allocate(4).putInt(new Integer(value)).array();
     ByteBuffer bb = ByteBuffer.allocate(4);
     byte[] bytes = bb.order(ByteOrder.BIG_ENDIAN).putInt(value).array();
-    for (int i = 0; i < bytes.length; i++) {
-      //System.out.println(bytes[i]);
-    }
 
     return bytes;
   }
@@ -137,20 +134,22 @@ public class sendEMMUDP {
 
       int SixteenByte = 0;
       for (int i = 0; i < packetSend.length; i++) {
-        SixteenByte += packetSend[i] & 0xff;
+        SixteenByte += packetSend[i] ;
+        //SixteenByte += packetSend[i] & 0xff;
         //System.out.println(packetSend[i]);
 
       }
 
-      packetSend[15] = (byte) (packC(SixteenByte)[1] & 0xff);
+      //packetSend[15] = (byte) (packC(SixteenByte)[1] & 0xff);
+      packetSend[15] = (byte) (packC(SixteenByte)[1]);
 
       packet = new DatagramPacket(packetSend, packetSend.length, soAddress, Port);
       socket = new DatagramSocket();
 
       //we gonna check if network is reachable, if it is then send socket.send(packet) ;0
-      if (socket.getInetAddress().getByName(HostName).isReachable(1000)) {
+ //     if (socket.getInetAddress().getByName(HostName).isReachable(10000)) {
         socket.send(packet);
-      }
+ //    }
       socket.close();
     } catch (UnknownHostException ex) {
       Logger.getLogger(sendEMMUDP.class.getName()).log(Level.SEVERE, null, ex);

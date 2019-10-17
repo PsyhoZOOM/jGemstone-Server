@@ -11,23 +11,18 @@ import org.json.JSONObject;
 public class GPSReceiver implements Runnable {
 
   DatagramSocket serverSock;
+  DatagramPacket datagramPacket;
   byte[] recvData;
   database db;
-  double longitude;
-  double latitude;
-  String ident;
 
   @Override
   public void run() {
-    recvData = new byte[128];
+      recvData = new byte[128];
 
-    try {
-      serverSock = new DatagramSocket((8544));
-    } catch (SocketException e) {
-      e.printStackTrace();
-    }
-    DatagramPacket datagramPacket = new DatagramPacket(recvData, recvData.length);
+    while (true) {
+      datagramPacket = new DatagramPacket(recvData, recvData.length);
       try {
+        serverSock = new DatagramSocket((8544));
         System.out.println("RECEIVING UDP DATA: \n");
         serverSock.receive(datagramPacket);
         byte[] data = datagramPacket.getData();
@@ -36,13 +31,12 @@ public class GPSReceiver implements Runnable {
         System.out.println("RECIEVED: " + data);
         System.out.println("TO STRING: " + a);
         System.out.println("JSONOB: " + obje.toString());
-        ident = obje.getString("identification");
-        longitude = obje.getDouble("long");
-        latitude = obje.getDouble("lat");
         LocationsClients.updateClient(obje, db);
+        serverSock.close();
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
 
     }
 

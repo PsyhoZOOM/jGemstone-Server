@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.apache.log4j.Logger;
+import org.omg.CORBA.TIMEOUT;
 
 /**
  * Created by PsyhoZOOM on 9/21/17.
@@ -14,7 +15,6 @@ import org.apache.log4j.Logger;
 public class EMMServer implements Runnable {
 
   public Logger LOGGER;
-  private final int MINUTES = 60 * 100;
   public int DEBUG;
   DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private int timeout;
@@ -49,10 +49,10 @@ public class EMMServer implements Runnable {
             if (DEBUG > 1) {
               System.out.println(
                   String.format
-                      ("Send EMMUDP Packet to: %s:%d CARD_ID: %d",
+                      ("Send EMMUDP Packet to: %s:%d CARD_ID: %d Packet: %d",
                           this.host,
                           this.port,
-                          rs.getInt("idKartica")));
+                          rs.getInt("idKartica"), rs.getInt("paketID")));
             }
             if (rs.getInt("idKartica") == 0) {
               continue;
@@ -61,22 +61,42 @@ public class EMMServer implements Runnable {
                 rs.getInt("idKartica"),
                 LocalDate.parse(rs.getDate("createDate").toString(), df),
                 LocalDate.parse(rs.getDate("endDate").toString(), df),
-                rs.getInt("paketID"),
+                getCode(rs.getInt("paketID")),
                 5
             );
+            Thread.sleep(timeout/2);
           }
         }
         rs.close();
         ps.close();
       } catch (SQLException e) {
         e.printStackTrace();
-      }
-
-      try {
-        Thread.sleep(timeout * MINUTES);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
+
     }
+  }
+
+  private int getCode(int paketID) {
+    PreparedStatement ps = null;
+    ResultSet rs;
+    int PaketID=0;
+
+    String query = "SELECT code from casPaket WHERE paketID=?";
+    try {
+      ps =db.conn.prepareStatement(query);
+      ps.setInt(1, paketID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        rs.next();
+        PaketID = rs.getInt("code");
+      }
+
+
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return PaketID;
   }
 }

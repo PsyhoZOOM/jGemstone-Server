@@ -150,6 +150,8 @@ public class Server {
     }
 
     if (runEMMServce) {
+      db = new database();
+      db.initDB();
       EMMServer emmServer = new EMMServer(EMMTimeout, db, EMMhost, EMMport);
       emmServer.DEBUG = DEBUG;
       emmServer.LOGGER = LOGGER;

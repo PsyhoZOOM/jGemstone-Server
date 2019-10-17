@@ -3878,10 +3878,44 @@ public class ClientWorker implements Runnable {
       send_object(jObj);
     }
 
-    if (rLine.getString("action").equals("getAllClientsLocations")) {
+    if (rLine.getString("action").equals("getAllGPSClientsLocations")) {
       LocationsClients locationsClients = new LocationsClients();
       JSONObject object = locationsClients.getAll(db);
       send_object(object);
+      //close all connection and database because we don't need them anymore
+      try {
+        client.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      db.closeDB();
+      return;
+    }
+
+    if (rLine.getString("action").equals("getAllGPSDevices")){
+      LocationsClients locationsClients = new LocationsClients();
+      JSONObject object = locationsClients.getAllDevices(db);
+      send_object(object);
+      //close connection and databse becouse we don't need them anymore
+      try {
+        client.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      db.closeDB();
+      return;
+    }
+
+    if (rLine.getString("action").equals("getGPSPath")){
+      LocationsClients locationsClients = new LocationsClients();
+      JSONObject object = locationsClients.getGPSPath(rLine.getString("identification"), rLine.getString("startTime"), rLine.getString("endTime"), db);
+      send_object(object);
+      try {
+        client.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      db.closeDB();
       return;
     }
 
