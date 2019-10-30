@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -18,6 +19,7 @@ import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
 import net.yuvideo.jgemstone.server.classes.valueToPercent;
+import org.codehaus.jackson.annotate.JsonAnyGetter;
 import org.json.JSONObject;
 
 /**
@@ -997,6 +999,177 @@ public class ServicesFunctions {
     }
   }
 
+
+  public void zaduziKorisnikaBeginOfMonth(int serviceID, int userID) {
+    ServiceData serviceData = getServiceData(serviceID);
+    //ako je nov servis samo cemog izbrisati necemo zaduzivati nista
+    if (!serviceData.isAktivan())
+      return;
+    if (serviceData.getPaketType().equals("BOX")) {
+      razduziBOX(serviceData.getId(), userID);
+    }else if (serviceData.getPaketType().equals("DTV")) {
+      razduziDTV(serviceData.getId(), userID);
+    }else{
+      razduziService(serviceData.getId(), userID);
+    }
+  }
+
+  private void razduziService(int serviceID, int userID){
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM servicesUser WHERE id=? AND userID=?";
+    DateTimeFormatter format_date = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    DateTimeFormatter format_motn = DateTimeFormatter.ofPattern("yyyy-MM");
+    DecimalFormat df = new DecimalFormat("#.00");
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1,serviceID);
+      ps.setInt(2, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        while (rs.next()){
+          query =
+              "INSERT INTO zaduzenja (datum, cena, pdv, popust, naziv, zaduzenOd, userID, paketType, dug, zaMesec)"
+                  + "VALUES "
+                  + "(?,?,?,?,?,?,?,?,?,?)";
+          ps = db.conn.prepareStatement(query);
+          ps.setString(1, LocalDate.now().format(format_date));
+          ps.setDouble(2, rs.getDouble("cena"));
+          ps.setDouble(3, rs.getDouble("PDV"));
+          ps.setDouble(4, rs.getDouble("popust"));
+          ps.setString(5, rs.getString("nazivPaketa").toUpperCase());
+          ps.setString(6, "SYSTEM");
+          ps.setInt(7, rs.getInt("userID"));
+          ps.setString(8, rs.getString("paketType"));
+
+          double cena = rs.getDouble("cena");
+          cena = countCenaFromStartOfMonth(cena);
+          double pdv = rs.getDouble("pdv");
+          double popust = rs.getDouble("popust");
+          double dug = cena - valueToPercent.getPDVOfSum(cena, popust);
+          dug = dug + valueToPercent.getPDVOfValue(dug , pdv);
+          ps.setDouble(9, dug);
+          ps.setString(10, LocalDateTime.now().format(format_motn));
+          ps.executeUpdate();
+
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private  void razduziDTV(int serviceID, int userID){
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM servicesUser WHERE dtv_main=? OR id=? AND userID=?";
+    DateTimeFormatter format_date = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    DateTimeFormatter format_motn = DateTimeFormatter.ofPattern("yyyy-MM");
+    DecimalFormat df = new DecimalFormat("#.00");
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1,serviceID);
+      ps.setInt(2, serviceID);
+      ps.setInt(3, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        while (rs.next()){
+          query =
+              "INSERT INTO zaduzenja (datum, cena, pdv, popust, naziv, zaduzenOd, userID, paketType, dug, zaMesec)"
+                  + "VALUES "
+                  + "(?,?,?,?,?,?,?,?,?,?)";
+          ps = db.conn.prepareStatement(query);
+          ps.setString(1, LocalDate.now().format(format_date));
+          ps.setDouble(2, rs.getDouble("cena"));
+          ps.setDouble(3, rs.getDouble("PDV"));
+          ps.setDouble(4, rs.getDouble("popust"));
+          ps.setString(5, rs.getString("nazivPaketa").toUpperCase());
+          ps.setString(6, "SYSTEM");
+          ps.setInt(7, rs.getInt("userID"));
+          ps.setString(8, rs.getString("paketType"));
+
+          double cena = rs.getDouble("cena");
+          cena = countCenaFromStartOfMonth(cena);
+          double pdv = rs.getDouble("pdv");
+          double popust = rs.getDouble("popust");
+          double dug = cena - valueToPercent.getPDVOfSum(cena, popust);
+          dug = dug + valueToPercent.getPDVOfValue(dug , pdv);
+          ps.setDouble(9, dug);
+          ps.setString(10, LocalDateTime.now().format(format_motn));
+          ps.executeUpdate();
+
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void razduziBOX(int serviceID, int userID){
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT * FROM servicesUser WHERE box_id=? OR id=? or dtv_main=? AND userID=?";
+    DateTimeFormatter format_date = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    DateTimeFormatter format_motn = DateTimeFormatter.ofPattern("yyyy-MM");
+    DecimalFormat df = new DecimalFormat("#.00");
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1,serviceID);
+      ps.setInt(2, serviceID);
+      ps.setInt(3, serviceID);
+      ps.setInt(4, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        while (rs.next()){
+          query =
+              "INSERT INTO zaduzenja (datum, cena, pdv, popust, naziv, zaduzenOd, userID, paketType, dug, zaMesec)"
+                  + "VALUES "
+                  + "(?,?,?,?,?,?,?,?,?,?)";
+          ps = db.conn.prepareStatement(query);
+          ps.setString(1, LocalDate.now().format(format_date));
+          ps.setDouble(2, rs.getDouble("cena"));
+          ps.setDouble(3, rs.getDouble("PDV"));
+          ps.setDouble(4, rs.getDouble("popust"));
+          ps.setString(5, rs.getString("nazivPaketa").toUpperCase());
+          ps.setString(6, "SYSTEM");
+          ps.setInt(7, rs.getInt("userID"));
+          ps.setString(8, rs.getString("paketType"));
+
+          double cena = rs.getDouble("cena");
+          cena = countCenaFromStartOfMonth(cena);
+          double pdv = rs.getDouble("pdv");
+          double popust = rs.getDouble("popust");
+          double dug = cena - valueToPercent.getPDVOfSum(cena, popust);
+          dug = dug + valueToPercent.getPDVOfValue(dug , pdv);
+          ps.setDouble(9, dug);
+          ps.setString(10, LocalDateTime.now().format(format_motn));
+          ps.executeUpdate();
+
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private double countCenaFromStartOfMonth(double cena) {
+    LocalDateTime dateEnd = LocalDateTime.now();
+
+    int day = dateEnd.getDayOfMonth();
+    int daysInMont = LocalDate.now().lengthOfMonth();
+
+    double cenaPerDay = cena / daysInMont;
+
+    double dug = cenaPerDay*day;
+
+
+    return dug;
+
+
+
+
+  }
+
   public void produziService(int serviceID, String endDateStr, int prekoracenje, String operName,
       boolean skipProduzenje) {
     PreparedStatement ps;
@@ -1760,6 +1933,8 @@ public class ServicesFunctions {
 
   }
 
+
+
   public boolean isError() {
     return error;
   }
@@ -1793,4 +1968,93 @@ public class ServicesFunctions {
   }
 
 
+  public JSONObject getUserServices(int userID) {
+    String query = "SELECT *  FROM servicesUser WHERE userID=? AND linkedService=false AND paketType NOT LIKE '%ADDON%' ";
+    PreparedStatement ps;
+    JSONObject jObj = new JSONObject();
+    ResultSet rs;
+
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, userID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()) {
+        JSONObject service;
+        int i = 0;
+        while (rs.next()) {
+          service = new JSONObject();
+          service.put("id", rs.getInt("id"));
+          service.put("userID", rs.getString("userID"));
+          service.put("brojUgovora", rs.getString("brojUgovora"));
+          service.put("cena", rs.getDouble("cena"));
+          service.put("popust", rs.getDouble("popust"));
+          service.put("pdv", rs.getDouble("PDV"));
+          service.put("operName", rs.getString("operName"));
+          service.put("date_added", rs.getString("date_added"));
+          service.put("nazivPaketa", rs.getString("nazivPaketa"));
+          service.put("naziv", rs.getString("nazivPaketa"));
+
+          //SETTING idUniqueName
+          String[] uniqueName = new String[4];
+          if (!rs.getString("IPTV_MAC").trim().isEmpty()) {
+            service.put("idUniqueName", rs.getString("IPTV_MAC"));
+            uniqueName[0] = "IPTV: " + rs.getString("IPTV_MAC");
+            service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
+            service.put("STB_MAC", rs.getString("IPTV_MAC"));
+          } else if (!rs.getString("UserName").trim().isEmpty()) {
+            service.put("idUniqueName", rs.getString("UserName"));
+            uniqueName[1] = "NET: " + rs.getString("UserName");
+          } else if (!rs.getString("idDTVCard").trim().isEmpty()) {
+            service.put("idUniqueName", rs.getString("idDTVCard"));
+            uniqueName[2] = "DTV: " + rs.getString("idDTVCard");
+          } else if (!rs.getString("FIKSNA_TEL").trim().isEmpty()) {
+            service.put("idUniqueName", rs.getString("FIKSNA_TEL"));
+            uniqueName[3] = "FIKSNA: " + rs.getString("FIKSNA_TEL");
+          } else {
+            service.put("idUniqueName", rs.getString("nazivPaketa"));
+          }
+
+          if (rs.getString("paketType").equals("BOX")) {
+            String serviceSTR = "";
+            for (String str : uniqueName) {
+              if (str != null) {
+                if (!str.isEmpty()) {
+                  serviceSTR += str + " ";
+                }
+              }
+            }
+            service.put("idUniqueName", serviceSTR);
+          }
+
+
+          service.put("userName", rs.getString("UserName"));
+          service.put("groupName", rs.getString("GroupName"));
+          service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
+          service.put("FIKSNA_TEL", rs.getString("FIKSNA_TEL"));
+          service.put("obracun", rs.getBoolean("obracun"));
+          service.put("aktivan", rs.getBoolean("aktivan"));
+          service.put("id_service", rs.getInt("id_service"));
+          service.put("box", rs.getBoolean("BOX_service"));
+          service.put("box_ID", rs.getInt("box_id"));
+          service.put("brojTel", rs.getString("FIKSNA_TEL"));
+          service.put("paketType", rs.getString("paketType"));
+          service.put("linkedService", rs.getBoolean("linkedService"));
+          service.put("newService", rs.getBoolean("newService"));
+          service.put("idDTVCard", rs.getString("idDTVCard"));
+          service.put("endDate", rs.getString("endDate"));
+          service.put("komentar", rs.getString("komentar"));
+          service.put("opis", rs.getString("opis"));
+          service.put("dtv_main", rs.getString("dtv_main"));
+
+          jObj.put(String.valueOf(i), service);
+          i++;
+        }
+      }
+      ps.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return jObj;
+  }
 }

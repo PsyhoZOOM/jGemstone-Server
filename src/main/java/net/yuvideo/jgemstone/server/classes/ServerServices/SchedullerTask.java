@@ -182,6 +182,7 @@ public class SchedullerTask implements Runnable {
       LOGGER.error(e.getMessage());
       e.printStackTrace();
     }
+    clientWorkerArrayList.get(i).closeDB();
     clientWorkerArrayList.remove(i);
     threadClientWorker.interrupt();
   }

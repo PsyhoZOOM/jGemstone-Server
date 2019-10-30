@@ -1,13 +1,17 @@
 package net.yuvideo.jgemstone.server.classes.LOCATION;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import net.yuvideo.jgemstone.server.classes.database;
 import org.json.JSONObject;
 
 public class LocationsClients {
+  private static  DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd mm:hh:ss");
 
 
   public static void updateClient(JSONObject object, database db) {
@@ -44,7 +48,7 @@ public class LocationsClients {
         ps = db.conn.prepareStatement(query);
         ps.setDouble(1, object.getDouble("lat"));
         ps.setDouble(2, object.getDouble("long"));
-        ps.setString(3, LocalDateTime.now().toString());
+        ps.setString(3, LocalDateTime.now().format(dateTimeFormatter));
         ps.setString(4, object.getString("imei"));
         ps.executeUpdate();
         ps.close();
@@ -158,6 +162,9 @@ public class LocationsClients {
     ResultSet rs;
     JSONObject object = new JSONObject();
     String query = "SELECT * FROM gpsTrackerPath WHERE identification=? AND lastUpdateTime >= ? AND lastUpdateTime <= ?";
+    if (identification.contains("3582400")){
+      System.out.println("HEE");
+    }
 
     try {
       ps= db.conn.prepareStatement(query);
@@ -170,7 +177,7 @@ public class LocationsClients {
         while (rs.next()) {
           JSONObject path = new JSONObject();
           path.put("longitude", rs.getDouble("longitude"));
-          path.put("latitude", rs.getObject("latitude"));
+          path.put("latitude", rs.getDouble("latitude"));
           object.put(String.valueOf(i), path);
           i++;
         }

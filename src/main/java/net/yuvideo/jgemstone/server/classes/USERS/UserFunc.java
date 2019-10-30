@@ -94,6 +94,7 @@ public class UserFunc {
     query =  "DELETE FROM uplate WHERE userID=?";
     try {
       ps =db.conn.prepareStatement(query);
+      ps.setInt(1, userId);
       ps.executeUpdate();
     } catch (SQLException e) {
       setErrorMSG(e.getMessage());

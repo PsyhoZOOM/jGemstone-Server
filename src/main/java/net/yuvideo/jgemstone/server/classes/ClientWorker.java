@@ -128,7 +128,8 @@ public class ClientWorker implements Runnable {
         String A = Bfr.readLine();
 
         if (A == null) {
-          //client.close();
+ //         client.close();
+          closeDB();
           LOGGER.info(String
               .format("Client %s %s disconnected", client.getRemoteSocketAddress().toString(),
                   getOperName()));
@@ -722,88 +723,8 @@ public class ClientWorker implements Runnable {
 
     if (rLine.getString("action").equals("get_user_services")) {
       jObj = new JSONObject();
-      query = "SELECT *  FROM servicesUser WHERE userID=? AND linkedService=false AND paketType NOT LIKE '%ADDON%' ";
-
-      try {
-        ps = db.conn.prepareStatement(query);
-        ps.setInt(1, rLine.getInt("userID"));
-        rs = ps.executeQuery();
-        if (rs.isBeforeFirst()) {
-          JSONObject service;
-          int i = 0;
-          while (rs.next()) {
-            service = new JSONObject();
-            service.put("id", rs.getInt("id"));
-            service.put("userID", rs.getString("userID"));
-            service.put("brojUgovora", rs.getString("brojUgovora"));
-            service.put("cena", rs.getDouble("cena"));
-            service.put("popust", rs.getDouble("popust"));
-            service.put("pdv", rs.getDouble("PDV"));
-            service.put("operName", rs.getString("operName"));
-            service.put("date_added", rs.getString("date_added"));
-            service.put("nazivPaketa", rs.getString("nazivPaketa"));
-            service.put("naziv", rs.getString("nazivPaketa"));
-
-            //SETTING idUniqueName
-            String[] uniqueName = new String[4];
-            if (!rs.getString("IPTV_MAC").trim().isEmpty()) {
-              service.put("idUniqueName", rs.getString("IPTV_MAC"));
-              uniqueName[0] = "IPTV: " + rs.getString("IPTV_MAC");
-              service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
-              service.put("STB_MAC", rs.getString("IPTV_MAC"));
-            } else if (!rs.getString("UserName").trim().isEmpty()) {
-              service.put("idUniqueName", rs.getString("UserName"));
-              uniqueName[1] = "NET: " + rs.getString("UserName");
-            } else if (!rs.getString("idDTVCard").trim().isEmpty()) {
-              service.put("idUniqueName", rs.getString("idDTVCard"));
-              uniqueName[2] = "DTV: " + rs.getString("idDTVCard");
-            } else if (!rs.getString("FIKSNA_TEL").trim().isEmpty()) {
-              service.put("idUniqueName", rs.getString("FIKSNA_TEL"));
-              uniqueName[3] = "FIKSNA: " + rs.getString("FIKSNA_TEL");
-            } else {
-              service.put("idUniqueName", rs.getString("nazivPaketa"));
-            }
-
-            if (rs.getString("paketType").equals("BOX")) {
-              String serviceSTR = "";
-              for (String str : uniqueName) {
-                if (str != null) {
-                  if (!str.isEmpty()) {
-                    serviceSTR += str + " ";
-                  }
-                }
-              }
-              service.put("idUniqueName", serviceSTR);
-            }
-
-
-            service.put("userName", rs.getString("UserName"));
-            service.put("groupName", rs.getString("GroupName"));
-            service.put("IPTV_MAC", rs.getString("IPTV_MAC"));
-            service.put("FIKSNA_TEL", rs.getString("FIKSNA_TEL"));
-            service.put("obracun", rs.getBoolean("obracun"));
-            service.put("aktivan", rs.getBoolean("aktivan"));
-            service.put("id_service", rs.getInt("id_service"));
-            service.put("box", rs.getBoolean("BOX_service"));
-            service.put("box_ID", rs.getInt("box_id"));
-            service.put("brojTel", rs.getString("FIKSNA_TEL"));
-            service.put("paketType", rs.getString("paketType"));
-            service.put("linkedService", rs.getBoolean("linkedService"));
-            service.put("newService", rs.getBoolean("newService"));
-            service.put("idDTVCard", rs.getString("idDTVCard"));
-            service.put("endDate", rs.getString("endDate"));
-            service.put("komentar", rs.getString("komentar"));
-            service.put("opis", rs.getString("opis"));
-            service.put("dtv_main", rs.getString("dtv_main"));
-
-            jObj.put(String.valueOf(i), service);
-            i++;
-          }
-        }
-        ps.close();
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }
+     ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
+     jObj = servicesFunctions.getUserServices(rLine.getInt("userID"));
       send_object(jObj);
       return;
 
@@ -1183,7 +1104,10 @@ public class ClientWorker implements Runnable {
       jObj = new JSONObject();
 
       ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
-      servicesFunctions.deleteService(rLine.getInt("serviceID"), rLine.getInt("userID"));
+      if (rLine.getBoolean("zaduzi")){
+        servicesFunctions.zaduziKorisnikaBeginOfMonth(rLine.getInt("serviceID"), rLine.getInt("userID"));
+      }
+ //     servicesFunctions.deleteService(rLine.getInt("serviceID"), rLine.getInt("userID"));
       if (servicesFunctions.isError()) {
         jObj.put("ERROR", servicesFunctions.getErrorMSG());
       }
@@ -4645,4 +4569,8 @@ public class ClientWorker implements Runnable {
 
   }
 
+  public void closeDB() {
+    if (db!=null)
+    this.db.closeDB();
+  }
 }
