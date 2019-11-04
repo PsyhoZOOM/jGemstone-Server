@@ -31,7 +31,7 @@ public class DTVFunctions {
 
   public boolean check_card_busy(int cardID) {
     if (cardID == 0) {
-      return false;
+      return true;
     }
     PreparedStatement ps;
     ResultSet rs;
