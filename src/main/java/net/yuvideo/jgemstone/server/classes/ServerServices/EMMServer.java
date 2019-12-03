@@ -18,12 +18,14 @@ public class EMMServer implements Runnable {
   public int DEBUG;
   DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private int timeout;
-  private Thread EMMServerThread;
   private sendEMMUDP sendEmmUDP;
   private database db;
   private String query;
   private String host;
   private int port;
+  PreparedStatement ps = null;
+  ResultSet rs = null;
+  private boolean runningService = true;
 
   public EMMServer(int timeout, database db, String host, int port) {
     this.timeout = timeout;
@@ -34,13 +36,11 @@ public class EMMServer implements Runnable {
 
   @Override
   public void run() {
-    PreparedStatement ps = null;
-    ResultSet rs = null;
     query = "SELECT * FROM DTVKartice ";
 
     sendEmmUDP = new sendEMMUDP(this.host, this.port);
     LOGGER.info("Starting EMM Service");
-    while (true) {
+    while (runningService) {
       try {
         ps = db.conn.prepareStatement(query);
         rs = ps.executeQuery();
@@ -64,17 +64,20 @@ public class EMMServer implements Runnable {
                 getCode(rs.getInt("paketID")),
                 5
             );
-            Thread.sleep(timeout/2);
+            Thread.sleep(timeout);
           }
         }
-        rs.close();
-        ps.close();
-      } catch (SQLException e) {
-        e.printStackTrace();
-      } catch (InterruptedException e) {
+      } catch (SQLException | InterruptedException e) {
         e.printStackTrace();
       }
 
+    }
+
+    try {
+      rs.close();
+      ps.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
     }
   }
 
@@ -92,6 +95,9 @@ public class EMMServer implements Runnable {
         rs.next();
         PaketID = rs.getInt("code");
       }
+
+      rs.close();
+      ps.close();
 
 
     } catch (SQLException e) {

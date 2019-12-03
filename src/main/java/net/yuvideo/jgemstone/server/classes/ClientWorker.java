@@ -4217,7 +4217,11 @@ public class ClientWorker implements Runnable {
       DTVPaketFunctions dtvPaketFunctions = new DTVPaketFunctions(db, getOperName());
       ServicesFunctions servicesFunctions = new ServicesFunctions(db, getOperName());
       ServiceData service = servicesFunctions.getServiceData(rLine.getInt("idService"));
-      object.put("paketID", dtvPaketFunctions.getPacketID(service.getId_service()));
+      if (service.isBoxService()){
+        object.put("paketID", dtvPaketFunctions.getPacketIDOfBox(service.getId()));
+      }else {
+        object.put("paketID", dtvPaketFunctions.getPacketID(service.getId_service()));
+      }
 
       if (dtvPaketFunctions.isError()) {
         object.put("ERROR", dtvPaketFunctions.getErrorMSG());

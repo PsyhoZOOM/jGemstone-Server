@@ -310,6 +310,28 @@ public class DTVPaketFunctions {
     return paketID;
   }
 
+  public int getPacketIDOfBox(int boxID){
+    int paketID=0;
+    PreparedStatement ps;
+    ResultSet rs;
+    String query = "SELECT id_service FROM servicesUser WHERE box_id=? and paketType='LINKED_DTV'";
+    try {
+      ps = db.conn.prepareStatement(query);
+      ps.setInt(1, boxID);
+      rs = ps.executeQuery();
+      if (rs.isBeforeFirst()){
+        rs.next();
+        paketID=getPacketID(rs.getInt("id_service"));
+      }
+    } catch (SQLException e) {
+      setError(true);
+      setErrorMSG(e.getMessage());
+      e.printStackTrace();
+    }
+    return paketID;
+
+  }
+
   public JSONObject getDTVAddonCards() {
     JSONObject object = new JSONObject();
     PreparedStatement ps;

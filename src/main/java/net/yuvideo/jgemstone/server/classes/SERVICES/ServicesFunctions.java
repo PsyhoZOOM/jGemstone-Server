@@ -15,6 +15,7 @@ import net.yuvideo.jgemstone.server.classes.DTV.DTVFunctions;
 import net.yuvideo.jgemstone.server.classes.FIX.FIXFunctions;
 import net.yuvideo.jgemstone.server.classes.INTERNET.NETFunctions;
 import net.yuvideo.jgemstone.server.classes.IPTV.StalkerRestAPI2;
+import net.yuvideo.jgemstone.server.classes.RACUNI.Uplate;
 import net.yuvideo.jgemstone.server.classes.RADIUS.Radius;
 import net.yuvideo.jgemstone.server.classes.USERS.UsersData;
 import net.yuvideo.jgemstone.server.classes.database;
@@ -807,6 +808,9 @@ public class ServicesFunctions {
       e.printStackTrace();
     }
 
+    Uplate uplate = new Uplate(getOperName(), db);
+    uplate.produzivanjeServisa(userID);
+
   }
 
 
@@ -930,6 +934,7 @@ public class ServicesFunctions {
       e.printStackTrace();
       return;
     }
+
 
     setEndDate(serviceID, endDate);
   }
